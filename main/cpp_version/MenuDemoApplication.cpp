@@ -247,6 +247,14 @@ void create_color_test(lv_obj_t* parent)
     }
 }
 
+// Demo 5: ColorWheel (from examples)
+extern "C" void create_colorwheel_demo();
+
+void create_colorwheel_wrapper(lv_obj_t* parent)
+{
+    // Call the demo directly
+    create_colorwheel_demo();
+}
 } // namespace
 
 // ========== MenuDemoApplication Implementation ==========
@@ -368,5 +376,11 @@ void MenuDemoApplication::registerAllDemos()
         create_color_test
     );
     
+    m_demoManager->registerDemo(
+    "ColorWheel Picker",
+    "Interactive color picker with HSV controls",
+    create_colorwheel_wrapper
+    );
+
     ESP_LOGI(TAG, "✓ Registered %d demos", m_demoManager->getDemoCount());
 }
