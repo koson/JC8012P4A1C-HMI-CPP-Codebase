@@ -546,7 +546,7 @@ esp_err_t bsp_touch_new(const bsp_touch_config_t *config, esp_lcd_touch_handle_t
             .mirror_y = 1,
 #else
             .mirror_x = 1,  // ✅ Flip both axes
-            .mirror_y = 1,
+            .mirror_y = 0,
 #endif
         },
         .driver_data = &gsl3680_io_cfg,  // ✅ CRITICAL: Required for GSL3680 I2C address selection
