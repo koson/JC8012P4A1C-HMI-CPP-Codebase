@@ -34,9 +34,15 @@ message(STATUS "Example C Sources: ${EXAMPLE_C_SOURCES}")
 
 idf_component_register(
     SRCS 
-        # Main entry point (C++)
+        # Main entry point (C++ - Refactored with clean OOP architecture)
         main.cpp
         # main_menu.cpp  # DISABLED - requires all examples to be compiled
+        
+        # System Manager (OOP base for any ESP32-P4 HMI project)
+        cpp_version/SystemManager.cpp
+        
+        # VPI Application (VPI-specific app logic)
+        cpp_version/VPIApplication.cpp
         
         # All C++ OOP widget implementations (core library)
         ${CPP_SOURCES}
