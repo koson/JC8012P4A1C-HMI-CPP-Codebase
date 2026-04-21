@@ -1,0 +1,12 @@
+idf_component_register(
+    SRCS 
+        "src/VPIDocument.cpp"
+        "src/DataLogger.cpp"
+        "src/VPIDocumentCWrapper.cpp"
+    INCLUDE_DIRS 
+        "include"
+    REQUIRES 
+        esp_timer
+        vfs
+        fatfs
+)

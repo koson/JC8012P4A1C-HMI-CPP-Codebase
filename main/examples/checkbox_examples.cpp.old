@@ -1,0 +1,155 @@
+/**
+ * @file checkbox_examples.cpp
+ * @brief 📋 ตัวอย่างการใช้ LVCheckbox
+ */
+
+#include "../include/LVCheckbox.hpp"
+#include "../include/LVLabel.hpp"
+#include "../include/LVPanel.hpp"
+#include <stdio.h>
+
+/**
+ * EXAMPLE 1: Simple Checkbox
+ */
+void example_simple_checkbox()
+{
+    auto cb = new LVCheckbox(nullptr, "Enable WiFi");
+    cb->setPos(10, 10)
+      ->onChange([](bool checked) {
+          printf("WiFi: %s\n", checked ? "ON" : "OFF");
+      });
+}
+
+/**
+ * EXAMPLE 2: Settings Panel
+ * กลุ่ม checkboxes สำหรับการตั้งค่า
+ */
+void example_settings_panel()
+{
+    // Title
+    auto title = new LVLabel(nullptr, "⚙️ Settings");
+    title->setPos(10, 60);
+    
+    // Checkbox 1: WiFi
+    auto cbWifi = new LVCheckbox(nullptr, "Enable WiFi");
+    cbWifi->setPos(10, 90)
+          ->setChecked(true)  // เปิดอยู่แล้ว
+          ->onChange([](bool on) {
+              printf("WiFi %s\n", on ? "enabled" : "disabled");
+              // ❓ TODO: เปิด/ปิด WiFi จริงๆ
+          });
+    
+    // Checkbox 2: Bluetooth
+    auto cbBT = new LVCheckbox(nullptr, "Enable Bluetooth");
+    cbBT->setPos(10, 130)
+        ->setChecked(false)
+        ->onChange([](bool on) {
+            printf("Bluetooth %s\n", on ? "enabled" : "disabled");
+            // ❓ TODO: เปิด/ปิด Bluetooth
+        });
+    
+    // Checkbox 3: Auto Update
+    auto cbUpdate = new LVCheckbox(nullptr, "Auto Update");
+    cbUpdate->setPos(10, 170)
+            ->setChecked(true)
+            ->onChange([](bool on) {
+                printf("Auto Update: %s\n", on ? "ON" : "OFF");
+            });
+}
+
+/**
+ * EXAMPLE 3: Todo List
+ * รายการงานที่ทำได้
+ */
+void example_todo_list()
+{
+    auto title = new LVLabel(nullptr, "✅ Todo List");
+    title->setPos(250, 10);
+    
+    // Todo items
+    const char* todos[] = {
+        "Finish homework",
+        "Buy groceries",
+        "Exercise",
+        "Read a book"
+    };
+    
+    for (int i = 0; i < 4; i++) {
+        auto cb = new LVCheckbox(nullptr, todos[i]);
+        cb->setPos(250, 40 + i * 40)
+          ->onChange([i, todos](bool done) {
+              if (done) {
+                  printf("✓ Completed: %s\n", todos[i]);
+              } else {
+                  printf("☐ Uncompleted: %s\n", todos[i]);
+              }
+          });
+    }
+}
+
+/**
+ * EXAMPLE 4: Multiple Selection
+ * เลือกได้หลายตัว (เช่น เลือกหมวดหมู่)
+ */
+void example_multi_selection()
+{
+    auto title = new LVLabel(nullptr, "🎯 Select Categories");
+    title->setPos(250, 220);
+    
+    const char* categories[] = {
+        "Sports",
+        "Music", 
+        "Technology",
+        "Art"
+    };
+    
+    for (int i = 0; i < 4; i++) {
+        auto cb = new LVCheckbox(nullptr, categories[i]);
+        cb->setPos(250, 250 + i * 35)
+          ->onChange([i, categories](bool selected) {
+              printf("%s: %s\n", categories[i], 
+                     selected ? "selected" : "unselected");
+          });
+    }
+}
+
+/**
+ * 🎯 TODO: สร้าง Checkbox ของคุณเอง
+ */
+void my_custom_checkboxes()
+{
+    // ❓ ลองสร้างกลุ่ม checkbox สำหรับ:
+    // - เปิด/ปิดฟีเจอร์ต่างๆ
+    // - เลือกตัวเลือก
+    // - สร้าง checklist
+    
+    auto cb = new LVCheckbox(nullptr, "My Checkbox");
+    cb->setPos(500, 10)
+      ->onChange([](bool checked) {
+          // เขียนโค้ดที่คุณต้องการ
+          printf("My checkbox: %s\n", checked ? "✓" : "☐");
+      });
+}
+
+void test_checkbox_examples()
+{
+    printf("\n=== LVCheckbox Examples ===\n");
+    
+    example_simple_checkbox();
+    example_settings_panel();
+    example_todo_list();
+    example_multi_selection();
+    
+    // my_custom_checkboxes();
+    
+    printf("✅ All checkboxes created!\n");
+}
+
+/*
+ * 💡 เคล็ดลับ:
+ * ============
+ * - ใช้ setChecked() เพื่อกำหนดค่าเริ่มต้น
+ * - ใช้ isChecked() เพื่ออ่านสถานะปัจจุบัน
+ * - ใช้ toggle() เพื่อสลับสถานะ
+ * - Checkbox เหมาะสำหรับ on/off settings
+ */

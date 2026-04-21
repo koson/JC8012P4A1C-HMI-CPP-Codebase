@@ -1,0 +1,52 @@
+# SquareLine Studio files
+**/squareline/backup/**
+**/squareline/autosave/**
+
+# LVGL source (managed by IDF)
+components/lvgl/**
+
+# ESP-IDF Build artifacts
+build/
+sdkconfig.old
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.bak
+
+# Python and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.env
+venv/
+env/
+
+# OS files
+.DS_Store
+Thumbs.db
+.directory
+
+# Temporary files
+*.tmp
+*.log
+.cache/
+
+# Build outputs
+*.o
+*.a
+*.so
+*.elf
+*.bin
+*.map
+
+# Managed components (auto-downloaded by ESP-IDF component manager)
+# These are regenerated from dependencies.lock - similar to node_modules
+managed_components/
+
+# Dependencies lock file (keep this - defines component versions)
+dependencies.lock

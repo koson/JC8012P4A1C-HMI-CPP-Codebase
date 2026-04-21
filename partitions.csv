@@ -1,0 +1,7 @@
+# Name,   Type, SubType, Offset,  Size, Flags
+# Note: if you change the phy_init or app partition offset, make sure to change the offset in Kconfig.projbuild
+# Total: nvs (24K) + phy_init (4K) + factory (12M) + storage (3.9M) = ~16M (fits in 16MB flash)
+nvs,      data, nvs,     0x9000,  0x6000,
+phy_init, data, phy,     0xf000,  0x1000,
+factory,  app,  factory, ,        12M,
+storage,  data, spiffs,  ,        3900K,

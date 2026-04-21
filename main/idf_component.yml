@@ -1,0 +1,7 @@
+  ## IDF Component Manager Manifest File
+dependencies:
+  espressif/esp_lcd_jd9365:
+    version: "*"
+  lvgl/lvgl:
+    version: "^9.2.2"
+    public: true

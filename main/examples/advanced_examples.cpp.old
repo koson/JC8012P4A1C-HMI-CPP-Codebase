@@ -1,0 +1,377 @@
+/**
+ * @file advanced_examples.cpp
+ * @brief ตัวอย่างการใช้งาน Advanced Widgets (Batch 5)
+ * 
+ * Widgets ในไฟล์นี้:
+ * - LVCalendar: Date picker calendar
+ * - LVColorWheel: Color picker wheel
+ * - LVList: Scrollable list
+ * - LVAnimImg: Animated images
+ */
+
+#include "../include/LVCalendar.hpp"
+#include "../include/LVColorWheel.hpp"
+#include "../include/LVList.hpp"
+#include "../include/LVAnimImg.hpp"
+#include "../include/LVLabel.hpp"
+#include "../include/LVButton.hpp"
+#include "../include/LVPanel.hpp"
+
+/**
+ * ตัวอย่างที่ 1: Simple Calendar
+ * ปฏิทินพื้นฐานสำหรับเลือกวันที่
+ */
+void example_calendar_basic(lv_obj_t* parent)
+{
+    auto* calendar = new LVCalendar(nullptr);
+    calendar->setSize(300, 320)->setPos(20, 20);
+    
+    // Set current date
+    calendar->setDate(2026, 1, 13);
+    
+    // Add header with arrows
+    calendar->getHeaderArrow(LV_DIR_LEFT);
+    calendar->getHeaderArrow(LV_DIR_RIGHT);
+    
+    // Date selection label
+    auto* dateLabel = new LVLabel(nullptr);
+    dateLabel->setText("Selected: 2026-01-13")->setPos(60, 350);
+    
+    // Track date changes
+    calendar->onDateChange([dateLabel](uint32_t year, uint32_t month, uint32_t day) {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "Selected: %04d-%02d-%02d", 
+                 (int)year, (int)month, (int)day);
+        dateLabel->setText(buf);
+        printf("Date selected: %04d-%02d-%02d\n", (int)year, (int)month, (int)day);
+    });
+    
+    auto* title = new LVLabel(nullptr);
+    title->setText("Calendar")->setPos(120, 0);
+}
+
+/**
+ * ตัวอย่างที่ 2: Calendar with Highlighted Dates
+ * ปฏิทินพร้อมวันที่ highlight (holidays, events)
+ */
+void example_calendar_highlighted(lv_obj_t* parent)
+{
+    auto* calendar = new LVCalendar(nullptr);
+    calendar->setSize(300, 320)->setPos(340, 20);
+    
+    // Set to current month
+    calendar->setShowedDate(2026, 1);
+    calendar->setDate(2026, 1, 13);
+    
+    // Highlighted dates (holidays/events)
+    lv_calendar_date_t highlighted[] = {
+        {2026, 1, 1},   // New Year
+        {2026, 1, 13},  // Today
+        {2026, 1, 25},  // Event 1
+        {2026, 1, 31},  // Event 2
+    };
+    calendar->setHighlightedDates(highlighted, 4);
+    
+    auto* title = new LVLabel(nullptr);
+    title->setText("Calendar with Events")->setPos(400, 0);
+}
+
+/**
+ * ตัวอย่างที่ 3: Color Wheel Picker
+ * Color picker แบบวงกลม
+ */
+void example_colorwheel_basic(lv_obj_t* parent)
+{
+    auto* wheel = new LVColorWheel(nullptr, true);
+    wheel->setSize(220, 220)->setPos(660, 50);
+    
+    // Set initial color (red)
+    wheel->setColor(lv_color_hex(0xFF0000));
+    
+    // Color preview panel
+    auto* preview = new LVPanel(nullptr);
+    preview->setSize(100, 100)->setPos(900, 100);
+    lv_obj_set_style_bg_color(preview->obj(), lv_color_hex(0xFF0000), 0);
+    
+    // Color value label
+    auto* colorLabel = new LVLabel(nullptr);
+    colorLabel->setText("Color: #FF0000")->setPos(660, 280);
+    
+    // Track color changes
+    wheel->onColorChange([preview, colorLabel](lv_color_t color) {
+        // Update preview
+        lv_obj_set_style_bg_color(preview->obj(), color, 0);
+        
+        // Update label
+        char buf[32];
+        snprintf(buf, sizeof(buf), "Color: #%06X", 
+                 (unsigned int)lv_color_to_u32(color) & 0xFFFFFF);
+        colorLabel->setText(buf);
+    });
+    
+    auto* title = new LVLabel(nullptr);
+    title->setText("Color Wheel")->setPos(730, 30);
+}
+
+/**
+ * ตัวอย่างที่ 4: Color Wheel with Mode
+ * Color wheel พร้อมโหมดต่างๆ
+ */
+void example_colorwheel_modes(lv_obj_t* parent)
+{
+    auto* wheel = new LVColorWheel(nullptr, true);
+    wheel->setSize(200, 200)->setPos(1030, 60);
+    
+    // Mode buttons
+    auto* btnHue = new LVButton(nullptr);
+    btnHue->setSize(100, 40)
+          ->setPos(1020, 280)
+          ->setLabel("Hue")
+          ->onClick([wheel]() {
+              wheel->setMode(LV_COLORWHEEL_MODE_HUE);
+              printf("Mode: HUE\n");
+          });
+    
+    auto* btnSat = new LVButton(nullptr);
+    btnSat->setSize(100, 40)
+          ->setPos(1140, 280)
+          ->setLabel("Saturation")
+          ->onClick([wheel]() {
+              wheel->setMode(LV_COLORWHEEL_MODE_SATURATION);
+              printf("Mode: SATURATION\n");
+          });
+    
+    auto* title = new LVLabel(nullptr);
+    title->setText("Color Modes")->setPos(1070, 30);
+}
+
+/**
+ * ตัวอย่างที่ 5: Simple List
+ * รายการ scrollable พื้นฐาน
+ */
+void example_list_basic(lv_obj_t* parent)
+{
+    auto* list = new LVList(nullptr);
+    list->setSize(300, 400)->setPos(20, 400);
+    
+    // Add category
+    list->addText("Files");
+    
+    // Add items with icons
+    lv_obj_t* btn1 = list->addButton(LV_SYMBOL_FILE, "Document.pdf");
+    lv_obj_t* btn2 = list->addButton(LV_SYMBOL_FILE, "Report.docx");
+    lv_obj_t* btn3 = list->addButton(LV_SYMBOL_FILE, "Data.xlsx");
+    
+    list->addText("Folders");
+    lv_obj_t* btn4 = list->addButton(LV_SYMBOL_DIRECTORY, "Downloads");
+    lv_obj_t* btn5 = list->addButton(LV_SYMBOL_DIRECTORY, "Documents");
+    lv_obj_t* btn6 = list->addButton(LV_SYMBOL_DIRECTORY, "Pictures");
+    
+    // Add click events
+    lv_obj_add_event_cb(btn1, [](lv_event_t* e) {
+        printf("Clicked: Document.pdf\n");
+    }, LV_EVENT_CLICKED, nullptr);
+    
+    lv_obj_add_event_cb(btn4, [](lv_event_t* e) {
+        printf("Clicked: Downloads folder\n");
+    }, LV_EVENT_CLICKED, nullptr);
+    
+    auto* title = new LVLabel(nullptr);
+    title->setText("File List")->setPos(130, 380);
+}
+
+/**
+ * ตัวอย่างที่ 6: Settings List
+ * รายการ settings แบบ scrollable
+ */
+void example_list_settings(lv_obj_t* parent)
+{
+    auto* list = new LVList(nullptr);
+    list->setSize(320, 400)->setPos(340, 400);
+    
+    // Network settings
+    list->addText("Network");
+    lv_obj_t* wifi = list->addButton(LV_SYMBOL_WIFI, "WiFi Settings");
+    lv_obj_t* bluetooth = list->addButton(LV_SYMBOL_BLUETOOTH, "Bluetooth");
+    lv_obj_t* mobile = list->addButton(LV_SYMBOL_CALL, "Mobile Data");
+    
+    // Display settings
+    list->addText("Display");
+    lv_obj_t* brightness = list->addButton(LV_SYMBOL_SUN, "Brightness");
+    lv_obj_t* wallpaper = list->addButton(LV_SYMBOL_IMAGE, "Wallpaper");
+    
+    // System settings
+    list->addText("System");
+    lv_obj_t* about = list->addButton(LV_SYMBOL_SETTINGS, "About Device");
+    lv_obj_t* update = list->addButton(LV_SYMBOL_DOWNLOAD, "Software Update");
+    lv_obj_t* reset = list->addButton(LV_SYMBOL_REFRESH, "Factory Reset");
+    
+    // Click handlers
+    lv_obj_add_event_cb(wifi, [](lv_event_t* e) {
+        printf("Opening WiFi Settings...\n");
+    }, LV_EVENT_CLICKED, nullptr);
+    
+    lv_obj_add_event_cb(about, [](lv_event_t* e) {
+        printf("Device: ESP32-P4 DevKit\nVersion: 1.0.0\n");
+    }, LV_EVENT_CLICKED, nullptr);
+    
+    auto* title = new LVLabel(nullptr);
+    title->setText("Settings Menu")->setPos(450, 380);
+}
+
+/**
+ * ตัวอย่างที่ 7: Contact List
+ * รายการผู้ติดต่อพร้อมไอคอน
+ */
+void example_list_contacts(lv_obj_t* parent)
+{
+    auto* list = new LVList(nullptr);
+    list->setSize(300, 400)->setPos(680, 400);
+    
+    list->addText("Contacts");
+    
+    // Add contacts
+    const char* names[] = {
+        "Alice Johnson",
+        "Bob Smith", 
+        "Charlie Brown",
+        "Diana Wilson",
+        "Eve Martinez",
+        "Frank Lee",
+        "Grace Chen",
+        "Henry Kim"
+    };
+    
+    for (int i = 0; i < 8; i++) {
+        lv_obj_t* btn = list->addButton(LV_SYMBOL_CALL, names[i]);
+        
+        // Add call handler
+        lv_obj_add_event_cb(btn, [](lv_event_t* e) {
+            lv_obj_t* btn = static_cast<lv_obj_t*>(lv_event_get_target(e));
+            const char* name = lv_list_get_button_text(lv_obj_get_parent(btn), btn);
+            printf("Calling: %s\n", name);
+        }, LV_EVENT_CLICKED, nullptr);
+    }
+    
+    auto* title = new LVLabel(nullptr);
+    title->setText("Contacts")->setPos(790, 380);
+}
+
+/**
+ * ตัวอย่างที่ 8: Animated Image (Conceptual)
+ * AnimImg widget - แสดงแนวคิด (ต้องมีรูปภาพจริง)
+ */
+void example_animimg_concept(lv_obj_t* parent)
+{
+    // Note: This is conceptual example
+    // In real usage, you need actual image sources
+    
+    auto* panel = new LVPanel(nullptr);
+    panel->setSize(280, 350)->setPos(1000, 400);
+    
+    auto* title = new LVLabel(nullptr);
+    title->setText("Animated Image\n(Conceptual)")->setPos(1050, 420);
+    
+    auto* infoLabel = new LVLabel(nullptr);
+    infoLabel->setText("AnimImg requires:\n"
+                      "1. Image sources array\n"
+                      "2. Frame count\n"
+                      "3. Duration (ms)\n"
+                      "4. Repeat count\n\n"
+                      "Usage:\n"
+                      "animImg->setImages(imgs, 5)\n"
+                      "       ->setDuration(1000)\n"
+                      "       ->setRepeatCount(10)\n"
+                      "       ->start();")
+             ->setPos(1020, 470);
+    
+    auto* noteLabel = new LVLabel(nullptr);
+    noteLabel->setText("Note: Need actual image\ndata for real demo")
+             ->setPos(1030, 680);
+}
+
+/**
+ * ตัวอย่างที่ 9: Complete UI Dashboard
+ * Dashboard รวม Calendar + ColorWheel + List
+ */
+void example_complete_dashboard(lv_obj_t* parent)
+{
+    // Top panel - Calendar
+    auto* calPanel = new LVPanel(nullptr);
+    calPanel->setSize(450, 380)->setPos(20, 820);
+    
+    auto* calendar = new LVCalendar(nullptr);
+    lv_obj_set_parent(calendar->obj(), calPanel->obj());
+    calendar->setSize(410, 300)->setPos(20, 50);
+    calendar->setDate(2026, 1, 13);
+    
+    auto* calTitle = new LVLabel(nullptr);
+    lv_obj_set_parent(calTitle->obj(), calPanel->obj());
+    calTitle->setText("Schedule")->setPos(180, 15);
+    
+    // Middle panel - Tasks list
+    auto* taskPanel = new LVPanel(nullptr);
+    taskPanel->setSize(450, 380)->setPos(490, 820);
+    
+    auto* taskTitle = new LVLabel(nullptr);
+    lv_obj_set_parent(taskTitle->obj(), taskPanel->obj());
+    taskTitle->setText("Today's Tasks")->setPos(165, 15);
+    
+    auto* taskList = new LVList(nullptr);
+    lv_obj_set_parent(taskList->obj(), taskPanel->obj());
+    taskList->setSize(410, 310)->setPos(20, 50);
+    
+    taskList->addText("Morning");
+    taskList->addButton(LV_SYMBOL_PLAY, "Team Meeting - 9:00 AM");
+    taskList->addButton(LV_SYMBOL_PLAY, "Code Review - 10:30 AM");
+    
+    taskList->addText("Afternoon");
+    taskList->addButton(LV_SYMBOL_PLAY, "Lunch Break - 12:00 PM");
+    taskList->addButton(LV_SYMBOL_PLAY, "Development - 2:00 PM");
+    
+    taskList->addText("Evening");
+    taskList->addButton(LV_SYMBOL_PLAY, "Testing - 4:00 PM");
+    taskList->addButton(LV_SYMBOL_PLAY, "Documentation - 5:30 PM");
+    
+    // Right panel - Theme color picker
+    auto* themePanel = new LVPanel(nullptr);
+    themePanel->setSize(300, 380)->setPos(960, 820);
+    
+    auto* themeTitle = new LVLabel(nullptr);
+    lv_obj_set_parent(themeTitle->obj(), themePanel->obj());
+    themeTitle->setText("Theme Color")->setPos(90, 15);
+    
+    auto* colorWheel = new LVColorWheel(nullptr, true);
+    lv_obj_set_parent(colorWheel->obj(), themePanel->obj());
+    colorWheel->setSize(180, 180)->setPos(60, 60);
+    
+    auto* applyBtn = new LVButton(nullptr);
+    lv_obj_set_parent(applyBtn->obj(), themePanel->obj());
+    applyBtn->setSize(200, 50)
+            ->setPos(50, 260)
+            ->setLabel("Apply Theme")
+            ->onClick([colorWheel]() {
+                lv_color_t color = colorWheel->getColor();
+                printf("Applied theme color: #%06X\n", 
+                       (unsigned int)lv_color_to_u32(color) & 0xFFFFFF);
+            });
+    
+    auto* dashTitle = new LVLabel(nullptr);
+    dashTitle->setText("Dashboard - Productivity Suite")->setPos(510, 800);
+}
+
+/**
+ * ฟังก์ชันหลักเรียกใช้ตัวอย่างทั้งหมด
+ */
+void run_advanced_examples()
+{
+    example_calendar_basic(nullptr);
+    example_calendar_highlighted(nullptr);
+    example_colorwheel_basic(nullptr);
+    example_colorwheel_modes(nullptr);
+    example_list_basic(nullptr);
+    example_list_settings(nullptr);
+    example_list_contacts(nullptr);
+    example_animimg_concept(nullptr);
+    example_complete_dashboard(nullptr);
+}

@@ -1,0 +1,60 @@
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "nvs_flash.h"
+#include "esp_log.h"
+#include "esp_err.h"
+#include "bsp/esp-bsp.h"
+#include "bsp/display.h"
+#include "bsp_board_extra.h"
+#include "include/LVButton.hpp"  // ✅ main.cpp อยู่ที่ main/ ดังนั้น include/ ใช้ได้โดยตรง
+#include "include/LVPanel.hpp"
+#include "include/LVLabel.hpp"
+#include "lv_demos.h"
+
+static const char *TAG = "MAIN";
+
+// Declare C functions
+extern "C" {
+    void test_Font(void);
+    void test_Button(void);
+    void test_Line(void);
+    void test_oop_example(void);  // C OOP Example
+}
+
+// Declare C++ functions
+extern void test_cpp_functional(void);  // C++ OOP Example!
+extern void test_cpp_custom_widget(void);
+extern void example_simple_arc(void);
+
+// ESP-IDF app_main ต้องเป็น C function
+extern "C" void app_main(void)
+{
+    // Configure and start display
+    bsp_display_cfg_t cfg = {
+        .lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG(),
+        .buffer_size = BSP_LCD_DRAW_BUFF_SIZE,
+        .double_buffer = BSP_LCD_DRAW_BUFF_DOUBLE,
+        .flags = {
+            .buff_dma = true,
+            .buff_spiram = false,
+            .sw_rotate = false,
+        }
+    };
+    
+    bsp_display_start_with_config(&cfg);
+    bsp_display_backlight_on();
+    
+    // Create OOP-style UI (คล้าง MFC Application!)
+    bsp_display_lock(0);
+
+    //---------------------Start of OOP UI Example---------------------
+ 
+    // test_Font();
+    lv_demo_widgets();
+    //---------------------End of OOP UI Example----------------------- 
+
+    bsp_display_unlock();
+    
+    // Give LVGL time to render the screen
+    vTaskDelay(pdMS_TO_TICKS(100));
+}

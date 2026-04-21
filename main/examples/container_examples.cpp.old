@@ -1,0 +1,335 @@
+/**
+ * @file container_examples.cpp
+ * @brief ตัวอย่างการใช้งาน Container & Layout Widgets (Batch 3)
+ * 
+ * Widgets ในไฟล์นี้:
+ * - LVTabView: Multi-tab container
+ * - LVWindow: Window with header
+ * - LVMenu: Nested menu structure
+ * - LVTileView: Swipeable tile pages
+ */
+
+#include "../include/LVTabView.hpp"
+#include "../include/LVWindow.hpp"
+#include "../include/LVMenu.hpp"
+#include "../include/LVTileView.hpp"
+#include "../include/LVLabel.hpp"
+#include "../include/LVButton.hpp"
+#include "../include/LVSlider.hpp"
+#include "../include/LVSwitch.hpp"
+#include "../include/LVTextArea.hpp"
+
+/**
+ * ตัวอย่างที่ 1: Basic TabView
+ * TabView พื้นฐานพร้อม 3 tabs
+ */
+void example_tabview_basic(lv_obj_t* parent)
+{
+    auto* tabview = new LVTabView(nullptr, LV_DIR_TOP);
+    tabview->setSize(600, 400)->setPos(20, 20);
+    
+    // Tab 1: Home
+    lv_obj_t* tab1 = tabview->addTab("Home");
+    auto* homeLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(homeLabel->obj(), tab1);
+    homeLabel->setText("Welcome to Home Tab!")->setPos(20, 20);
+    
+    auto* homeBtn = new LVButton(nullptr);
+    lv_obj_set_parent(homeBtn->obj(), tab1);
+    homeBtn->setLabel("Click Me")
+           ->setSize(120, 50)
+           ->setPos(20, 60)
+           ->onClick([]() {
+               printf("Home button clicked!\n");
+           });
+    
+    // Tab 2: Settings
+    lv_obj_t* tab2 = tabview->addTab("Settings");
+    auto* settingsLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(settingsLabel->obj(), tab2);
+    settingsLabel->setText("Settings Configuration")->setPos(20, 20);
+    
+    auto* volumeLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(volumeLabel->obj(), tab2);
+    volumeLabel->setText("Volume: 50")->setPos(20, 60);
+    
+    auto* volumeSlider = new LVSlider(nullptr);
+    lv_obj_set_parent(volumeSlider->obj(), tab2);
+    volumeSlider->setSize(300, 20)
+                ->setPos(20, 90)
+                ->setValue(50)
+                ->onChange([volumeLabel](int32_t val) {
+                    char buf[32];
+                    snprintf(buf, sizeof(buf), "Volume: %d", (int)val);
+                    volumeLabel->setText(buf);
+                });
+    
+    // Tab 3: About
+    lv_obj_t* tab3 = tabview->addTab("About");
+    auto* aboutLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(aboutLabel->obj(), tab3);
+    aboutLabel->setText("LVGL C++ Framework v1.0\nDeveloped for ESP32-P4")
+              ->setPos(20, 20);
+    
+    // Tab change callback
+    tabview->onTabChange([](uint32_t index) {
+        printf("Tab changed to: %d\n", (int)index);
+    });
+}
+
+/**
+ * ตัวอย่างที่ 2: TabView with Position
+ * TabView ที่มี tabs ด้านข้าง/ล่าง
+ */
+void example_tabview_positions(lv_obj_t* parent)
+{
+    // Left tabs
+    auto* leftTabview = new LVTabView(nullptr, LV_DIR_LEFT);
+    leftTabview->setSize(300, 350)->setPos(640, 20);
+    leftTabview->setTabBarSize(80);
+    
+    lv_obj_t* t1 = leftTabview->addTab("Tab 1");
+    auto* l1 = new LVLabel(nullptr);
+    lv_obj_set_parent(l1->obj(), t1);
+    l1->setText("Left Tab 1")->setPos(10, 10);
+    
+    lv_obj_t* t2 = leftTabview->addTab("Tab 2");
+    auto* l2 = new LVLabel(nullptr);
+    lv_obj_set_parent(l2->obj(), t2);
+    l2->setText("Left Tab 2")->setPos(10, 10);
+    
+    // Bottom tabs
+    auto* bottomTabview = new LVTabView(nullptr, LV_DIR_BOTTOM);
+    bottomTabview->setSize(300, 350)->setPos(960, 20);
+    
+    lv_obj_t* b1 = bottomTabview->addTab("Home");
+    auto* bl1 = new LVLabel(nullptr);
+    lv_obj_set_parent(bl1->obj(), b1);
+    bl1->setText("Bottom Home")->setPos(10, 10);
+    
+    lv_obj_t* b2 = bottomTabview->addTab("Menu");
+    auto* bl2 = new LVLabel(nullptr);
+    lv_obj_set_parent(bl2->obj(), b2);
+    bl2->setText("Bottom Menu")->setPos(10, 10);
+}
+
+/**
+ * ตัวอย่างที่ 3: Window Dialog
+ * Window พร้อม header และปุ่มควบคุม
+ */
+void example_window_dialog(lv_obj_t* parent)
+{
+    auto* window = new LVWindow(nullptr, 50);
+    window->setSize(500, 400)->setPos(20, 440);
+    
+    // Set title
+    window->setTitle("Settings Dialog");
+    
+    // Add close button
+    window->addHeaderButton(LV_SYMBOL_CLOSE, 60);
+    
+    // Content area
+    lv_obj_t* content = window->getContent();
+    
+    auto* nameLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(nameLabel->obj(), content);
+    nameLabel->setText("Device Name:")->setPos(20, 20);
+    
+    auto* nameInput = new LVTextArea(nullptr);
+    lv_obj_set_parent(nameInput->obj(), content);
+    nameInput->setSize(440, 50)
+             ->setPos(20, 50)
+             ->setOneLineMode(true)
+             ->setText("ESP32-P4 DevKit");
+    
+    auto* wifiLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(wifiLabel->obj(), content);
+    wifiLabel->setText("WiFi Enabled")->setPos(20, 120);
+    
+    auto* wifiSwitch = new LVSwitch(nullptr);
+    lv_obj_set_parent(wifiSwitch->obj(), content);
+    wifiSwitch->setPos(400, 115)
+              ->setOn(true)
+              ->onChange([](bool on) {
+                  printf("WiFi: %s\n", on ? "ON" : "OFF");
+              });
+    
+    auto* saveBtn = new LVButton(nullptr);
+    lv_obj_set_parent(saveBtn->obj(), content);
+    saveBtn->setSize(150, 50)
+           ->setPos(175, 280)
+           ->setLabel("Save Settings")
+           ->onClick([nameInput]() {
+               printf("Settings saved! Name: %s\n", nameInput->getText().c_str());
+           });
+}
+
+/**
+ * ตัวอย่างที่ 4: Menu Navigation
+ * Menu แบบ nested พร้อม submenu
+ */
+void example_menu_navigation(lv_obj_t* parent)
+{
+    auto* menu = new LVMenu(nullptr);
+    menu->setSize(400, 450)->setPos(540, 440);
+    
+    // Main page
+    lv_obj_t* mainPage = menu->createPage("Main Menu");
+    
+    // Settings submenu
+    lv_obj_t* settingsPage = menu->createSubPage(mainPage, "Settings");
+    
+    // Add items to settings page
+    lv_obj_t* section1 = menu->createSection(settingsPage, "Display");
+    auto* brightnessItem = menu->createSliderItem(settingsPage, LV_SYMBOL_SUN, "Brightness", 0, 100, 75);
+    
+    lv_obj_t* section2 = menu->createSection(settingsPage, "Connectivity");
+    auto* wifiItem = menu->createSwitchItem(settingsPage, LV_SYMBOL_WIFI, "WiFi");
+    auto* btItem = menu->createSwitchItem(settingsPage, LV_SYMBOL_BLUETOOTH, "Bluetooth");
+    
+    // Network submenu
+    lv_obj_t* networkPage = menu->createSubPage(mainPage, "Network");
+    auto* networkLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(networkLabel->obj(), networkPage);
+    networkLabel->setText("Network Settings")->setPos(20, 20);
+    
+    // About page
+    lv_obj_t* aboutPage = menu->createPage("About");
+    auto* aboutLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(aboutLabel->obj(), aboutPage);
+    aboutLabel->setText("Version 1.0.0\nBuild: 2026-01-12")->setPos(20, 20);
+    
+    // Set main page
+    menu->setMainPage(mainPage);
+}
+
+/**
+ * ตัวอย่างที่ 5: TileView Gallery
+ * TileView สำหรับเลื่อนดู gallery/carousel
+ */
+void example_tileview_gallery(lv_obj_t* parent)
+{
+    auto* tileview = new LVTileView(nullptr);
+    tileview->setSize(450, 400)->setPos(960, 440);
+    
+    // Tile 0,0 - Photo 1
+    lv_obj_t* tile1 = tileview->addTile(0, 0, LV_DIR_RIGHT | LV_DIR_BOTTOM);
+    lv_obj_set_style_bg_color(tile1, lv_color_hex(0x3498db), 0);
+    auto* label1 = new LVLabel(nullptr);
+    lv_obj_set_parent(label1->obj(), tile1);
+    label1->setText("Photo 1\nSwipe right or down")->setPos(150, 150);
+    lv_obj_set_style_text_color(label1->obj(), lv_color_white(), 0);
+    
+    // Tile 1,0 - Photo 2
+    lv_obj_t* tile2 = tileview->addTile(1, 0, LV_DIR_LEFT | LV_DIR_RIGHT);
+    lv_obj_set_style_bg_color(tile2, lv_color_hex(0xe74c3c), 0);
+    auto* label2 = new LVLabel(nullptr);
+    lv_obj_set_parent(label2->obj(), tile2);
+    label2->setText("Photo 2\nSwipe left/right")->setPos(150, 150);
+    lv_obj_set_style_text_color(label2->obj(), lv_color_white(), 0);
+    
+    // Tile 2,0 - Photo 3
+    lv_obj_t* tile3 = tileview->addTile(2, 0, LV_DIR_LEFT);
+    lv_obj_set_style_bg_color(tile3, lv_color_hex(0x2ecc71), 0);
+    auto* label3 = new LVLabel(nullptr);
+    lv_obj_set_parent(label3->obj(), tile3);
+    label3->setText("Photo 3\nSwipe left")->setPos(150, 150);
+    lv_obj_set_style_text_color(label3->obj(), lv_color_white(), 0);
+    
+    // Tile 0,1 - Photo 4 (bottom)
+    lv_obj_t* tile4 = tileview->addTile(0, 1, LV_DIR_TOP);
+    lv_obj_set_style_bg_color(tile4, lv_color_hex(0xf39c12), 0);
+    auto* label4 = new LVLabel(nullptr);
+    lv_obj_set_parent(label4->obj(), tile4);
+    label4->setText("Photo 4\nSwipe up")->setPos(150, 150);
+    lv_obj_set_style_text_color(label4->obj(), lv_color_white(), 0);
+    
+    // Tile change callback
+    tileview->onTileChange([](lv_obj_t* tile) {
+        printf("Tile changed!\n");
+    });
+}
+
+/**
+ * ตัวอย่างที่ 6: Complex Dashboard
+ * รวม TabView + Window สร้าง dashboard
+ */
+void example_complex_dashboard(lv_obj_t* parent)
+{
+    auto* mainTab = new LVTabView(nullptr, LV_DIR_TOP);
+    mainTab->setSize(900, 500)->setPos(20, 900);
+    
+    // Dashboard tab
+    lv_obj_t* dashTab = mainTab->addTab("Dashboard");
+    
+    // Status window 1
+    auto* win1 = new LVWindow(nullptr, 40);
+    lv_obj_set_parent(win1->obj(), dashTab);
+    win1->setSize(400, 200)->setPos(20, 20);
+    win1->setTitle("System Status");
+    
+    lv_obj_t* win1Content = win1->getContent();
+    auto* cpuLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(cpuLabel->obj(), win1Content);
+    cpuLabel->setText("CPU: 45%")->setPos(20, 20);
+    
+    auto* memLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(memLabel->obj(), win1Content);
+    memLabel->setText("Memory: 128 MB")->setPos(20, 50);
+    
+    auto* tempLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(tempLabel->obj(), win1Content);
+    tempLabel->setText("Temperature: 42°C")->setPos(20, 80);
+    
+    // Status window 2
+    auto* win2 = new LVWindow(nullptr, 40);
+    lv_obj_set_parent(win2->obj(), dashTab);
+    win2->setSize(400, 200)->setPos(440, 20);
+    win2->setTitle("Network");
+    
+    lv_obj_t* win2Content = win2->getContent();
+    auto* ipLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(ipLabel->obj(), win2Content);
+    ipLabel->setText("IP: 192.168.1.100")->setPos(20, 20);
+    
+    auto* statusLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(statusLabel->obj(), win2Content);
+    statusLabel->setText("Status: Connected")->setPos(20, 50);
+    
+    // Controls tab
+    lv_obj_t* ctrlTab = mainTab->addTab("Controls");
+    
+    auto* ctrlLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(ctrlLabel->obj(), ctrlTab);
+    ctrlLabel->setText("Quick Controls")->setPos(20, 20);
+    
+    auto* ledSwitch = new LVSwitch(nullptr);
+    lv_obj_set_parent(ledSwitch->obj(), ctrlTab);
+    ledSwitch->setPos(20, 60);
+    
+    auto* ledLabel = new LVLabel(nullptr);
+    lv_obj_set_parent(ledLabel->obj(), ctrlTab);
+    ledLabel->setText("LED Control")->setPos(100, 65);
+    
+    // Logs tab
+    lv_obj_t* logsTab = mainTab->addTab("Logs");
+    
+    auto* logArea = new LVTextArea(nullptr);
+    lv_obj_set_parent(logArea->obj(), logsTab);
+    logArea->setSize(840, 280)
+           ->setPos(20, 20)
+           ->setText("[12:00] System started\n[12:01] WiFi connected\n[12:02] Ready");
+}
+
+/**
+ * ฟังก์ชันหลักเรียกใช้ตัวอย่างทั้งหมด
+ */
+void run_container_examples()
+{
+    example_tabview_basic(nullptr);
+    example_tabview_positions(nullptr);
+    example_window_dialog(nullptr);
+    example_menu_navigation(nullptr);
+    example_tileview_gallery(nullptr);
+    example_complex_dashboard(nullptr);
+}

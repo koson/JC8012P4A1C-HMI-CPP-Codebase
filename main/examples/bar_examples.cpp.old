@@ -1,0 +1,175 @@
+/**
+ * @file bar_examples.cpp
+ * @brief 📊 ตัวอย่างการใช้ LVBar (Progress Bar)
+ */
+
+#include "../include/LVBar.hpp"
+#include "../include/LVLabel.hpp"
+#include "../include/LVButton.hpp"
+#include <stdio.h>
+
+/**
+ * EXAMPLE 1: Simple Progress Bar
+ */
+void example_simple_bar()
+{
+    auto label = new LVLabel(nullptr, "Download Progress");
+    label->setPos(10, 10);
+    
+    auto bar = new LVBar(nullptr);
+    bar->setPos(10, 40)
+       ->setSize(300, 20)
+       ->setRange(0, 100)
+       ->setValue(45);  // 45%
+    
+    auto percentLabel = new LVLabel(nullptr, "45%");
+    percentLabel->setPos(320, 40);
+}
+
+/**
+ * EXAMPLE 2: Animated Progress
+ * Progress bar ที่เพิ่มค่าอัตโนมัติ
+ */
+void example_animated_progress()
+{
+    auto label = new LVLabel(nullptr, "Loading...");
+    label->setPos(10, 80);
+    
+    auto bar = new LVBar(nullptr);
+    bar->setPos(10, 110)
+       ->setSize(300, 25)
+       ->setRange(0, 100)
+       ->setValue(0, true);  // เริ่มที่ 0 พร้อม animation
+    
+    // ❓ TODO: ใช้ timer เพื่อเพิ่มค่าอัตโนมัติ
+    // เช่น: lv_timer_create() เพื่ออัพเดทค่าทุกๆ 100ms
+}
+
+/**
+ * EXAMPLE 3: Battery Level Indicator
+ */
+void example_battery_indicator()
+{
+    auto label = new LVLabel(nullptr, "🔋 Battery Level");
+    label->setPos(10, 160);
+    
+    auto bar = new LVBar(nullptr);
+    bar->setPos(10, 190)
+       ->setSize(200, 30)
+       ->setRange(0, 100)
+       ->setValue(75);  // 75% battery
+    
+    auto percentLabel = new LVLabel(nullptr, "75%");
+    percentLabel->setPos(220, 195);
+    
+    // ❓ TODO: เปลี่ยนสีตามระดับแบตเตอรี่
+    // - แดง: 0-20%
+    // - เหลือง: 21-50%
+    // - เขียว: 51-100%
+}
+
+/**
+ * EXAMPLE 4: Volume/Brightness Bars
+ */
+void example_volume_bars()
+{
+    // Volume
+    auto volLabel = new LVLabel(nullptr, "🔊 Volume");
+    volLabel->setPos(250, 10);
+    auto volBar = new LVBar(nullptr);
+    volBar->setPos(250, 40)
+          ->setSize(150, 15)
+          ->setValue(60);
+    
+    // Brightness
+    auto brightLabel = new LVLabel(nullptr, "☀️ Brightness");
+    brightLabel->setPos(250, 70);
+    auto brightBar = new LVBar(nullptr);
+    brightBar->setPos(250, 100)
+             ->setSize(150, 15)
+             ->setValue(80);
+}
+
+/**
+ * EXAMPLE 5: Interactive Progress
+ * กดปุ่มเพื่อเพิ่ม/ลด progress
+ */
+void example_interactive_progress()
+{
+    static auto bar = new LVBar(nullptr);
+    bar->setPos(10, 250)
+       ->setSize(250, 30)
+       ->setValue(50);
+    
+    auto label = new LVLabel(nullptr, "50%");
+    label->setPos(270, 255);
+    
+    // ปุ่ม +
+    auto btnPlus = new LVButton(nullptr);
+    btnPlus->setText("+")
+           ->setSize(50, 50)
+           ->setPos(10, 290)
+           ->onClick([bar, label]() {
+               int val = bar->getValue();
+               if (val < 100) {
+                   bar->setValue(val + 10, true);
+                   char buf[8];
+                   sprintf(buf, "%d%%", val + 10);
+                   label->setText(buf);
+               }
+           });
+    
+    // ปุ่ม -
+    auto btnMinus = new LVButton(nullptr);
+    btnMinus->setText("-")
+            ->setSize(50, 50)
+            ->setPos(70, 290)
+            ->onClick([bar, label]() {
+                int val = bar->getValue();
+                if (val > 0) {
+                    bar->setValue(val - 10, true);
+                    char buf[8];
+                    sprintf(buf, "%d%%", val - 10);
+                    label->setText(buf);
+                }
+            });
+}
+
+/**
+ * 🎯 TODO: ลองสร้างของคุณเอง
+ */
+void my_custom_bar()
+{
+    auto bar = new LVBar(nullptr);
+    bar->setPos(450, 10)
+       ->setSize(200, 20)
+       ->setRange(0, 100)
+       ->setValue(30);
+    
+    // ❓ ลองใช้ setStartValue() เพื่อสร้าง range bar
+    // bar->setStartValue(20)->setValue(80);
+}
+
+void test_bar_examples()
+{
+    printf("\n=== LVBar Examples ===\n");
+    
+    example_simple_bar();
+    // example_animated_progress();
+    example_battery_indicator();
+    example_volume_bars();
+    example_interactive_progress();
+    
+    // my_custom_bar();
+    
+    printf("✅ All bars created!\n");
+}
+
+/*
+ * 💡 เคล็ดลับ:
+ * ============
+ * - ใช้ setValue(x, true) สำหรับ animation
+ * - ใช้ setStartValue() สำหรับ range bar
+ * - Bar เหมาะสำหรับแสดงค่าที่เปลี่ยนแปลงได้
+ * - ลองใช้กับ timer เพื่อทำ animated progress
+ */

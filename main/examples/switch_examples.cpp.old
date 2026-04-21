@@ -1,0 +1,108 @@
+/**
+ * @file switch_examples.cpp
+ * @brief 🔄 ตัวอย่างการใช้ LVSwitch
+ */
+
+#include "../include/LVSwitch.hpp"
+#include "../include/LVLabel.hpp"
+#include <stdio.h>
+
+/**
+ * EXAMPLE 1: Simple Switch
+ */
+void example_simple_switch()
+{
+    auto label = new LVLabel(nullptr, "Power: OFF");
+    label->setPos(10, 10);
+    
+    auto sw = new LVSwitch(nullptr);
+    sw->setPos(10, 40)
+      ->onChange([label](bool on) {
+          label->setText(on ? "Power: ON" : "Power: OFF");
+          printf("Power: %s\n", on ? "ON" : "OFF");
+      });
+}
+
+/**
+ * EXAMPLE 2: Multiple Switches
+ */
+void example_control_panel()
+{
+    auto title = new LVLabel(nullptr, "🎛️ Control Panel");
+    title->setPos(10, 90);
+    
+    // LED Switch
+    auto ledLabel = new LVLabel(nullptr, "LED: OFF");
+    ledLabel->setPos(10, 120);
+    auto ledSwitch = new LVSwitch(nullptr);
+    ledSwitch->setPos(150, 120)
+             ->onChange([ledLabel](bool on) {
+                 ledLabel->setText(on ? "LED: ON" : "LED: OFF");
+                 // ❓ TODO: ควบคุม LED จริงๆ
+             });
+    
+    // Fan Switch
+    auto fanLabel = new LVLabel(nullptr, "Fan: OFF");
+    fanLabel->setPos(10, 160);
+    auto fanSwitch = new LVSwitch(nullptr);
+    fanSwitch->setPos(150, 160)
+             ->onChange([fanLabel](bool on) {
+                 fanLabel->setText(on ? "Fan: ON" : "Fan: OFF");
+                 // ❓ TODO: ควบคุมพัดลมจริงๆ
+             });
+}
+
+/**
+ * EXAMPLE 3: Dark Mode Toggle
+ */
+void example_dark_mode()
+{
+    auto label = new LVLabel(nullptr, "🌙 Dark Mode");
+    label->setPos(250, 10);
+    
+    auto sw = new LVSwitch(nullptr);
+    sw->setPos(250, 40);
+    sw->setOn(false)  // เริ่มต้นปิด
+      ->onChange([](bool dark) {
+          if (dark) {
+              printf("🌙 Dark mode enabled\n");
+              // ❓ TODO: เปลี่ยน theme เป็นโหมดมืด
+          } else {
+              printf("☀️ Light mode enabled\n");
+              // ❓ TODO: เปลี่ยน theme เป็นโหมดสว่าง
+          }
+      });
+}
+
+/**
+ * 🎯 TODO: ลองสร้างของคุณเอง
+ */
+void my_custom_switches()
+{
+    auto sw = new LVSwitch(nullptr);
+    sw->setPos(400, 10);
+    sw->onChange([](bool on) {
+        // เขียนโค้ดของคุณ
+        printf("My switch: %s\n", on ? "ON" : "OFF");
+    });
+}
+
+void test_switch_examples()
+{
+    printf("\n=== LVSwitch Examples ===\n");
+    
+    example_simple_switch();
+    example_control_panel();
+    example_dark_mode();
+    
+    // my_custom_switches();
+    
+    printf("✅ All switches created!\n");
+}
+
+/*
+ * 💡 Switch vs Checkbox:
+ * ======================
+ * - Switch: สำหรับ on/off ที่มีผลทันที (เช่น เปิด/ปิดไฟ)
+ * - Checkbox: สำหรับเลือกตัวเลือก (เช่น agree to terms)
+ */

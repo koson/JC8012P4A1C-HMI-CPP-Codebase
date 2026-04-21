@@ -1,0 +1,204 @@
+/**
+ * @file arc_examples.cpp
+ * @brief 🎡 ตัวอย่างการใช้ LVArc (Circular Progress/Knob)
+ */
+
+#include "../include/LVArc.hpp"
+#include "../include/LVLabel.hpp"
+#include <stdio.h>
+
+/**
+ * EXAMPLE 1: Simple Arc Knob
+ */
+void example_simple_arc()
+{
+    auto label = new LVLabel(nullptr);
+    label->setText("Value: 50")
+         ->setPos(10, 10);
+    
+    auto arc = new LVArc(nullptr);
+    arc->setPos(10, 40);
+    arc->setSize(120, 120);
+    arc->setRange(0, 100);
+    arc->setValue(50);
+    arc->onChange([=](int32_t value) {
+        char buf[32];
+        sprintf(buf, "Value: %d", (int)value);
+        label->setText(buf);
+    });
+}
+
+/**
+ * EXAMPLE 2: Volume Knob
+ * วงโค้งควบคุม volume แบบหมุน
+ */
+void example_volume_knob()
+{
+    auto label = new LVLabel(nullptr);
+    label->setText("🔊 Volume: 60%")
+         ->setPos(150, 10);
+    
+    auto arc = new LVArc(nullptr);
+    arc->setPos(150, 40);
+    arc->setSize(100, 100);
+    arc->setRange(0, 100);
+    arc->setValue(60);
+    arc->onChange([=](int32_t vol) {
+        char buf[32];
+        sprintf(buf, "🔊 Volume: %d%%", (int)vol);
+        label->setText(buf);
+        
+        // แสดง icon ตาม volume
+        if (vol == 0) {
+            printf("🔇 Muted\n");
+        } else if (vol < 30) {
+            printf("🔉 Low volume\n");
+        } else {
+            printf("🔊 High volume\n");
+        }
+    });
+}
+
+/**
+ * EXAMPLE 3: Temperature Gauge
+ * วัดอุณหภูมิแบบวงกลม
+ */
+void example_temperature_gauge()
+{
+    auto label = new LVLabel(nullptr);
+    label->setText("🌡️ 24°C")
+         ->setPos(280, 10);
+    
+    auto arc = new LVArc(nullptr);
+    arc->setPos(280, 40);
+    arc->setSize(110, 110);
+    arc->setRange(0, 50);          // 0-50°C
+    arc->setValue(24);
+    arc->setAngles(135, 45);       // เริ่มที่ 135° ถึง 45°
+    arc->onChange([=](int32_t temp) {
+        char buf[32];
+        const char* icon;
+        
+        if (temp < 15) icon = "❄️";
+        else if (temp < 25) icon = "🌡️";
+        else icon = "🔥";
+        
+        sprintf(buf, "%s %d°C", icon, (int)temp);
+        label->setText(buf);
+    });
+}
+
+/**
+ * EXAMPLE 4: Speedometer
+ * มาตรวัดความเร็วแบบครึ่งวงกลม
+ */
+void example_speedometer()
+{
+    auto label = new LVLabel(nullptr);
+    label->setText("🚗 0 km/h")
+         ->setPos(10, 180);
+    
+    auto arc = new LVArc(nullptr);
+    arc->setPos(10, 210);
+    arc->setSize(150, 150);
+    arc->setRange(0, 200);         // 0-200 km/h
+    arc->setValue(0);
+    arc->setAngles(135, 45);       // ครึ่งวงกลม
+    arc->setRotation(270);         // หมุน layout
+    arc->onChange([=](int32_t speed) {
+        char buf[32];
+        sprintf(buf, "🚗 %d km/h", (int)speed);
+        label->setText(buf);
+        
+        if (speed > 120) {
+            printf("⚠️ Speed warning: %d km/h\n", (int)speed);
+        }
+    });
+}
+
+/**
+ * EXAMPLE 5: Circular Progress
+ * แสดง progress แบบวงกลม (loading spinner)
+ */
+void example_circular_progress()
+{
+    auto label = new LVLabel(nullptr);
+    label->setText("Loading: 0%")
+         ->setPos(450, 10);
+    
+    auto arc = new LVArc(nullptr);
+    arc->setPos(450, 40);
+    arc->setSize(100, 100);
+    arc->setRange(0, 100);
+    arc->setValue(0);
+    arc->setMode(LV_ARC_MODE_NORMAL);  // โหมด progress
+    
+    // ❓ TODO: ใช้ timer เพื่อเพิ่มค่า progress อัตโนมัติ
+    // เพื่อทำ loading animation
+}
+
+/**
+ * EXAMPLE 6: Multiple Arcs
+ * หลาย arc แสดงค่าต่างๆ
+ */
+void example_multi_arcs()
+{
+    const char* labels[] = {"CPU", "RAM", "DISK"};
+    int values[] = {45, 60, 80};
+    
+    for (int i = 0; i < 3; i++) {
+        auto label = new LVLabel(nullptr);
+        label->setText(labels[i])
+             ->setPos(200 + i * 120, 200);
+        
+        auto arc = new LVArc(nullptr);
+        arc->setPos(200 + i * 120, 230)
+           ->setSize(80, 80);
+        arc->setRange(0, 100)
+           ->setValue(values[i]);
+    }
+}
+
+/**
+ * 🎯 TODO: สร้าง Arc ของคุณเอง
+ */
+void my_custom_arc()
+{
+    auto arc = new LVArc(nullptr);
+    arc->setPos(600, 40)
+       ->setSize(100, 100);
+    arc->setRange(0, 100)
+       ->setValue(50)
+       ->onChange([](int32_t value) {
+           printf("My arc: %d\n", (int)value);
+           // เขียนโค้ดของคุณ
+       });
+}
+
+void test_arc_examples()
+{
+    printf("\n=== LVArc Examples ===\n");
+    
+    example_simple_arc();
+    example_volume_knob();
+    example_temperature_gauge();
+    example_speedometer();
+    example_circular_progress();
+    example_multi_arcs();
+    
+    // my_custom_arc();
+    
+    printf("✅ All arcs created!\n");
+}
+
+/*
+ * 💡 เคล็ดลับ:
+ * ============
+ * - ใช้ setAngles() เพื่อกำหนดช่วงมุม (0-360°)
+ * - ใช้ setRotation() เพื่อหมุน arc
+ * - Arc เหมาะสำหรับแสดงค่าแบบวงกลม (volume, gauge, etc.)
+ * - ลองใช้ setMode() สำหรับโหมดต่างๆ:
+ *   - LV_ARC_MODE_NORMAL: ปรับค่าได้
+ *   - LV_ARC_MODE_SYMMETRICAL: สมมาตร
+ *   - LV_ARC_MODE_REVERSE: ทิศทางกลับ
+ */

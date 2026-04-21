@@ -1,0 +1,353 @@
+/**
+ * @file text_input_examples.cpp
+ * @brief ตัวอย่างการใช้งาน Text & Input Widgets (Batch 2)
+ * 
+ * Widgets ในไฟล์นี้:
+ * - LVTextArea: Multi-line text input
+ * - LVDropdown: Dropdown menu
+ * - LVRoller: Rolling selector
+ * - LVSpinbox: Numeric spinner
+ */
+
+#include "../include/LVPanel.hpp"
+#include "../include/LVLabel.hpp"
+#include "../include/LVTextArea.hpp"
+#include "../include/LVDropdown.hpp"
+#include "../include/LVRoller.hpp"
+#include "../include/LVSpinbox.hpp"
+#include "../include/LVButton.hpp"
+
+/**
+ * ตัวอย่างที่ 1: Simple TextArea
+ * Multi-line text input พื้นฐาน
+ */
+void example_textarea_basic(lv_obj_t* parent)
+{
+    auto* panel = new LVPanel(nullptr);
+    panel->setSize(400, 300)->setPos(20, 20);
+    
+    auto* title = new LVLabel(panel);
+    title->setText("TextArea Example")->setPos(10, 10);
+    
+    auto* ta = new LVTextArea(panel);
+    ta->setSize(360, 150)
+      ->setPos(20, 40)
+      ->setPlaceholder("Type your message here...")
+      ->onChange([](const std::string& text) {
+          printf("Text changed: %s\n", text.c_str());
+      });
+    
+    auto* statusLabel = new LVLabel(panel);
+    statusLabel->setText("Characters: 0")->setPos(20, 200);
+    
+    ta->onChange([statusLabel](const std::string& text) {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "Characters: %d", (int)text.length());
+        statusLabel->setText(buf);
+    });
+}
+
+/**
+ * ตัวอย่างที่ 2: Password Input
+ * TextArea แบบ password mode
+ */
+void example_textarea_password(lv_obj_t* parent)
+{
+    auto* panel = new LVPanel(nullptr);
+    panel->setSize(400, 250)->setPos(440, 20);
+    
+    auto* title = new LVLabel(panel);
+    title->setText("Password Input")->setPos(10, 10);
+    
+    auto* usernameLabel = new LVLabel(panel);
+    usernameLabel->setText("Username:")->setPos(20, 40);
+    
+    auto* username = new LVTextArea(panel);
+    username->setSize(360, 40)
+            ->setPos(20, 65)
+            ->setOneLineMode(true)
+            ->setMaxLength(20)
+            ->setPlaceholder("Enter username");
+    
+    auto* passwordLabel = new LVLabel(panel);
+    passwordLabel->setText("Password:")->setPos(20, 115);
+    
+    auto* password = new LVTextArea(panel);
+    password->setSize(360, 40)
+            ->setPos(20, 140)
+            ->setOneLineMode(true)
+            ->setPasswordMode(true)
+            ->setMaxLength(32)
+            ->setPlaceholder("Enter password");
+    
+    auto* loginBtn = new LVButton(panel);
+    loginBtn->setSize(120, 40)
+            ->setPos(20, 190)
+            ->setLabel("Login")
+            ->onClick([username, password]() {
+                printf("Login attempt - User: %s, Pass: %s\n",
+                       username->getText().c_str(),
+                       password->getText().c_str());
+            });
+}
+
+/**
+ * ตัวอย่างที่ 3: Dropdown Menu
+ * Dropdown สำหรับเลือกภาษา
+ */
+void example_dropdown_language(lv_obj_t* parent)
+{
+    auto* panel = new LVPanel(nullptr);
+    panel->setSize(300, 200)->setPos(20, 340);
+    
+    auto* title = new LVLabel(panel);
+    title->setText("Language Selector")->setPos(10, 10);
+    
+    auto* dd = new LVDropdown(panel);
+    dd->setSize(260, 40)
+      ->setPos(20, 40)
+      ->setOptions({"English", "ไทย", "日本語", "中文", "Español", "Français"})
+      ->setSelected(0);
+    
+    auto* statusLabel = new LVLabel(panel);
+    statusLabel->setText("Selected: English")->setPos(20, 90);
+    
+    dd->onChange([statusLabel, dd](uint16_t index) {
+        std::string selected = dd->getSelectedStr();
+        statusLabel->setText("Selected: " + selected);
+        printf("Language changed to: %s (index: %d)\n", selected.c_str(), index);
+    });
+}
+
+/**
+ * ตัวอย่างที่ 4: Roller Time Picker
+ * ใช้ Roller สร้าง time picker
+ */
+void example_roller_time_picker(lv_obj_t* parent)
+{
+    auto* panel = new LVPanel(nullptr);
+    panel->setSize(420, 250)->setPos(340, 340);
+    
+    auto* title = new LVLabel(panel);
+    title->setText("Time Picker")->setPos(10, 10);
+    
+    // Hour roller
+    auto* hourLabel = new LVLabel(panel);
+    hourLabel->setText("Hour")->setPos(50, 40);
+    
+    auto* hourRoller = new LVRoller(panel);
+    std::vector<std::string> hours;
+    for (int i = 0; i < 24; i++) {
+        char buf[8];
+        snprintf(buf, sizeof(buf), "%02d", i);
+        hours.push_back(buf);
+    }
+    hourRoller->setOptions(hours)
+               ->setVisibleRowCount(5)
+               ->setSize(80, 150)
+               ->setPos(30, 65);
+    
+    // Minute roller
+    auto* minLabel = new LVLabel(panel);
+    minLabel->setText("Min")->setPos(180, 40);
+    
+    auto* minRoller = new LVRoller(panel);
+    std::vector<std::string> minutes;
+    for (int i = 0; i < 60; i++) {
+        char buf[8];
+        snprintf(buf, sizeof(buf), "%02d", i);
+        minutes.push_back(buf);
+    }
+    minRoller->setOptions(minutes)
+             ->setVisibleRowCount(5)
+             ->setSize(80, 150)
+             ->setPos(160, 65);
+    
+    // Second roller
+    auto* secLabel = new LVLabel(panel);
+    secLabel->setText("Sec")->setPos(310, 40);
+    
+    auto* secRoller = new LVRoller(panel);
+    secRoller->setOptions(minutes)  // Same as minutes
+             ->setVisibleRowCount(5)
+             ->setSize(80, 150)
+             ->setPos(290, 65);
+    
+    // Display selected time
+    auto* timeDisplay = new LVLabel(panel);
+    timeDisplay->setText("Time: 00:00:00")->setPos(120, 220);
+    
+    auto updateTime = [hourRoller, minRoller, secRoller, timeDisplay]() {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "Time: %s:%s:%s",
+                hourRoller->getSelectedStr().c_str(),
+                minRoller->getSelectedStr().c_str(),
+                secRoller->getSelectedStr().c_str());
+        timeDisplay->setText(buf);
+    };
+    
+    hourRoller->onChange([updateTime](uint16_t) { updateTime(); });
+    minRoller->onChange([updateTime](uint16_t) { updateTime(); });
+    secRoller->onChange([updateTime](uint16_t) { updateTime(); });
+}
+
+/**
+ * ตัวอย่างที่ 5: Spinbox Quantity
+ * Spinbox สำหรับเลือกจำนวนสินค้า
+ */
+void example_spinbox_quantity(lv_obj_t* parent)
+{
+    auto* panel = new LVPanel(nullptr);
+    panel->setSize(350, 280)->setPos(780, 340);
+    
+    auto* title = new LVLabel(panel);
+    title->setText("Product Quantity")->setPos(10, 10);
+    
+    auto* productLabel = new LVLabel(panel);
+    productLabel->setText("ESP32-P4 DevKit")->setPos(20, 40);
+    
+    auto* priceLabel = new LVLabel(panel);
+    priceLabel->setText("Price: $49.99")->setPos(20, 65);
+    
+    // Quantity spinbox
+    auto* qtyLabel = new LVLabel(panel);
+    qtyLabel->setText("Quantity:")->setPos(20, 100);
+    
+    auto* spinbox = new LVSpinbox(panel);
+    spinbox->setSize(200, 50)
+           ->setPos(20, 125);
+    spinbox->setRange(1, 99)
+           ->setValue(1)
+           ->setDigitFormat(2, 0)
+           ->setStep(1);
+    
+    // Increment button
+    auto* btnPlus = new LVButton(panel);
+    btnPlus->setSize(50, 50)
+           ->setPos(230, 125);
+    btnPlus->setLabel("+")
+           ->onClick([spinbox]() {
+               spinbox->increment();
+           });
+    
+    // Decrement button
+    auto* btnMinus = new LVButton(panel);
+    btnMinus->setSize(50, 50)
+            ->setPos(290, 125)
+            ->setLabel("-")
+            ->onClick([spinbox]() {
+                spinbox->decrement();
+            });
+    
+    // Total price
+    auto* totalLabel = new LVLabel(panel);
+    totalLabel->setText("Total: $49.99")->setPos(20, 190);
+    
+    spinbox->onChange([totalLabel](int32_t value) {
+        double total = value * 49.99;
+        char buf[32];
+        snprintf(buf, sizeof(buf), "Total: $%.2f", total);
+        totalLabel->setText(buf);
+        printf("Quantity changed: %d, Total: $%.2f\n", value, total);
+    });
+    
+    // Add to cart button
+    auto* addBtn = new LVButton(panel);
+    addBtn->setSize(200, 40);
+    addBtn->setPos(20, 230);
+    addBtn->setLabel("Add to Cart");
+    addBtn->onClick([spinbox]() {
+        printf("Added %d items to cart\n", spinbox->getValue());
+    });
+}
+
+/**
+ * ตัวอย่างที่ 6: Form with All Widgets
+ * ฟอร์มครบครันใช้ทุก widget
+ */
+void example_complete_form(lv_obj_t* parent)
+{
+    auto* panel = new LVPanel(nullptr);
+    panel->setSize(500, 480)->setPos(20, 600);
+    
+    auto* title = new LVLabel(panel);
+    title->setText("Registration Form")->setPos(10, 10);
+    
+    // Name
+    auto* nameLabel = new LVLabel(panel);
+    nameLabel->setText("Full Name:")->setPos(20, 40);
+    
+    auto* nameInput = new LVTextArea(panel);
+    nameInput->setSize(460, 40);
+    nameInput->setPos(20, 65);
+    nameInput->setOneLineMode(true);
+    nameInput->setPlaceholder("John Doe");
+    
+    // Email
+    auto* emailLabel = new LVLabel(panel);
+    emailLabel->setText("Email:")->setPos(20, 115);
+    
+    auto* emailInput = new LVTextArea(panel);
+    emailInput->setSize(460, 40)
+              ->setPos(20, 140)
+              ->setOneLineMode(true)
+              ->setPlaceholder("john@example.com");
+    
+    // Country
+    auto* countryLabel = new LVLabel(panel);
+    countryLabel->setText("Country:")->setPos(20, 190);
+    
+    auto* countryDropdown = new LVDropdown(panel);
+    countryDropdown->setSize(220, 40)
+                   ->setPos(20, 215)
+                   ->setOptions("Thailand\nUSA\nJapan\nChina\nUK\nGermany");
+    
+    // Age
+    auto* ageLabel = new LVLabel(panel);
+    ageLabel->setText("Age:")->setPos(260, 190);
+    
+    auto* ageSpinbox = new LVSpinbox(panel);
+    ageSpinbox->setSize(220, 40)
+              ->setPos(260, 215)
+              ->setRange(18, 99)
+              ->setValue(25)
+              ->setDigitFormat(2, 0);
+    
+    // Occupation
+    auto* occLabel = new LVLabel(panel);
+    occLabel->setText("Occupation:")->setPos(20, 265);
+    
+    auto* occRoller = new LVRoller(panel);
+    occRoller->setOptions("Student\nEngineer\nTeacher\nDoctor\nOther")
+             ->setVisibleRowCount(3)
+             ->setSize(460, 100)
+             ->setPos(20, 290);
+    
+    // Submit button
+    auto* submitBtn = new LVButton(panel);
+    submitBtn->setSize(200, 50)
+             ->setPos(150, 410)
+             ->setLabel("Submit")
+             ->onClick([nameInput, emailInput, countryDropdown, ageSpinbox, occRoller]() {
+                 printf("\n=== Form Submitted ===\n");
+                 printf("Name: %s\n", nameInput->getText().c_str());
+                 printf("Email: %s\n", emailInput->getText().c_str());
+                 printf("Country: %s\n", countryDropdown->getSelectedStr().c_str());
+                 printf("Age: %d\n", ageSpinbox->getValue());
+                 printf("Occupation: %s\n", occRoller->getSelectedStr().c_str());
+                 printf("====================\n\n");
+             });
+}
+
+/**
+ * ฟังก์ชันหลักเรียกใช้ตัวอย่างทั้งหมด
+ */
+void run_text_input_examples()
+{
+    example_textarea_basic(nullptr);
+    example_textarea_password(nullptr);
+    example_dropdown_language(nullptr);
+    example_roller_time_picker(nullptr);
+    example_spinbox_quantity(nullptr);
+    example_complete_form(nullptr);
+}

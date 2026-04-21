@@ -1,0 +1,222 @@
+/**
+ * @file slider_playground.cpp
+ * @brief 🎮 Template สำหรับทดลองเล่น LVSlider
+ * 
+ * ไฟล์นี้เป็น playground ให้คุณลองปรับแต่งและทดสอบ Slider
+ * ลองแก้ไขค่าต่างๆ แล้วดูผลลัพธ์บนบอร์ด!
+ */
+
+#include "../include/LVSlider.hpp"
+#include "../include/LVLabel.hpp"
+#include "../include/LVPanel.hpp"
+#include <stdio.h>
+
+/**
+ * EXAMPLE 1: Basic Slider
+ * ========================
+ * Slider พื้นฐานแสดงค่า 0-100
+ */
+void example_basic_slider()
+{
+    // สร้าง label แสดงค่า
+    auto valueLabel = new LVLabel(nullptr, "Value: 50");
+    valueLabel->setPos(10, 10)
+              ->setSize(200, 30);
+    
+    // สร้าง slider
+    auto slider = new LVSlider(nullptr);
+    slider->setPos(10, 50)
+          ->setSize(200, 20)
+          ->setRange(0, 100)      // ❓ ลองเปลี่ยนเป็น (0, 200) ดู!
+          ->setValue(50)           // ❓ ลองเปลี่ยนค่าเริ่มต้น
+          ->onChange([valueLabel](int32_t value) {
+              // Lambda callback - จะถูกเรียกเมื่อค่าเปลี่ยน
+              char buf[32];
+              sprintf(buf, "Value: %d", (int)value);
+              valueLabel->setText(buf);
+              
+              printf("Slider changed: %d\n", (int)value);  // แสดงใน console
+          });
+}
+
+/**
+ * EXAMPLE 2: Range Slider
+ * ========================
+ * Slider ที่มี 2 knobs (เลือกช่วง min-max)
+ */
+void example_range_slider()
+{
+    auto label = new LVLabel(nullptr, "Range: 20-80");
+    label->setPos(10, 100);
+    
+    auto slider = new LVSlider(nullptr);
+    slider->setPos(10, 130)
+          ->setSize(200, 20)
+          ->setMode(true)              // ✅ true = Range mode (2 knobs)
+          ->setRange(0, 100)
+          ->setLeftValue(20)           // ค่าซ้าย (knob แรก)
+          ->setValue(80)               // ค่าขวา (knob ที่สอง)
+          ->onChange([label, slider](int32_t rightValue) {
+              int32_t leftValue = slider->getLeftValue();
+              char buf[64];
+              sprintf(buf, "Range: %d-%d", (int)leftValue, (int)rightValue);
+              label->setText(buf);
+          });
+}
+
+/**
+ * EXAMPLE 3: Volume Control
+ * ==========================
+ * Slider สำหรับควบคุม Volume (0-100%)
+ */
+void example_volume_control()
+{
+    // Title
+    auto title = new LVLabel(nullptr, "🔊 Volume");
+    title->setPos(250, 10);
+    
+    // Volume label
+    auto volLabel = new LVLabel(nullptr, "50%");
+    volLabel->setPos(250, 40);
+    
+    // Volume slider
+    auto volSlider = new LVSlider(nullptr);
+    volSlider->setPos(250, 70)
+             ->setSize(150, 15)
+             ->setRange(0, 100)
+             ->setValue(50)
+             ->onChange([volLabel](int32_t vol) {
+                 char buf[16];
+                 sprintf(buf, "%d%%", (int)vol);
+                 volLabel->setText(buf);
+                 
+                 // ❓ TODO: เพิ่มการควบคุม audio volume จริงๆ ที่นี่
+                 printf("Volume: %d%%\n", (int)vol);
+             });
+}
+
+/**
+ * EXAMPLE 4: Temperature Control
+ * ================================
+ * Slider สำหรับตั้งอุณหภูมิ (16-30°C)
+ */
+void example_temperature_slider()
+{
+    auto tempLabel = new LVLabel(nullptr, "Temp: 24°C");
+    tempLabel->setPos(250, 120);
+    
+    auto tempSlider = new LVSlider(nullptr);
+    tempSlider->setPos(250, 150)
+              ->setSize(150, 15)
+              ->setRange(16, 30)         // ❓ ลองเปลี่ยนช่วงอุณหภูมิ
+              ->setValue(24)
+              ->onChange([tempLabel](int32_t temp) {
+                  char buf[32];
+                  sprintf(buf, "Temp: %d°C", (int)temp);
+                  tempLabel->setText(buf);
+                  
+                  // เปลี่ยนสีตามอุณหภูมิ (ตัวอย่าง)
+                  if (temp < 20) {
+                      printf("❄️ Cold: %d°C\n", (int)temp);
+                  } else if (temp < 26) {
+                      printf("😊 Comfortable: %d°C\n", (int)temp);
+                  } else {
+                      printf("🔥 Hot: %d°C\n", (int)temp);
+                  }
+              });
+}
+
+/**
+ * EXAMPLE 5: Brightness Control with Animation
+ * ==============================================
+ * Slider ที่มี animation สวยงาม
+ */
+void example_brightness_slider()
+{
+    auto brightLabel = new LVLabel(nullptr, "☀️ Brightness: 75%");
+    brightLabel->setPos(10, 200);
+    
+    auto brightSlider = new LVSlider(nullptr);
+    brightSlider->setPos(10, 230)
+                ->setSize(300, 20)
+                ->setRange(0, 100)
+                ->setValue(75, true)     // ✅ true = มี animation
+                ->onChange([brightLabel](int32_t val) {
+                    char buf[64];
+                    
+                    // แสดง emoji ตามระดับความสว่าง
+                    const char* icon;
+                    if (val < 25) icon = "🌑";
+                    else if (val < 50) icon = "🌓";
+                    else if (val < 75) icon = "🌕";
+                    else icon = "☀️";
+                    
+                    sprintf(buf, "%s Brightness: %d%%", icon, (int)val);
+                    brightLabel->setText(buf);
+                });
+}
+
+/**
+ * 🎯 TODO: ลองสร้าง Slider ของคุณเอง!
+ * =====================================
+ * Template สำหรับทดลอง:
+ */
+void my_custom_slider()
+{
+    // ❓ TODO 1: สร้าง Label แสดงค่า
+    auto myLabel = new LVLabel(nullptr, "My Value: 0");
+    myLabel->setPos(450, 10);  // ❓ เปลี่ยนตำแหน่ง
+    
+    // ❓ TODO 2: สร้าง Slider
+    auto mySlider = new LVSlider(nullptr);
+    mySlider->setPos(450, 40)
+            ->setSize(200, 20)
+            ->setRange(0, 100)       // ❓ เปลี่ยนช่วงค่า
+            ->setValue(0)            // ❓ เปลี่ยนค่าเริ่มต้น
+            ->onChange([myLabel](int32_t value) {
+                // ❓ TODO 3: เขียนโค้ดที่คุณต้องการ
+                char buf[64];
+                sprintf(buf, "My Value: %d", (int)value);
+                myLabel->setText(buf);
+                
+                // ❓ TODO 4: ทำอะไรกับค่าที่ได้?
+                // เช่น: ควบคุม LED, มอเตอร์, ส่งข้อมูล, etc.
+            });
+}
+
+/**
+ * 🚀 Main Function - เรียกตัวอย่างที่ต้องการ
+ */
+void test_slider_playground()
+{
+    printf("\n=== LVSlider Playground ===\n");
+    
+    // เรียกตัวอย่างที่ต้องการทดสอบ
+    example_basic_slider();
+    example_range_slider();
+    example_volume_control();
+    example_temperature_slider();
+    example_brightness_slider();
+    
+    // ❓ ลองสร้างของคุณเอง!
+    // my_custom_slider();
+    
+    printf("✅ All sliders created!\n");
+    printf("💡 Try moving the sliders on screen\n");
+}
+
+/*
+ * 📚 สิ่งที่ควรลอง:
+ * ==================
+ * 1. เปลี่ยนค่า setRange() ดูว่าเกิดอะไรขึ้น
+ * 2. ลอง setMode(true) สำหรับ Range Slider
+ * 3. ใส่ animation ด้วย setValue(x, true)
+ * 4. สร้าง slider ควบคุมสิ่งอื่นๆ (PWM, DAC, etc.)
+ * 5. ลองทำ slider แนวตั้ง (หมุน 90 องศา)
+ * 
+ * 💡 เคล็ดลับ:
+ * ============
+ * - ใช้ lambda capture [myLabel, mySlider] เพื่อเข้าถึง widget อื่น
+ * - printf() ช่วยในการ debug ค่า
+ * - ลอง setSymmetric(true) สำหรับ slider แบบสมมาตร
+ */
