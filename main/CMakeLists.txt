@@ -46,6 +46,8 @@ idf_component_register(
         # Menu Demo Application (Demo gallery app)
         cpp_version/MenuDemoApplication.cpp
         
+        examples/colorwheel_demo.cpp
+
         # All C++ OOP widget implementations (core library)
         ${CPP_SOURCES}
         
