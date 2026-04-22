@@ -1,0 +1,10 @@
+idf_component_register(
+    SRCS 
+        "src/SvgPathParser.cpp"
+        "src/BezierConverter.cpp"
+        "src/SvgRenderer.cpp"
+    INCLUDE_DIRS 
+        "include"
+    REQUIRES
+        lvgl_cpp_v9
+)

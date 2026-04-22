@@ -46,6 +46,9 @@ idf_component_register(
         # Menu Demo Application (Demo gallery app)
         cpp_version/MenuDemoApplication.cpp
         
+        # LabHappy SVG Path Renderer Demo
+        cpp_version/LabHappySvgDemo.cpp
+        
         examples/colorwheel_demo.cpp
 
         # All C++ OOP widget implementations (core library)
@@ -74,6 +77,7 @@ idf_component_register(
     REQUIRES
         esp32_p4_function_ev_board  # BSP with SD card support
         fatfs  # For LVStorage component
+        svg_renderer  # LabHappy SVG Path Renderer
         
     PRIV_REQUIRES
         bsp_extra  # BSP extra functions
