@@ -2,6 +2,9 @@
 #include <cstring>
 #include <cctype>
 #include <cstdlib>
+#include "esp_log.h"
+
+static const char* TAG = "SvgPathParser";
 
 namespace SvgRenderer {
 
@@ -18,8 +21,11 @@ std::vector<PathCommand> SvgPathParser::parse(const char* pathData) {
     
     if (!pathData || strlen(pathData) == 0) {
         m_lastError = "Empty path data";
+        ESP_LOGW(TAG, "Empty path data");
         return commands;
     }
+    
+    ESP_LOGI(TAG, "Parsing path: %s", pathData);
     
     const char* ptr = pathData;
     m_currentPos = Point(0, 0);
@@ -28,28 +34,45 @@ std::vector<PathCommand> SvgPathParser::parse(const char* pathData) {
     // Skip leading whitespace
     skipWhitespace(&ptr);
     
+    int cmdCount = 0;
+    char lastCommand = '\0';
+    
     while (*ptr != '\0') {
         // Skip whitespace
         skipWhitespace(&ptr);
         
         if (*ptr == '\0') break;
         
-        // Get command character
-        if (!isCommand(*ptr)) {
+        char cmd;
+        
+        // Check if this is a command character or implicit repetition
+        if (isCommand(*ptr)) {
+            cmd = *ptr;
+            ptr++;
+            lastCommand = cmd;
+        } else if (lastCommand != '\0' && lastCommand != 'Z' && lastCommand != 'z') {
+            // Implicit command repetition (same command continues)
+            cmd = lastCommand;
+            ESP_LOGI(TAG, "  Implicit repeat of command '%c'", cmd);
+        } else {
+            // Invalid - not a command and no lastCommand to repeat
             m_lastError = "Invalid command character";
+            ESP_LOGW(TAG, "Invalid command at position %d: '%c'", (int)(ptr - pathData), *ptr);
             break;
         }
-        
-        char cmd = *ptr;
-        ptr++;
         
         // Parse command
         PathCommand command = parseCommand(cmd, &ptr);
         commands.push_back(command);
+        cmdCount++;
+        
+        ESP_LOGI(TAG, "  Command %d: '%c' with %d args", cmdCount, cmd, command.args.size());
         
         // Skip trailing whitespace
         skipWhitespace(&ptr);
     }
+    
+    ESP_LOGI(TAG, "Parsed %d commands total", cmdCount);
     
     return commands;
 }

@@ -255,6 +255,15 @@ void create_colorwheel_wrapper(lv_obj_t* parent)
     // Call the demo directly
     create_colorwheel_demo();
 }
+
+// Demo 6: LabHappy SVG Path Renderer
+extern "C" void create_labhappy_svg_demo();
+
+void create_labhappy_svg_wrapper(lv_obj_t* parent)
+{
+    // Call the SVG demo directly
+    create_labhappy_svg_demo();
+}
 } // namespace
 
 // ========== MenuDemoApplication Implementation ==========
@@ -380,6 +389,12 @@ void MenuDemoApplication::registerAllDemos()
     "ColorWheel Picker",
     "Interactive color picker with HSV controls",
     create_colorwheel_wrapper
+    );
+    
+    m_demoManager->registerDemo(
+        "SVG Path Renderer",
+        "LabHappy SVG symbol rendering (XOR/AND gates)",
+        create_labhappy_svg_wrapper
     );
 
     ESP_LOGI(TAG, "✓ Registered %d demos", m_demoManager->getDemoCount());

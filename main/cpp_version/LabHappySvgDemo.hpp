@@ -14,7 +14,7 @@
  */
 class LabHappySvgDemo : public LVWidget {
 public:
-    LabHappySvgDemo(lv_obj_t* parent = nullptr);
+    LabHappySvgDemo(LVWidget* parent = nullptr);
     virtual ~LabHappySvgDemo();
     
     /**
