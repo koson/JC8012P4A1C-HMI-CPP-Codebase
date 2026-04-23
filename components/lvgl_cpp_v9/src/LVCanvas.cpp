@@ -4,21 +4,23 @@
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_line.h"
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_label.h"
 
-LVCanvas::LVCanvas(lv_obj_t* parent, uint16_t width, uint16_t height, lv_color_format_t fmt, void* buffer)
+LVCanvas::LVCanvas(lv_obj_t *parent, uint16_t width, uint16_t height, lv_color_format_t fmt, void *buffer)
 {
     m_canvas = lv_canvas_create(parent);
     setBuffer(buffer, width, height, fmt);
 }
 
-void LVCanvas::setBuffer(void* buffer, uint16_t width, uint16_t height, lv_color_format_t fmt)
+void LVCanvas::setBuffer(void *buffer, uint16_t width, uint16_t height, lv_color_format_t fmt)
 {
-    if (!m_canvas || !buffer) return;
+    if (!m_canvas || !buffer)
+        return;
     lv_canvas_set_buffer(m_canvas, buffer, width, height, fmt);
 }
 
 void LVCanvas::fill(LVColor color, lv_opa_t opa)
 {
-    if (!m_canvas) return;
+    if (!m_canvas)
+        return;
     lv_canvas_fill_bg(m_canvas, color.raw(), opa);
 }
 
@@ -29,7 +31,8 @@ void LVCanvas::clear(LVColor color)
 
 void LVCanvas::drawRect(int32_t x, int32_t y, int32_t w, int32_t h, LVColor color, lv_opa_t opa, int32_t radius)
 {
-    if (!m_canvas) return;
+    if (!m_canvas)
+        return;
     lv_layer_t layer;
     lv_canvas_init_layer(m_canvas, &layer);
 
@@ -49,7 +52,8 @@ void LVCanvas::drawRect(int32_t x, int32_t y, int32_t w, int32_t h, LVColor colo
 
 void LVCanvas::drawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, LVColor color, int32_t width, lv_opa_t opa)
 {
-    if (!m_canvas) return;
+    if (!m_canvas)
+        return;
     lv_layer_t layer;
     lv_canvas_init_layer(m_canvas, &layer);
 
@@ -70,13 +74,14 @@ void LVCanvas::drawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, LVColor 
 
 void LVCanvas::drawCircle(int32_t cx, int32_t cy, int32_t radius, LVColor color, bool filled, lv_opa_t opa)
 {
-    if (!m_canvas || radius <= 0) return;
-    
+    if (!m_canvas || radius <= 0)
+        return;
+
     // Use rounded rect with radius = diameter/2 to create circle
     int32_t diameter = radius * 2;
     int32_t x = cx - radius;
     int32_t y = cy - radius;
-    
+
     lv_layer_t layer;
     lv_canvas_init_layer(m_canvas, &layer);
 
@@ -85,13 +90,16 @@ void LVCanvas::drawCircle(int32_t cx, int32_t cy, int32_t radius, LVColor color,
     dsc.bg_color = color.raw();
     dsc.bg_opa = filled ? opa : LV_OPA_TRANSP;
     dsc.radius = radius; // Full radius makes it circular
-    
-    if (!filled) {
+
+    if (!filled)
+    {
         // Draw outline only
         dsc.border_color = color.raw();
         dsc.border_width = 2;
         dsc.border_opa = opa;
-    } else {
+    }
+    else
+    {
         dsc.border_opa = LV_OPA_TRANSP;
     }
 
@@ -102,9 +110,10 @@ void LVCanvas::drawCircle(int32_t cx, int32_t cy, int32_t radius, LVColor color,
     lv_canvas_finish_layer(m_canvas, &layer);
 }
 
-void LVCanvas::drawText(int32_t x, int32_t y, const char* text, LVColor color, int32_t max_width)
+void LVCanvas::drawText(int32_t x, int32_t y, const char *text, LVColor color, int32_t max_width)
 {
-    if (!m_canvas || !text) return;
+    if (!m_canvas || !text)
+        return;
     lv_layer_t layer;
     lv_canvas_init_layer(m_canvas, &layer);
 
@@ -123,7 +132,8 @@ void LVCanvas::drawText(int32_t x, int32_t y, const char* text, LVColor color, i
 
 void LVCanvas::setPalette(uint8_t idx, LVColor color)
 {
-    if (!m_canvas) return;
+    if (!m_canvas)
+        return;
     lv_color32_t c32 = lv_color_to_32(color.raw(), LV_OPA_COVER);
     lv_canvas_set_palette(m_canvas, idx, c32);
 }

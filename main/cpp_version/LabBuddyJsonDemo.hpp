@@ -32,7 +32,7 @@ public:
 
 private:
     void createCanvas();
-    void listSDCardFiles(const char* path);
+    void listSDCardFiles(const char *path);
 
     static constexpr int CANVAS_WIDTH = 1024;
     static constexpr int CANVAS_HEIGHT = 500;
