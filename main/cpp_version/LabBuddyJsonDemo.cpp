@@ -1,5 +1,7 @@
 #include "LabBuddyJsonDemo.hpp"
 #include "esp_log.h"
+#include <dirent.h>
+#include <sys/stat.h>
 
 static const char *LOG_TAG = "LabBuddyJsonDemo";
 
@@ -53,8 +55,8 @@ void LabBuddyJsonDemo::init()
     // Create canvas
     createCanvas();
 
-    // List available files on SD card
-    listSDCardFiles("/sdcard/worksheets");
+    // List available files on SD card (using 8.3 short filename)
+    listSDCardFiles("/sdcard/WORKSH~1");
 
     ESP_LOGI(LOG_TAG, "LabBuddyJsonDemo initialized");
 }
@@ -89,6 +91,55 @@ void LabBuddyJsonDemo::createCanvas()
     m_renderer = std::make_unique<JsonRenderer::JsonRenderer>(m_canvas);
 
     ESP_LOGI(LOG_TAG, "Canvas created: %dx%d", CANVAS_WIDTH, CANVAS_HEIGHT);
+}
+
+void LabBuddyJsonDemo::listSDCardFiles(const char *path)
+{
+    ESP_LOGI(LOG_TAG, "===========================================");
+    ESP_LOGI(LOG_TAG, "Listing files in: %s", path);
+    ESP_LOGI(LOG_TAG, "===========================================");
+
+    DIR *dir = opendir(path);
+    if (!dir)
+    {
+        ESP_LOGE(LOG_TAG, "Failed to open directory: %s", path);
+        return;
+    }
+
+    struct dirent *entry;
+    int fileCount = 0;
+
+    while ((entry = readdir(dir)) != nullptr)
+    {
+        fileCount++;
+
+        // Build full path
+        char fullPath[512];
+        snprintf(fullPath, sizeof(fullPath), "%s/%s", path, entry->d_name);
+
+        // Check if it's a directory or file
+        struct stat st;
+        if (stat(fullPath, &st) == 0)
+        {
+            if (S_ISDIR(st.st_mode))
+            {
+                ESP_LOGI(LOG_TAG, "  [DIR]  %s", entry->d_name);
+            }
+            else
+            {
+                ESP_LOGI(LOG_TAG, "  [FILE] %s (size: %ld bytes)", entry->d_name, st.st_size);
+            }
+        }
+        else
+        {
+            ESP_LOGI(LOG_TAG, "  [????] %s (stat failed)", entry->d_name);
+        }
+    }
+
+    closedir(dir);
+
+    ESP_LOGI(LOG_TAG, "Total entries: %d", fileCount);
+    ESP_LOGI(LOG_TAG, "===========================================");
 }
 
 bool LabBuddyJsonDemo::loadCircuit(const char *filePath)
@@ -156,7 +207,8 @@ extern "C" void create_labhappy_json_demo()
     demo = new LabBuddyJsonDemo(nullptr);
     demo->init();
 
-    // Try to load a default circuit from SD card
-    // User can copy JSON files to /sdcard/worksheets/
-    demo->loadCircuit("/sdcard/worksheets/half_adder.json");
+    // Load default circuit from SD card
+    // NOTE: FAT filesystem using 8.3 short filenames (LFN not enabled)
+    // Files found: HALF_A~1.JSO, SVG1_C~1.JSO, SHAPES~1.JSO
+    demo->loadCircuit("/sdcard/WORKSH~1/HALF_A~1.JSO");
 }

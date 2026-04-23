@@ -73,11 +73,18 @@ namespace JsonRenderer
 
         // Helper methods
         SvgRenderer::Color parseColor(const std::string &hexColor);
+        void calculateScale(const Screen &screen);
 
         LVCanvas *m_canvas;
         std::unique_ptr<SvgRenderer::SvgRenderer> m_svgRenderer;
         std::unique_ptr<JsonParser> m_parser;
         std::unique_ptr<Screen> m_screen;
+
+        // Auto-scaling
+        float m_scaleX;
+        float m_scaleY;
+        float m_offsetX;
+        float m_offsetY;
         std::string m_lastError;
     };
 

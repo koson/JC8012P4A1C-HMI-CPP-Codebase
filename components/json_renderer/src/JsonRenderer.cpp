@@ -8,7 +8,8 @@ namespace JsonRenderer
 {
 
     JsonRenderer::JsonRenderer(LVCanvas *canvas)
-        : m_canvas(canvas), m_svgRenderer(nullptr), m_parser(nullptr), m_screen(nullptr)
+        : m_canvas(canvas), m_svgRenderer(nullptr), m_parser(nullptr), m_screen(nullptr),
+          m_scaleX(1.0f), m_scaleY(1.0f), m_offsetX(0.0f), m_offsetY(0.0f)
     {
 
         // Create SVG renderer
@@ -48,6 +49,9 @@ namespace JsonRenderer
     bool JsonRenderer::render(const Screen &screen)
     {
         ESP_LOGI(TAG, "Rendering screen: %s", screen.title.c_str());
+
+        // Calculate auto-scaling
+        calculateScale(screen);
 
         // Clear canvas with background color
         SvgRenderer::Color bgColor = parseColor(screen.backgroundColor);
@@ -107,13 +111,18 @@ namespace JsonRenderer
             ESP_LOGI(TAG, "  Rendering widget: %s at (%.0f, %.0f)",
                      widget.symbolId.c_str(), widget.x, widget.y);
 
+            // Apply auto-scaling
+            int32_t scaledX = (int32_t)(widget.x * m_scaleX + m_offsetX);
+            int32_t scaledY = (int32_t)(widget.y * m_scaleY + m_offsetY);
+            float scaledScale = widget.scale * m_scaleX; // Uniform scale
+
             m_svgRenderer->renderSymbol(
                 symbol,
-                (int32_t)widget.x,
-                (int32_t)widget.y,
+                scaledX,
+                scaledY,
                 strokeColor,
                 (int32_t)widget.strokeWidth,
-                widget.scale,
+                scaledScale,
                 widget.rotation);
         }
     }
@@ -147,11 +156,16 @@ namespace JsonRenderer
             SvgRenderer::Color color = parseColor(port.color);
             LVColor lvColor(color.r, color.g, color.b);
 
+            // Apply auto-scaling
+            int32_t scaledX = (int32_t)(port.x * m_scaleX + m_offsetX);
+            int32_t scaledY = (int32_t)(port.y * m_scaleY + m_offsetY);
+            int32_t scaledRadius = (int32_t)(port.radius * m_scaleX);
+
             // Draw circle for port
             m_canvas->drawCircle(
-                (int32_t)port.x,
-                (int32_t)port.y,
-                (int32_t)port.radius,
+                scaledX,
+                scaledY,
+                scaledRadius,
                 lvColor);
 
             ESP_LOGD(TAG, "  Port: %s at (%.0f, %.0f)", port.id.c_str(), port.x, port.y);
@@ -170,10 +184,15 @@ namespace JsonRenderer
             // Draw filled circle for junction
             LVColor color = LVColor::Black;
 
+            // Apply auto-scaling
+            int32_t scaledX = (int32_t)(junction.x * m_scaleX + m_offsetX);
+            int32_t scaledY = (int32_t)(junction.y * m_scaleY + m_offsetY);
+            int32_t scaledRadius = (int32_t)(junction.radius * m_scaleX);
+
             m_canvas->drawCircle(
-                (int32_t)junction.x,
-                (int32_t)junction.y,
-                (int32_t)junction.radius,
+                scaledX,
+                scaledY,
+                scaledRadius,
                 color);
 
             ESP_LOGD(TAG, "  Junction: %s at (%.0f, %.0f)", junction.id.c_str(), junction.x, junction.y);
@@ -207,6 +226,37 @@ namespace JsonRenderer
         uint8_t b = std::strtol(hex.substr(4, 2).c_str(), nullptr, 16);
 
         return SvgRenderer::Color(r, g, b);
+    }
+
+    void JsonRenderer::calculateScale(const Screen &screen)
+    {
+        // Get canvas dimensions (need to query from LVGL object)
+        lv_obj_t *canvasObj = m_canvas->obj();
+        int32_t canvasWidth = lv_obj_get_width(canvasObj);
+        int32_t canvasHeight = lv_obj_get_height(canvasObj);
+
+        // Get screen dimensions from JSON
+        float screenWidth = screen.width;
+        float screenHeight = screen.height;
+
+        // Calculate scale to fit canvas (maintain aspect ratio)
+        float scaleX = canvasWidth / screenWidth;
+        float scaleY = canvasHeight / screenHeight;
+
+        // Use uniform scale (smallest to fit everything)
+        float scale = std::min(scaleX, scaleY);
+        m_scaleX = scale;
+        m_scaleY = scale;
+
+        // Calculate centering offset
+        float scaledWidth = screenWidth * scale;
+        float scaledHeight = screenHeight * scale;
+        m_offsetX = (canvasWidth - scaledWidth) / 2.0f;
+        m_offsetY = (canvasHeight - scaledHeight) / 2.0f;
+
+        ESP_LOGI(TAG, "Auto-scaling: screen=%dx%d, canvas=%dx%d, scale=%.3f, offset=(%.1f, %.1f)",
+                 (int)screenWidth, (int)screenHeight, canvasWidth, canvasHeight,
+                 scale, m_offsetX, m_offsetY);
     }
 
 } // namespace JsonRenderer
