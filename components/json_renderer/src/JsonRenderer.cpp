@@ -1,0 +1,212 @@
+#include "JsonRenderer.hpp"
+#include "esp_log.h"
+#include <algorithm>
+
+static const char *TAG = "JsonRenderer";
+
+namespace JsonRenderer
+{
+
+    JsonRenderer::JsonRenderer(LVCanvas *canvas)
+        : m_canvas(canvas), m_svgRenderer(nullptr), m_parser(nullptr), m_screen(nullptr)
+    {
+
+        // Create SVG renderer
+        m_svgRenderer = std::make_unique<SvgRenderer::SvgRenderer>(canvas);
+        m_svgRenderer->setBezierQuality(30, 20); // High quality rendering
+
+        // Create JSON parser
+        m_parser = std::make_unique<JsonParser>();
+
+        ESP_LOGI(TAG, "JsonRenderer initialized");
+    }
+
+    JsonRenderer::~JsonRenderer()
+    {
+    }
+
+    bool JsonRenderer::loadAndRender(const char *filePath)
+    {
+        ESP_LOGI(TAG, "Loading and rendering: %s", filePath);
+
+        // Clear previous screen
+        m_screen = std::make_unique<Screen>();
+
+        // Parse JSON file
+        if (!m_parser->parseFile(filePath, *m_screen))
+        {
+            m_lastError = "Parse error: ";
+            m_lastError += m_parser->getLastError();
+            ESP_LOGE(TAG, "%s", m_lastError.c_str());
+            return false;
+        }
+
+        // Render to canvas
+        return render(*m_screen);
+    }
+
+    bool JsonRenderer::render(const Screen &screen)
+    {
+        ESP_LOGI(TAG, "Rendering screen: %s", screen.title.c_str());
+
+        // Clear canvas with background color
+        SvgRenderer::Color bgColor = parseColor(screen.backgroundColor);
+        m_canvas->fill(LVColor(bgColor.r, bgColor.g, bgColor.b));
+
+        // Render in order: wires -> junctions -> widgets -> ports
+        // (wires should be behind everything)
+
+        renderWires(screen);
+        renderJunctions(screen);
+        renderWidgets(screen);
+        renderPorts(screen);
+
+        ESP_LOGI(TAG, "Rendering complete");
+        return true;
+    }
+
+    void JsonRenderer::clear()
+    {
+        m_canvas->fill(LVColor::White);
+    }
+
+    void JsonRenderer::renderWidgets(const Screen &screen)
+    {
+        ESP_LOGI(TAG, "Rendering %d widgets...", screen.widgets.size());
+
+        for (const auto &widget : screen.widgets)
+        {
+            if (widget.type != "svgSymbol")
+            {
+                ESP_LOGW(TAG, "Unsupported widget type: %s", widget.type.c_str());
+                continue;
+            }
+
+            // Find symbol in embedded symbols
+            auto it = screen.embeddedSymbols.find(widget.symbolId);
+            if (it == screen.embeddedSymbols.end())
+            {
+                ESP_LOGW(TAG, "Symbol not found: %s", widget.symbolId.c_str());
+                continue;
+            }
+
+            const SymbolDef &symbolDef = it->second;
+
+            // Create SvgSymbol for rendering
+            SvgRenderer::SvgSymbol symbol;
+            symbol.id = symbolDef.id.c_str();
+            symbol.pathData = symbolDef.pathData.c_str();
+            symbol.viewBox = symbolDef.viewBox;
+            symbol.scale = widget.scale;
+            symbol.rotation = widget.rotation;
+
+            // Parse colors
+            SvgRenderer::Color strokeColor = parseColor(widget.strokeColor);
+
+            // Render symbol
+            ESP_LOGI(TAG, "  Rendering widget: %s at (%.0f, %.0f)",
+                     widget.symbolId.c_str(), widget.x, widget.y);
+
+            m_svgRenderer->renderSymbol(
+                symbol,
+                (int32_t)widget.x,
+                (int32_t)widget.y,
+                strokeColor,
+                (int32_t)widget.strokeWidth,
+                widget.scale,
+                widget.rotation);
+        }
+    }
+
+    void JsonRenderer::renderWires(const Screen &screen)
+    {
+        if (screen.wires.empty())
+            return;
+
+        ESP_LOGI(TAG, "Rendering %d wires...", screen.wires.size());
+
+        for (const auto &wire : screen.wires)
+        {
+            // Parse wire path and render
+            // TODO: Implement wire path rendering using SvgPathParser
+            // For now, wires are skipped (symbols are more important)
+            ESP_LOGD(TAG, "  Wire: %s (path rendering not yet implemented)", wire.id.c_str());
+        }
+    }
+
+    void JsonRenderer::renderPorts(const Screen &screen)
+    {
+        if (screen.ports.empty())
+            return;
+
+        ESP_LOGI(TAG, "Rendering %d ports...", screen.ports.size());
+
+        for (const auto &port : screen.ports)
+        {
+            // Parse color
+            SvgRenderer::Color color = parseColor(port.color);
+            LVColor lvColor(color.r, color.g, color.b);
+
+            // Draw circle for port
+            m_canvas->drawCircle(
+                (int32_t)port.x,
+                (int32_t)port.y,
+                (int32_t)port.radius,
+                lvColor);
+
+            ESP_LOGD(TAG, "  Port: %s at (%.0f, %.0f)", port.id.c_str(), port.x, port.y);
+        }
+    }
+
+    void JsonRenderer::renderJunctions(const Screen &screen)
+    {
+        if (screen.junctions.empty())
+            return;
+
+        ESP_LOGI(TAG, "Rendering %d junctions...", screen.junctions.size());
+
+        for (const auto &junction : screen.junctions)
+        {
+            // Draw filled circle for junction
+            LVColor color = LVColor::Black;
+
+            m_canvas->drawCircle(
+                (int32_t)junction.x,
+                (int32_t)junction.y,
+                (int32_t)junction.radius,
+                color);
+
+            ESP_LOGD(TAG, "  Junction: %s at (%.0f, %.0f)", junction.id.c_str(), junction.x, junction.y);
+        }
+    }
+
+    SvgRenderer::Color JsonRenderer::parseColor(const std::string &hexColor)
+    {
+        // Parse hex color string (e.g., "#2C3E50" or "#000")
+        if (hexColor.empty() || hexColor[0] != '#')
+        {
+            return SvgRenderer::Color::Black();
+        }
+
+        std::string hex = hexColor.substr(1); // Remove '#'
+
+        // Expand short format (#RGB -> #RRGGBB)
+        if (hex.length() == 3)
+        {
+            hex = std::string(2, hex[0]) + std::string(2, hex[1]) + std::string(2, hex[2]);
+        }
+
+        if (hex.length() != 6)
+        {
+            return SvgRenderer::Color::Black();
+        }
+
+        // Parse hex values
+        uint8_t r = std::strtol(hex.substr(0, 2).c_str(), nullptr, 16);
+        uint8_t g = std::strtol(hex.substr(2, 2).c_str(), nullptr, 16);
+        uint8_t b = std::strtol(hex.substr(4, 2).c_str(), nullptr, 16);
+
+        return SvgRenderer::Color(r, g, b);
+    }
+
+} // namespace JsonRenderer

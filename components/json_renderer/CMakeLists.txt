@@ -1,0 +1,12 @@
+idf_component_register(
+    SRCS 
+        "src/JsonParser.cpp"
+        "src/JsonRenderer.cpp"
+    INCLUDE_DIRS 
+        "include"
+    REQUIRES
+        json
+        fatfs
+        svg_renderer
+        lvgl_cpp_v9
+)

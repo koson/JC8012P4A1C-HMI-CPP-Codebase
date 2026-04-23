@@ -49,6 +49,9 @@ idf_component_register(
         # LabHappy SVG Path Renderer Demo
         cpp_version/LabHappySvgDemo.cpp
         
+        # LabBuddy JSON Circuit Viewer Demo
+        cpp_version/LabBuddyJsonDemo.cpp
+        
         examples/colorwheel_demo.cpp
 
         # All C++ OOP widget implementations (core library)
@@ -78,6 +81,7 @@ idf_component_register(
         esp32_p4_function_ev_board  # BSP with SD card support
         fatfs  # For LVStorage component
         svg_renderer  # LabHappy SVG Path Renderer
+        json_renderer  # LabBuddy JSON Circuit Viewer
         
     PRIV_REQUIRES
         bsp_extra  # BSP extra functions

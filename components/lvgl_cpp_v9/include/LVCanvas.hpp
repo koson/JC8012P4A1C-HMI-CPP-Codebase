@@ -21,6 +21,7 @@ public:
 
     void drawRect(int32_t x, int32_t y, int32_t w, int32_t h, LVColor color, lv_opa_t opa = LV_OPA_COVER, int32_t radius = 0);
     void drawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, LVColor color, int32_t width = 2, lv_opa_t opa = LV_OPA_COVER);
+    void drawCircle(int32_t cx, int32_t cy, int32_t radius, LVColor color, bool filled = true, lv_opa_t opa = LV_OPA_COVER);
     void drawText(int32_t x, int32_t y, const char* text, LVColor color, int32_t max_width = 0);
 
     void setPalette(uint8_t idx, LVColor color); // for indexed formats
