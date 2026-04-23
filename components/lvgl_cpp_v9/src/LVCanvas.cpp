@@ -5,6 +5,7 @@
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_label.h"
 
 LVCanvas::LVCanvas(lv_obj_t *parent, uint16_t width, uint16_t height, lv_color_format_t fmt, void *buffer)
+    : m_width(width), m_height(height)
 {
     m_canvas = lv_canvas_create(parent);
     setBuffer(buffer, width, height, fmt);
@@ -14,6 +15,8 @@ void LVCanvas::setBuffer(void *buffer, uint16_t width, uint16_t height, lv_color
 {
     if (!m_canvas || !buffer)
         return;
+    m_width = width;
+    m_height = height;
     lv_canvas_set_buffer(m_canvas, buffer, width, height, fmt);
 }
 

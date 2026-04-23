@@ -230,10 +230,9 @@ namespace JsonRenderer
 
     void JsonRenderer::calculateScale(const Screen &screen)
     {
-        // Get canvas dimensions (need to query from LVGL object)
-        lv_obj_t *canvasObj = m_canvas->obj();
-        int32_t canvasWidth = lv_obj_get_width(canvasObj);
-        int32_t canvasHeight = lv_obj_get_height(canvasObj);
+        // Get canvas dimensions from stored values
+        int32_t canvasWidth = m_canvas->width();
+        int32_t canvasHeight = m_canvas->height();
 
         // Get screen dimensions from JSON
         float screenWidth = screen.width;
