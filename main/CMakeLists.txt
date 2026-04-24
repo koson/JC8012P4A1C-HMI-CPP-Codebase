@@ -46,6 +46,12 @@ idf_component_register(
         # Menu Demo Application (Demo gallery app)
         cpp_version/MenuDemoApplication.cpp
         
+        # File Manager Application (Web-based file upload/download)
+        cpp_version/FileManagerApplication.cpp
+        
+        # File Viewer UI (LVGL UI for FileManager - Option 1.5)
+        cpp_version/FileViewerUI.cpp
+        
         # LabHappy SVG Path Renderer Demo
         cpp_version/LabHappySvgDemo.cpp
         
@@ -85,4 +91,8 @@ idf_component_register(
         
     PRIV_REQUIRES
         bsp_extra  # BSP extra functions
+        esp_wifi_remote  # WiFi Remote Library
+        esp_wifi  # WiFi component
+        esp_http_server  # HTTP server
+        nvs_flash  # NVS storage for WiFi
 )

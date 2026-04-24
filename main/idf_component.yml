@@ -5,3 +5,6 @@ dependencies:
   lvgl/lvgl:
     version: "^9.2.2"
     public: true
+  espressif/esp_wifi_remote:
+    version: "*"
+    public: true

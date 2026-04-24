@@ -1,0 +1,401 @@
+#include "FileViewerUI.h"
+#include "esp_log.h"
+#include <dirent.h>
+#include <sys/stat.h>
+#include <algorithm>
+
+static const char *TAG = "FileViewerUI";
+static const char *UPLOAD_DIR = "/sdcard/WORKSHOP";
+
+// Constructor
+FileViewerUI::FileViewerUI()
+    : m_parent(nullptr), m_labelIP(nullptr), m_labelStatus(nullptr), m_fileList(nullptr), m_btnRefresh(nullptr), m_btnRender(nullptr), m_btnClear(nullptr), m_canvasContainer(nullptr), m_canvas(nullptr), m_canvasBuffer(nullptr), m_selectedIndex(-1)
+{
+}
+
+// Destructor
+FileViewerUI::~FileViewerUI()
+{
+    if (m_renderer)
+    {
+        m_renderer.reset();
+    }
+    if (m_canvas)
+    {
+        delete m_canvas;
+        m_canvas = nullptr;
+    }
+    if (m_canvasBuffer)
+    {
+        free(m_canvasBuffer);
+        m_canvasBuffer = nullptr;
+    }
+}
+
+// Create UI
+void FileViewerUI::create(lv_obj_t *parent)
+{
+    m_parent = parent;
+
+    // Create container with flex layout
+    lv_obj_t *mainContainer = lv_obj_create(parent);
+    lv_obj_set_size(mainContainer, LV_PCT(100), LV_PCT(100));
+    lv_obj_set_flex_flow(mainContainer, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(mainContainer, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_all(mainContainer, 10, 0);
+    lv_obj_set_style_pad_gap(mainContainer, 10, 0);
+
+    // ===== Header Section =====
+    lv_obj_t *headerContainer = lv_obj_create(mainContainer);
+    lv_obj_set_size(headerContainer, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_set_style_pad_all(headerContainer, 10, 0);
+    lv_obj_set_style_bg_color(headerContainer, lv_color_hex(0x667eea), 0);
+
+    // Title
+    lv_obj_t *titleLabel = lv_label_create(headerContainer);
+    lv_label_set_text(titleLabel, "📁 LabBuddy File Manager");
+    lv_obj_set_style_text_font(titleLabel, &lv_font_montserrat_20, 0);
+    lv_obj_set_style_text_color(titleLabel, lv_color_white(), 0);
+    lv_obj_align(titleLabel, LV_ALIGN_TOP_LEFT, 0, 0);
+
+    // IP Label
+    m_labelIP = lv_label_create(headerContainer);
+    lv_label_set_text(m_labelIP, "IP: Connecting...");
+    lv_obj_set_style_text_font(m_labelIP, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(m_labelIP, lv_color_white(), 0);
+    lv_obj_align(m_labelIP, LV_ALIGN_TOP_LEFT, 0, 30);
+
+    // Status Label
+    m_labelStatus = lv_label_create(headerContainer);
+    lv_label_set_text(m_labelStatus, "Status: Ready");
+    lv_obj_set_style_text_font(m_labelStatus, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(m_labelStatus, lv_color_white(), 0);
+    lv_obj_align(m_labelStatus, LV_ALIGN_TOP_LEFT, 0, 50);
+
+    // ===== Control Buttons =====
+    lv_obj_t *btnContainer = lv_obj_create(mainContainer);
+    lv_obj_set_size(btnContainer, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(btnContainer, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(btnContainer, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_all(btnContainer, 5, 0);
+
+    // Refresh Button
+    m_btnRefresh = lv_button_create(btnContainer);
+    lv_obj_set_size(m_btnRefresh, 120, 50);
+    lv_obj_add_event_cb(m_btnRefresh, btnRefreshClicked, LV_EVENT_CLICKED, this);
+    lv_obj_t *labelRefresh = lv_label_create(m_btnRefresh);
+    lv_label_set_text(labelRefresh, "🔄 Refresh");
+    lv_obj_center(labelRefresh);
+
+    // Render Button
+    m_btnRender = lv_button_create(btnContainer);
+    lv_obj_set_size(m_btnRender, 120, 50);
+    lv_obj_add_event_cb(m_btnRender, btnRenderClicked, LV_EVENT_CLICKED, this);
+    lv_obj_set_style_bg_color(m_btnRender, lv_color_hex(0x4CAF50), 0);
+    lv_obj_t *labelRender = lv_label_create(m_btnRender);
+    lv_label_set_text(labelRender, "▶ Render");
+    lv_obj_center(labelRender);
+
+    // Clear Button
+    m_btnClear = lv_button_create(btnContainer);
+    lv_obj_set_size(m_btnClear, 120, 50);
+    lv_obj_add_event_cb(m_btnClear, btnClearClicked, LV_EVENT_CLICKED, this);
+    lv_obj_set_style_bg_color(m_btnClear, lv_color_hex(0xf44336), 0);
+    lv_obj_t *labelClear = lv_label_create(m_btnClear);
+    lv_label_set_text(labelClear, "🗑 Clear");
+    lv_obj_center(labelClear);
+
+    // ===== File List =====
+    lv_obj_t *listContainer = lv_obj_create(mainContainer);
+    lv_obj_set_size(listContainer, LV_PCT(100), 150);
+
+    m_fileList = lv_list_create(listContainer);
+    lv_obj_set_size(m_fileList, LV_PCT(100), LV_PCT(100));
+    lv_obj_center(m_fileList);
+
+    // ===== Canvas Container =====
+    m_canvasContainer = lv_obj_create(mainContainer);
+    lv_obj_set_size(m_canvasContainer, LV_PCT(100), LV_PCT(100));
+    lv_obj_set_style_bg_color(m_canvasContainer, lv_color_hex(0xf0f0f0), 0);
+
+    // Initial file scan
+    refreshFileList();
+
+    ESP_LOGI(TAG, "FileViewerUI created");
+}
+
+// Update IP address
+void FileViewerUI::updateIP(const char *ip)
+{
+    if (m_labelIP)
+    {
+        lv_label_set_text_fmt(m_labelIP, "IP: %s", ip);
+        ESP_LOGI(TAG, "IP updated: %s", ip);
+    }
+}
+
+// Scan files from SD card
+void FileViewerUI::scanFiles()
+{
+    m_files.clear();
+
+    DIR *dir = opendir(UPLOAD_DIR);
+    if (!dir)
+    {
+        ESP_LOGE(TAG, "Failed to open directory: %s", UPLOAD_DIR);
+        return;
+    }
+
+    struct dirent *entry;
+    struct stat st;
+
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (entry->d_type == DT_REG)
+        {
+            char filepath[512];
+            snprintf(filepath, sizeof(filepath), "%s/%s", UPLOAD_DIR, entry->d_name);
+
+            if (stat(filepath, &st) == 0)
+            {
+                FileItem item;
+                item.name = entry->d_name;
+                item.size = st.st_size;
+                item.selected = false;
+                m_files.push_back(item);
+            }
+        }
+    }
+
+    closedir(dir);
+
+    // Sort by name
+    std::sort(m_files.begin(), m_files.end(),
+              [](const FileItem &a, const FileItem &b)
+              {
+                  return a.name < b.name;
+              });
+
+    ESP_LOGI(TAG, "Found %d files", m_files.size());
+}
+
+// Update file list UI
+void FileViewerUI::updateFileListUI()
+{
+    if (!m_fileList)
+        return;
+
+    // Clear list
+    lv_obj_clean(m_fileList);
+
+    if (m_files.empty())
+    {
+        lv_obj_t *item = lv_list_add_button(m_fileList, LV_SYMBOL_WARNING, "No files found");
+        lv_obj_add_flag(item, LV_OBJ_FLAG_CLICKABLE);
+        return;
+    }
+
+    // Add files to list
+    for (size_t i = 0; i < m_files.size(); i++)
+    {
+        const FileItem &file = m_files[i];
+
+        char label[256];
+        snprintf(label, sizeof(label), "%s (%.1f KB)",
+                 file.name.c_str(), file.size / 1024.0f);
+
+        lv_obj_t *btn = lv_list_add_button(m_fileList, LV_SYMBOL_FILE, label);
+        lv_obj_add_event_cb(btn, fileItemClicked, LV_EVENT_CLICKED, this);
+        lv_obj_set_user_data(btn, (void *)i); // Store index
+
+        // Highlight selected
+        if ((int)i == m_selectedIndex)
+        {
+            lv_obj_set_style_bg_color(btn, lv_color_hex(0xc8e6c9), 0);
+        }
+    }
+}
+
+// Refresh file list
+void FileViewerUI::refreshFileList()
+{
+    ESP_LOGI(TAG, "Refreshing file list...");
+
+    if (m_labelStatus)
+    {
+        lv_label_set_text(m_labelStatus, "Status: Scanning files...");
+    }
+
+    scanFiles();
+    updateFileListUI();
+
+    if (m_labelStatus)
+    {
+        lv_label_set_text_fmt(m_labelStatus, "Status: %d file(s) found", m_files.size());
+    }
+
+    ESP_LOGI(TAG, "File list refreshed");
+}
+
+// Get selected file path
+std::string FileViewerUI::getSelectedFilePath()
+{
+    if (m_selectedIndex < 0 || m_selectedIndex >= (int)m_files.size())
+    {
+        return "";
+    }
+
+    char filepath[512];
+    snprintf(filepath, sizeof(filepath), "%s/%s",
+             UPLOAD_DIR, m_files[m_selectedIndex].name.c_str());
+
+    return filepath;
+}
+
+// Render selected file
+void FileViewerUI::renderSelected()
+{
+    if (m_selectedIndex < 0)
+    {
+        ESP_LOGW(TAG, "No file selected");
+        if (m_labelStatus)
+        {
+            lv_label_set_text(m_labelStatus, "Status: No file selected");
+        }
+        return;
+    }
+
+    std::string filepath = getSelectedFilePath();
+    ESP_LOGI(TAG, "Rendering: %s", filepath.c_str());
+
+    if (m_labelStatus)
+    {
+        lv_label_set_text_fmt(m_labelStatus, "Rendering: %s", m_files[m_selectedIndex].name.c_str());
+    }
+
+    // Clear previous canvas
+    clearCanvas();
+
+    // Create canvas if needed
+    if (!m_canvas)
+    {
+        // Canvas dimensions
+        const uint16_t CANVAS_WIDTH = 800;
+        const uint16_t CANVAS_HEIGHT = 480;
+
+        // Allocate buffer for canvas (RGB565)
+        size_t bufferSize = CANVAS_WIDTH * CANVAS_HEIGHT * sizeof(uint16_t);
+        m_canvasBuffer = malloc(bufferSize);
+
+        if (!m_canvasBuffer)
+        {
+            ESP_LOGE(TAG, "Failed to allocate canvas buffer");
+            if (m_labelStatus)
+            {
+                lv_label_set_text(m_labelStatus, "Error: Out of memory");
+            }
+            return;
+        }
+
+        // Create canvas
+        m_canvas = new LVCanvas(
+            m_canvasContainer,
+            CANVAS_WIDTH,
+            CANVAS_HEIGHT,
+            LV_COLOR_FORMAT_RGB565,
+            m_canvasBuffer);
+
+        // Center canvas in container
+        lv_obj_align(m_canvas->obj(), LV_ALIGN_CENTER, 0, 0);
+
+        // Fill with white background
+        m_canvas->fill(LVColor::White);
+    }
+
+    // Create renderer if needed
+    if (!m_renderer)
+    {
+        m_renderer = std::make_unique<JsonRenderer::JsonRenderer>(m_canvas);
+    }
+
+    // Render JSON
+    if (m_renderer->loadAndRender(filepath.c_str()))
+    {
+        ESP_LOGI(TAG, "Render successful");
+        if (m_labelStatus)
+        {
+            lv_label_set_text(m_labelStatus, "Status: Render complete ✓");
+        }
+    }
+    else
+    {
+        ESP_LOGE(TAG, "Render failed: %s", m_renderer->getLastError());
+        if (m_labelStatus)
+        {
+            lv_label_set_text_fmt(m_labelStatus, "Error: %s", m_renderer->getLastError());
+        }
+    }
+}
+
+// Clear canvas
+void FileViewerUI::clearCanvas()
+{
+    if (m_renderer)
+    {
+        m_renderer->clear();
+    }
+
+    if (m_canvas)
+    {
+        m_canvas->fill(LVColor::White);
+    }
+
+    ESP_LOGI(TAG, "Canvas cleared");
+}
+
+// ===== Event Handlers =====
+
+void FileViewerUI::btnRefreshClicked(lv_event_t *e)
+{
+    FileViewerUI *ui = static_cast<FileViewerUI *>(lv_event_get_user_data(e));
+    ui->refreshFileList();
+}
+
+void FileViewerUI::btnRenderClicked(lv_event_t *e)
+{
+    FileViewerUI *ui = static_cast<FileViewerUI *>(lv_event_get_user_data(e));
+    ui->renderSelected();
+}
+
+void FileViewerUI::btnClearClicked(lv_event_t *e)
+{
+    FileViewerUI *ui = static_cast<FileViewerUI *>(lv_event_get_user_data(e));
+    ui->clearCanvas();
+
+    if (ui->m_labelStatus)
+    {
+        lv_label_set_text(ui->m_labelStatus, "Status: Canvas cleared");
+    }
+}
+
+void FileViewerUI::fileItemClicked(lv_event_t *e)
+{
+    FileViewerUI *ui = static_cast<FileViewerUI *>(lv_event_get_user_data(e));
+    lv_obj_t *btn = static_cast<lv_obj_t *>(lv_event_get_target(e));
+
+    if (!ui || !btn)
+        return;
+
+    size_t index = (size_t)lv_obj_get_user_data(btn);
+
+    // Update selection
+    ui->m_selectedIndex = index;
+    ui->updateFileListUI(); // Refresh to show selection
+
+    ESP_LOGI(TAG, "File selected: %s", ui->m_files[index].name.c_str());
+
+    if (ui->m_labelStatus)
+    {
+        lv_label_set_text_fmt(ui->m_labelStatus, "Selected: %s", ui->m_files[index].name.c_str());
+    }
+}
