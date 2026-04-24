@@ -371,6 +371,11 @@ void MenuDemoApplication::registerAllDemos()
 
     // Register basic widget demos
     m_demoManager->registerDemo(
+        "JSON Circuit Viewer",
+        "Load and render circuit from JSON file (embeddedSymbols v1.1)",
+        create_labhappy_json_wrapper);
+
+    m_demoManager->registerDemo(
         "Widget Gallery",
         "Browse LVGL widgets (Slider, Switch, Button, Checkbox)",
         create_widget_gallery);
@@ -404,11 +409,6 @@ void MenuDemoApplication::registerAllDemos()
         "SVG Path Renderer",
         "LabHappy SVG symbol rendering (XOR/AND gates)",
         create_labhappy_svg_wrapper);
-
-    m_demoManager->registerDemo(
-        "JSON Circuit Viewer",
-        "Load and render circuit from JSON file (embeddedSymbols v1.1)",
-        create_labhappy_json_wrapper);
 
     ESP_LOGI(TAG, "✓ Registered %d demos", m_demoManager->getDemoCount());
 }

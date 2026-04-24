@@ -111,10 +111,22 @@ namespace JsonRenderer
             ESP_LOGI(TAG, "  Rendering widget: %s at (%.0f, %.0f)",
                      widget.symbolId.c_str(), widget.x, widget.y);
 
-            // Apply auto-scaling
-            int32_t scaledX = (int32_t)(widget.x * m_scaleX + m_offsetX);
-            int32_t scaledY = (int32_t)(widget.y * m_scaleY + m_offsetY);
-            float scaledScale = widget.scale * m_scaleX; // Uniform scale
+            // Different offset handling for positioned widgets vs path widgets
+            // Path widgets (x=0, y=0) use absolute SVG coordinates → normal offset
+            // Gate widgets (x>0) are in design space → adjusted offset for centering
+            bool isPathWidget = (widget.x == 0 && widget.y == 0);
+            float offsetMultiplierX = isPathWidget ? 1.0f : 1.9f;
+
+            // Vertical offset varies by Y position (proportional adjustment)
+            // XOR (y=50) needs +33, so scale factor = 33/50 = 0.66
+            // This makes AND (y=174) get +115px which spreads them properly
+            float constantOffsetY = isPathWidget ? 0.0f : (widget.y * 0.66f);
+
+            int32_t scaledX = (int32_t)(widget.x * m_scaleX + m_offsetX * offsetMultiplierX);
+            int32_t scaledY = (int32_t)(widget.y * m_scaleY + constantOffsetY);
+
+            ESP_LOGI(TAG, "    Scaled pos: (%d, %d), offset×%.1f+%.0f, raw_y=%.0f",
+                     scaledX, scaledY, offsetMultiplierX, constantOffsetY, widget.y);
 
             m_svgRenderer->renderSymbol(
                 symbol,
@@ -122,7 +134,7 @@ namespace JsonRenderer
                 scaledY,
                 strokeColor,
                 (int32_t)widget.strokeWidth,
-                scaledScale,
+                m_scaleX, // Only canvas scale (symbol.scale is already set)
                 widget.rotation);
         }
     }

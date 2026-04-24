@@ -14,7 +14,7 @@ public:
     LVCanvas(lv_obj_t *parent, uint16_t width, uint16_t height, lv_color_format_t fmt, void *buffer);
 
     lv_obj_t *obj() const { return m_canvas; }
-    
+
     uint16_t width() const { return m_width; }
     uint16_t height() const { return m_height; }
 
