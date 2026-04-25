@@ -3,6 +3,7 @@
 #include "esp_err.h"
 #include "esp_http_server.h"
 #include "SystemManager.h"
+#include "FileViewerUI.h"
 
 /**
  * @brief FileManagerApplication - Web-based file manager
@@ -97,10 +98,12 @@ private:
     static esp_err_t list_handler(httpd_req_t *req);
     static esp_err_t download_handler(httpd_req_t *req);
     static esp_err_t delete_handler(httpd_req_t *req);
+    static esp_err_t view_handler(httpd_req_t *req);
 
     SystemManager *m_sysMgr;
     WiFiConfig m_wifi_config;
     httpd_handle_t m_server;
+    FileViewerUI *m_viewer;
 
     bool m_initialized;
     bool m_wifi_connected;

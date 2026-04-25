@@ -48,6 +48,23 @@ public:
     void renderSelected();
 
     /**
+     * @brief Render file by name
+     * @param filename File name to render (e.g., "HALF_ADDER_CIRCUIT.JSON")
+     * @return true if render succeeded
+     */
+    bool renderFile(const char *filename);
+
+    /**
+     * @brief Get debug info from last render (JSON string)
+     */
+    std::string getLastDebugInfo() const;
+
+    /**
+     * @brief Enable/disable debug overlay on LCD
+     */
+    void setDebugMode(bool enable);
+
+    /**
      * @brief Clear canvas
      */
     void clearCanvas();

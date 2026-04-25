@@ -337,6 +337,115 @@ void FileViewerUI::renderSelected()
     }
 }
 
+// Render file by name (called from web interface)
+bool FileViewerUI::renderFile(const char *filename)
+{
+    if (!filename || strlen(filename) == 0)
+    {
+        ESP_LOGW(TAG, "Empty filename");
+        return false;
+    }
+
+    char filepath[256];
+    snprintf(filepath, sizeof(filepath), "%s/%s", UPLOAD_DIR, filename);
+
+    ESP_LOGI(TAG, "Rendering file: %s", filepath);
+
+    // CRITICAL: Acquire LVGL lock for thread-safe UI operations
+    lv_lock();
+
+    // Create UI if not initialized
+    if (!m_parent)
+    {
+        ESP_LOGI(TAG, "Creating FileViewerUI from LVGL task context...");
+        create(lv_screen_active());
+        if (!m_parent)
+        {
+            ESP_LOGE(TAG, "Failed to create FileViewerUI");
+            lv_unlock();
+            return false;
+        }
+    }
+
+    // Clear previous canvas
+    clearCanvas();
+
+    // Create canvas if needed
+    if (!m_canvas)
+    {
+        const uint16_t CANVAS_WIDTH = 800;
+        const uint16_t CANVAS_HEIGHT = 480;
+
+        size_t bufferSize = CANVAS_WIDTH * CANVAS_HEIGHT * sizeof(uint16_t);
+        m_canvasBuffer = malloc(bufferSize);
+
+        if (!m_canvasBuffer)
+        {
+            ESP_LOGE(TAG, "Failed to allocate canvas buffer");
+            return false;
+        }
+
+        m_canvas = new LVCanvas(
+            m_canvasContainer,
+            CANVAS_WIDTH,
+            CANVAS_HEIGHT,
+            LV_COLOR_FORMAT_RGB565,
+            m_canvasBuffer);
+
+        lv_obj_align(m_canvas->obj(), LV_ALIGN_CENTER, 0, 0);
+        m_canvas->fill(LVColor::White);
+    }
+
+    // Create renderer if needed
+    if (!m_renderer)
+    {
+        m_renderer = std::make_unique<JsonRenderer::JsonRenderer>(m_canvas);
+    }
+
+    // Render JSON
+    bool success = false;
+    if (m_renderer->loadAndRender(filepath))
+    {
+        ESP_LOGI(TAG, "Render successful: %s", filename);
+        if (m_labelStatus)
+        {
+            lv_label_set_text_fmt(m_labelStatus, "Rendered: %s ✓", filename);
+        }
+        success = true;
+    }
+    else
+    {
+        ESP_LOGE(TAG, "Render failed: %s - %s", filename, m_renderer->getLastError());
+        if (m_labelStatus)
+        {
+            lv_label_set_text_fmt(m_labelStatus, "Error: %s", m_renderer->getLastError());
+        }
+        success = false;
+    }
+
+    // CRITICAL: Release LVGL lock
+    lv_unlock();
+
+    return success;
+}
+
+std::string FileViewerUI::getLastDebugInfo() const
+{
+    if (m_renderer)
+    {
+        return m_renderer->getDebugInfo();
+    }
+    return "{}";
+}
+
+void FileViewerUI::setDebugMode(bool enable)
+{
+    if (m_renderer)
+    {
+        m_renderer->setDebugMode(enable);
+    }
+}
+
 // Clear canvas
 void FileViewerUI::clearCanvas()
 {

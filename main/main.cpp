@@ -1,16 +1,14 @@
 /**
  * @file main.cpp
- * @brief Entry point for ESP32-P4 HMI applications
- * 
- * This is a refactored main file that demonstrates clean separation between:
- * - System initialization (SystemManager)
- * - Application logic (MenuDemoApplication)
- * - Entry point (app_main)
- * 
- * This architecture makes it easy to create new projects by:
- * 1. Reusing SystemManager for system setup
- * 2. Creating a new Application class for your specific app
- * 3. Keeping main.cpp minimal and clean
+ * @brief Entry point for FileManager Application
+ *
+ * This application provides:
+ * - WiFi connectivity via ESP32-C6 coprocessor (ESP-HOSTED)
+ * - Web-based file upload interface (HTTP server)
+ * - File browser with LVGL UI
+ * - SVG/JSON renderer for uploaded files
+ *
+ * Workflow: SVG design → JSON convert → Web upload → Select & render → Test
  */
 
 #include "esp_log.h"
@@ -19,62 +17,66 @@
 
 // System & Application managers
 #include "SystemManager.h"
-#include "MenuDemoApplication.h"
+#include "FileManagerApplication.h"
 
-static const char* TAG = "main";
+static const char *TAG = "main";
 
 /**
  * @brief Main application entry point
- * 
- * This demonstrates clean architecture with:
- * 1. SystemManager - handles all system-level initialization
- * 2. MenuDemoApplication - handles menu demo gallery
- * 3. Minimal main code - just orchestration
+ *
+ * Architecture:
+ * 1. SystemManager - handles system-level initialization (minimal for WiFi)
+ * 2. FileManagerApplication - handles WiFi + HTTP server + file browsing
  */
 extern "C" void app_main(void)
 {
     ESP_LOGI(TAG, "===========================================");
-    ESP_LOGI(TAG, "  ESP32-P4 Demo Gallery");
-    ESP_LOGI(TAG, "  Clean OOP Architecture");
+    ESP_LOGI(TAG, "  LabBuddy File Manager");
+    ESP_LOGI(TAG, "  WiFi + Web Upload + Renderer");
     ESP_LOGI(TAG, "===========================================");
 
-    // Step 1: Initialize system (display, touch, SD card)
-    SystemManager& sysMgr = SystemManager::getInstance();
-    
+    // Step 1: Initialize system (display, SD card required)
+    SystemManager &sysMgr = SystemManager::getInstance();
+
     ESP_LOGI(TAG, "Initializing display system...");
-    if (sysMgr.initDisplay() != ESP_OK) {
+    if (sysMgr.initDisplay() != ESP_OK)
+    {
         ESP_LOGE(TAG, "Failed to initialize display");
         return;
     }
 
-    // SD card is optional for menu demo
-    ESP_LOGI(TAG, "Mounting SD card (optional)...");
-    if (sysMgr.mountSDCard() == ESP_OK) {
-        sysMgr.listSDCardContents("/sdcard");
-    } else {
-        ESP_LOGW(TAG, "SD card not available - some demos may not work");
-    }
-
-    // Step 2: Initialize application
-    MenuDemoApplication& app = MenuDemoApplication::getInstance();
-    
-    ESP_LOGI(TAG, "Initializing Menu Demo Application...");
-    if (app.init(sysMgr) != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize application");
+    ESP_LOGI(TAG, "Mounting SD card (required for file manager)...");
+    if (sysMgr.mountSDCard() != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to mount SD card - cannot continue");
         return;
     }
 
-    // Step 3: Start application
-    ESP_LOGI(TAG, "Starting Menu Demo Application...");
-    if (app.start() != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to start application");
+    // Step 2: Create and start FileManager application (Singleton)
+    ESP_LOGI(TAG, "Starting FileManager application...");
+    FileManagerApplication &app = FileManagerApplication::getInstance();
+
+    if (app.init(sysMgr) != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to initialize FileManager");
         return;
     }
 
-    ESP_LOGI(TAG, "===========================================");
-    ESP_LOGI(TAG, "  Demo Gallery Ready!");
-    ESP_LOGI(TAG, "===========================================");
+    ESP_LOGI(TAG, "FileManager initialized successfully");
+    ESP_LOGI(TAG, "Starting WiFi and HTTP server...");
+
+    if (app.start() != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to start FileManager");
+        return;
+    }
+
+    // Application runs forever (WiFi + LVGL event loop)
+    ESP_LOGI(TAG, "FileManager is running");
+
+    // Keep main task alive
+    while (true)
+    {
+        vTaskDelay(pdMS_TO_TICKS(10000));
+    }
 }
-
-// No C wrapper functions needed for MenuDemoApplication
-// (Menu demo doesn't interface with C components)

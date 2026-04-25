@@ -24,6 +24,7 @@ static const char *index_html = R"HTML(
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>LabBuddy File Manager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
@@ -125,8 +126,8 @@ static const char *index_html = R"HTML(
             cursor: pointer;
             transition: all 0.2s;
         }
-        .btn-download { background: #4CAF50; color: white; }
-        .btn-download:hover { background: #45a049; }
+        .btn-view { background: #4CAF50; color: white; }
+        .btn-view:hover { background: #45a049; }
         .btn-delete { background: #f44336; color: white; }
         .btn-delete:hover { background: #da190b; }
         .status { 
@@ -231,7 +232,7 @@ static const char *index_html = R"HTML(
                                 </div>
                             </div>
                             <div class="file-actions">
-                                <button class="btn-small btn-download" onclick="downloadFile('${file.name}')">⬇️</button>
+                                <button class="btn-small btn-view" onclick="viewFile('${file.name}')">📥</button>
                                 <button class="btn-small btn-delete" onclick="deleteFile('${file.name}')">🗑️</button>
                             </div>
                         </div>
@@ -243,6 +244,21 @@ static const char *index_html = R"HTML(
                 }
             } catch (error) {
                 fileList.innerHTML = '<div style="text-align: center; color: #f44336; padding: 20px;">Error loading files</div>';
+            }
+        }
+
+        async function viewFile(filename) {
+            try {
+                const response = await fetch(`/view?file=${encodeURIComponent(filename)}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                } else {
+                    showMessage(result.message || 'Render failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to render file', 'error');
             }
         }
 
@@ -283,7 +299,7 @@ FileManagerApplication &FileManagerApplication::getInstance()
 
 // Constructor
 FileManagerApplication::FileManagerApplication()
-    : m_sysMgr(nullptr), m_server(nullptr), m_initialized(false), m_wifi_connected(false), m_retry_count(0)
+    : m_sysMgr(nullptr), m_server(nullptr), m_viewer(nullptr), m_initialized(false), m_wifi_connected(false), m_retry_count(0)
 {
     memset(m_ip_address, 0, sizeof(m_ip_address));
 }
@@ -292,13 +308,18 @@ FileManagerApplication::FileManagerApplication()
 FileManagerApplication::~FileManagerApplication()
 {
     stop();
+    if (m_viewer)
+    {
+        delete m_viewer;
+        m_viewer = nullptr;
+    }
 }
 
 // Get default WiFi config
 FileManagerApplication::WiFiConfig FileManagerApplication::getDefaultWiFiConfig()
 {
     return WiFiConfig{
-        .ssid = "aesfiber",
+        .ssid = "AESFIBER",
         .password = "29052552",
         .max_retry = 5,
         .connect_timeout_ms = 10000};
@@ -352,6 +373,16 @@ esp_err_t FileManagerApplication::init(SystemManager &sysMgr, const WiFiConfig *
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+
+    // Create FileViewerUI (UI will be created lazily on first render)
+    ESP_LOGI(TAG, "Creating FileViewerUI...");
+    m_viewer = new FileViewerUI();
+    if (!m_viewer)
+    {
+        ESP_LOGE(TAG, "Failed to allocate FileViewerUI");
+        return ESP_FAIL;
+    }
+    ESP_LOGI(TAG, "FileViewerUI allocated (UI creation deferred to LVGL task)");
 
     m_initialized = true;
     ESP_LOGI(TAG, "FileManager initialized");
@@ -683,6 +714,69 @@ esp_err_t FileManagerApplication::download_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+// HTTP Handler: View/Render file on LCD
+esp_err_t FileManagerApplication::view_handler(httpd_req_t *req)
+{
+    // Get filename from query string: /view?file=FILENAME.JSON
+    char query[128];
+    if (httpd_req_get_url_query_str(req, query, sizeof(query)) != ESP_OK)
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing file parameter");
+        return ESP_FAIL;
+    }
+
+    char filename[128];
+    if (httpd_query_key_value(query, "file", filename, sizeof(filename)) != ESP_OK)
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid file parameter");
+        return ESP_FAIL;
+    }
+
+    ESP_LOGI(TAG, "View request for: %s", filename);
+
+    // Get FileManagerApplication instance
+    FileManagerApplication &app = FileManagerApplication::getInstance();
+
+    if (!app.m_viewer)
+    {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Viewer not initialized");
+        return ESP_FAIL;
+    }
+
+    // Render file on LCD
+    bool success = app.m_viewer->renderFile(filename);
+
+    // Get debug info from renderer
+    std::string debugInfo = app.m_viewer->getLastDebugInfo();
+
+    // Send JSON response (include debug info)
+    httpd_resp_set_type(req, "application/json");
+    if (success)
+    {
+        // Build response with debug info
+        std::string resp = "{\"success\":true,\"message\":\"Rendered: ";
+        resp += filename;
+        resp += "\",\"debug\":";
+        resp += debugInfo.empty() ? "null" : debugInfo;
+        resp += "}";
+        httpd_resp_sendstr(req, resp.c_str());
+        ESP_LOGI(TAG, "File rendered: %s", filename);
+        return ESP_OK;
+    }
+    else
+    {
+        std::string resp = "{\"success\":false,\"message\":\"Render failed: ";
+        resp += filename;
+        resp += "\",\"debug\":";
+        resp += debugInfo.empty() ? "null" : debugInfo;
+        resp += "}";
+        httpd_resp_set_status(req, "500 Internal Server Error");
+        httpd_resp_sendstr(req, resp.c_str());
+        ESP_LOGE(TAG, "Render failed: %s", filename);
+        return ESP_FAIL;
+    }
+}
+
 // HTTP Handler: Delete file
 esp_err_t FileManagerApplication::delete_handler(httpd_req_t *req)
 {
@@ -747,6 +841,13 @@ void FileManagerApplication::registerHTTPHandlers()
         .handler = delete_handler,
         .user_ctx = NULL};
     httpd_register_uri_handler(m_server, &delete_uri);
+
+    httpd_uri_t view_uri = {
+        .uri = "/view",
+        .method = HTTP_GET,
+        .handler = view_handler,
+        .user_ctx = NULL};
+    httpd_register_uri_handler(m_server, &view_uri);
 }
 
 // Start HTTP server
@@ -755,6 +856,7 @@ esp_err_t FileManagerApplication::startHTTPServer()
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.lru_purge_enable = true;
     config.max_uri_handlers = 8;
+    config.stack_size = 16384; // Increased from default 4096 to handle large debug responses
 
     ESP_LOGI(TAG, "Starting HTTP server on port %d", config.server_port);
 

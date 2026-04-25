@@ -78,6 +78,17 @@ namespace JsonRenderer
     {
         ESP_LOGI(TAG, "Rendering %d widgets...", screen.widgets.size());
 
+        // Build debug header with integer-only values (avoid float->string stack overflow)
+        char dbuf[512];
+        snprintf(dbuf, sizeof(dbuf),
+                 "{\"cw\":%d,\"ch\":%d,\"sw\":%d,\"sh\":%d,\"scaleX_pct\":%d,\"scaleY_pct\":%d,\"ox\":%d,\"oy\":%d,\"widgets\":[",
+                 (int)m_canvas->width(), (int)m_canvas->height(),
+                 (int)screen.width, (int)screen.height,
+                 (int)(m_scaleX * 1000), (int)(m_scaleY * 1000),
+                 (int)m_offsetX, (int)m_offsetY);
+        m_debugInfo = dbuf;
+        bool firstWidget = true;
+
         for (const auto &widget : screen.widgets)
         {
             if (widget.type != "svgSymbol")
@@ -86,7 +97,6 @@ namespace JsonRenderer
                 continue;
             }
 
-            // Find symbol in embedded symbols
             auto it = screen.embeddedSymbols.find(widget.symbolId);
             if (it == screen.embeddedSymbols.end())
             {
@@ -96,7 +106,6 @@ namespace JsonRenderer
 
             const SymbolDef &symbolDef = it->second;
 
-            // Create SvgSymbol for rendering
             SvgRenderer::SvgSymbol symbol;
             symbol.id = symbolDef.id.c_str();
             symbol.pathData = symbolDef.pathData.c_str();
@@ -104,39 +113,52 @@ namespace JsonRenderer
             symbol.scale = widget.scale;
             symbol.rotation = widget.rotation;
 
-            // Parse colors
             SvgRenderer::Color strokeColor = parseColor(widget.strokeColor);
 
-            // Render symbol
-            ESP_LOGI(TAG, "  Rendering widget: %s at (%.0f, %.0f)",
-                     widget.symbolId.c_str(), widget.x, widget.y);
+            // WPF applies position twice: Canvas.SetLeft(widget.X) + TranslateTransform(widget.X,widget.Y)
+            // So effective WPF position = 2*widget.X + SVG_point*scale
+            int32_t scaledX = (int32_t)(2.0f * widget.x * m_scaleX + m_offsetX);
+            int32_t scaledY = (int32_t)(2.0f * widget.y * m_scaleY + m_offsetY);
+            int32_t finalScalePct = (int32_t)(widget.scale * m_scaleX * 1000);
 
-            // Different offset handling for positioned widgets vs path widgets
-            // Path widgets (x=0, y=0) use absolute SVG coordinates → normal offset
-            // Gate widgets (x>0) are in design space → adjusted offset for centering
-            bool isPathWidget = (widget.x == 0 && widget.y == 0);
-            float offsetMultiplierX = isPathWidget ? 1.0f : 1.9f;
+            // Verbose debug log (integers only - no float formatting)
+            ESP_LOGE(TAG, "WIDGET[%s]: json=(%d,%d) scale_x1000=%d -> canvas=(%d,%d) finalScale_x1000=%d",
+                     widget.symbolId.c_str(),
+                     (int)widget.x, (int)widget.y, (int)(widget.scale * 1000),
+                     scaledX, scaledY, finalScalePct);
 
-            // Vertical offset varies by Y position (proportional adjustment)
-            // XOR (y=50) needs +33, so scale factor = 33/50 = 0.66
-            // This makes AND (y=174) get +115px which spreads them properly
-            float constantOffsetY = isPathWidget ? 0.0f : (widget.y * 0.66f);
-
-            int32_t scaledX = (int32_t)(widget.x * m_scaleX + m_offsetX * offsetMultiplierX);
-            int32_t scaledY = (int32_t)(widget.y * m_scaleY + constantOffsetY);
-
-            ESP_LOGI(TAG, "    Scaled pos: (%d, %d), offset×%.1f+%.0f, raw_y=%.0f",
-                     scaledX, scaledY, offsetMultiplierX, constantOffsetY, widget.y);
+            // Accumulate debug JSON (integers only)
+            char wbuf[128];
+            snprintf(wbuf, sizeof(wbuf),
+                     "%s{\"id\":\"%s\",\"jx\":%d,\"jy\":%d,\"cx\":%d,\"cy\":%d,\"fs\":%d}",
+                     firstWidget ? "" : ",",
+                     widget.symbolId.c_str(),
+                     (int)widget.x, (int)widget.y,
+                     scaledX, scaledY, finalScalePct);
+            m_debugInfo += wbuf;
+            firstWidget = false;
 
             m_svgRenderer->renderSymbol(
-                symbol,
-                scaledX,
-                scaledY,
-                strokeColor,
-                (int32_t)widget.strokeWidth,
-                m_scaleX, // Only canvas scale (symbol.scale is already set)
-                widget.rotation);
+                symbol, scaledX, scaledY,
+                strokeColor, (int32_t)widget.strokeWidth,
+                m_scaleX, widget.rotation);
+
+            if (m_debugMode)
+            {
+                drawDebugMarker(scaledX, scaledY, widget.symbolId.c_str());
+            }
         }
+        m_debugInfo += "]}";
+        ESP_LOGI(TAG, "Debug: %s", m_debugInfo.c_str());
+    }
+
+    void JsonRenderer::drawDebugMarker(int32_t x, int32_t y, const char *label)
+    {
+        // Red cross at anchor point
+        m_canvas->drawLine(x - 8, y, x + 8, y, LVColor(255, 0, 0), 2);
+        m_canvas->drawLine(x, y - 8, x, y + 8, LVColor(255, 0, 0), 2);
+        // Yellow dot center
+        m_canvas->drawCircle(x, y, 4, LVColor(255, 255, 0));
     }
 
     void JsonRenderer::renderWires(const Screen &screen)

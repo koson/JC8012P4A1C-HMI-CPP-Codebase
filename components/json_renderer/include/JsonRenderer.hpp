@@ -64,10 +64,21 @@ namespace JsonRenderer
          */
         const Screen *getScreen() const { return m_screen.get(); }
 
+        /**
+         * @brief Enable/disable debug overlay (draws dots at widget anchors)
+         */
+        void setDebugMode(bool enable) { m_debugMode = enable; }
+
+        /**
+         * @brief Get debug info string (last render coordinates)
+         */
+        const std::string &getDebugInfo() const { return m_debugInfo; }
+
     private:
         // Rendering methods
         void renderWidgets(const Screen &screen);
         void renderWires(const Screen &screen);
+        void drawDebugMarker(int32_t x, int32_t y, const char *label);
         void renderPorts(const Screen &screen);
         void renderJunctions(const Screen &screen);
 
@@ -86,6 +97,8 @@ namespace JsonRenderer
         float m_offsetX;
         float m_offsetY;
         std::string m_lastError;
+        bool m_debugMode = false;
+        std::string m_debugInfo;
     };
 
 } // namespace JsonRenderer
