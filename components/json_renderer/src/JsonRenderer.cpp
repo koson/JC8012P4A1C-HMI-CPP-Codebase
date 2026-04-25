@@ -57,6 +57,9 @@ namespace JsonRenderer
         SvgRenderer::Color bgColor = parseColor(screen.backgroundColor);
         m_canvas->fill(LVColor(bgColor.r, bgColor.g, bgColor.b));
 
+        // Batch all drawing into one layer flush for performance
+        m_canvas->beginBatch();
+
         // Render in order: wires -> junctions -> widgets -> ports
         // (wires should be behind everything)
 
@@ -64,6 +67,8 @@ namespace JsonRenderer
         renderJunctions(screen);
         renderWidgets(screen);
         renderPorts(screen);
+
+        m_canvas->endBatch();
 
         ESP_LOGI(TAG, "Rendering complete");
         return true;

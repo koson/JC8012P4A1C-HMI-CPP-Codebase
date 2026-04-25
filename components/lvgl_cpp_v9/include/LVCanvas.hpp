@@ -7,6 +7,9 @@
 /**
  * @brief Canvas wrapper for LVGL v9 (RGB565/ARGB8888/etc.).
  * Non-owning buffer (caller manages memory lifetime).
+ *
+ * Use beginBatch()/endBatch() to group all draw calls into a single
+ * lv_canvas_finish_layer flush instead of one flush per primitive.
  */
 class LVCanvas
 {
@@ -23,6 +26,11 @@ public:
     void fill(LVColor color, lv_opa_t opa = LV_OPA_COVER);
     void clear(LVColor color = LVColor::Black);
 
+    /** Open a shared layer – all draw calls until endBatch() reuse it. */
+    void beginBatch();
+    /** Flush the shared layer to the display once. */
+    void endBatch();
+
     void drawRect(int32_t x, int32_t y, int32_t w, int32_t h, LVColor color, lv_opa_t opa = LV_OPA_COVER, int32_t radius = 0);
     void drawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, LVColor color, int32_t width = 2, lv_opa_t opa = LV_OPA_COVER);
     void drawCircle(int32_t cx, int32_t cy, int32_t radius, LVColor color, bool filled = true, lv_opa_t opa = LV_OPA_COVER);
@@ -34,4 +42,12 @@ private:
     lv_obj_t *m_canvas;
     uint16_t m_width;
     uint16_t m_height;
+
+    bool m_batchMode = false;
+    lv_layer_t m_batchLayer;
+
+    /** Get active layer: batch layer if open, else init a temporary one. */
+    lv_layer_t *acquireLayer(lv_layer_t *tmp);
+    /** Finish the layer only when NOT in batch mode. */
+    void releaseLayer(lv_layer_t *tmp);
 };

@@ -32,12 +32,39 @@ void LVCanvas::clear(LVColor color)
     fill(color, LV_OPA_COVER);
 }
 
+void LVCanvas::beginBatch()
+{
+    if (!m_canvas || m_batchMode) return;
+    lv_canvas_init_layer(m_canvas, &m_batchLayer);
+    m_batchMode = true;
+}
+
+void LVCanvas::endBatch()
+{
+    if (!m_canvas || !m_batchMode) return;
+    m_batchMode = false;
+    lv_canvas_finish_layer(m_canvas, &m_batchLayer);
+}
+
+lv_layer_t *LVCanvas::acquireLayer(lv_layer_t *tmp)
+{
+    if (m_batchMode) return &m_batchLayer;
+    lv_canvas_init_layer(m_canvas, tmp);
+    return tmp;
+}
+
+void LVCanvas::releaseLayer(lv_layer_t *tmp)
+{
+    if (!m_batchMode)
+        lv_canvas_finish_layer(m_canvas, tmp);
+}
+
 void LVCanvas::drawRect(int32_t x, int32_t y, int32_t w, int32_t h, LVColor color, lv_opa_t opa, int32_t radius)
 {
     if (!m_canvas)
         return;
-    lv_layer_t layer;
-    lv_canvas_init_layer(m_canvas, &layer);
+    lv_layer_t tmp;
+    lv_layer_t *layer = acquireLayer(&tmp);
 
     lv_draw_rect_dsc_t dsc;
     lv_draw_rect_dsc_init(&dsc);
@@ -48,17 +75,17 @@ void LVCanvas::drawRect(int32_t x, int32_t y, int32_t w, int32_t h, LVColor colo
 
     lv_area_t area;
     lv_area_set(&area, x, y, x + w - 1, y + h - 1);
-    lv_draw_rect(&layer, &dsc, &area);
+    lv_draw_rect(layer, &dsc, &area);
 
-    lv_canvas_finish_layer(m_canvas, &layer);
+    releaseLayer(&tmp);
 }
 
 void LVCanvas::drawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, LVColor color, int32_t width, lv_opa_t opa)
 {
     if (!m_canvas)
         return;
-    lv_layer_t layer;
-    lv_canvas_init_layer(m_canvas, &layer);
+    lv_layer_t tmp;
+    lv_layer_t *layer = acquireLayer(&tmp);
 
     lv_draw_line_dsc_t dsc;
     lv_draw_line_dsc_init(&dsc);
@@ -70,9 +97,9 @@ void LVCanvas::drawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, LVColor 
     dsc.p2.x = x2;
     dsc.p2.y = y2;
 
-    lv_draw_line(&layer, &dsc);
+    lv_draw_line(layer, &dsc);
 
-    lv_canvas_finish_layer(m_canvas, &layer);
+    releaseLayer(&tmp);
 }
 
 void LVCanvas::drawCircle(int32_t cx, int32_t cy, int32_t radius, LVColor color, bool filled, lv_opa_t opa)
@@ -85,8 +112,8 @@ void LVCanvas::drawCircle(int32_t cx, int32_t cy, int32_t radius, LVColor color,
     int32_t x = cx - radius;
     int32_t y = cy - radius;
 
-    lv_layer_t layer;
-    lv_canvas_init_layer(m_canvas, &layer);
+    lv_layer_t tmp;
+    lv_layer_t *layer = acquireLayer(&tmp);
 
     lv_draw_rect_dsc_t dsc;
     lv_draw_rect_dsc_init(&dsc);
@@ -108,17 +135,17 @@ void LVCanvas::drawCircle(int32_t cx, int32_t cy, int32_t radius, LVColor color,
 
     lv_area_t area;
     lv_area_set(&area, x, y, x + diameter - 1, y + diameter - 1);
-    lv_draw_rect(&layer, &dsc, &area);
+    lv_draw_rect(layer, &dsc, &area);
 
-    lv_canvas_finish_layer(m_canvas, &layer);
+    releaseLayer(&tmp);
 }
 
 void LVCanvas::drawText(int32_t x, int32_t y, const char *text, LVColor color, int32_t max_width)
 {
     if (!m_canvas || !text)
         return;
-    lv_layer_t layer;
-    lv_canvas_init_layer(m_canvas, &layer);
+    lv_layer_t tmp;
+    lv_layer_t *layer = acquireLayer(&tmp);
 
     lv_draw_label_dsc_t dsc;
     lv_draw_label_dsc_init(&dsc);
@@ -128,9 +155,9 @@ void LVCanvas::drawText(int32_t x, int32_t y, const char *text, LVColor color, i
 
     lv_area_t area;
     lv_area_set(&area, x, y, x + w - 1, y + 40); // rough height allowance
-    lv_draw_label(&layer, &dsc, &area);
+    lv_draw_label(layer, &dsc, &area);
 
-    lv_canvas_finish_layer(m_canvas, &layer);
+    releaseLayer(&tmp);
 }
 
 void LVCanvas::setPalette(uint8_t idx, LVColor color)
