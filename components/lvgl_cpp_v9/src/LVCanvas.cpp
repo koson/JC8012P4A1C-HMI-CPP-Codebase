@@ -34,21 +34,24 @@ void LVCanvas::clear(LVColor color)
 
 void LVCanvas::beginBatch()
 {
-    if (!m_canvas || m_batchMode) return;
+    if (!m_canvas || m_batchMode)
+        return;
     lv_canvas_init_layer(m_canvas, &m_batchLayer);
     m_batchMode = true;
 }
 
 void LVCanvas::endBatch()
 {
-    if (!m_canvas || !m_batchMode) return;
+    if (!m_canvas || !m_batchMode)
+        return;
     m_batchMode = false;
     lv_canvas_finish_layer(m_canvas, &m_batchLayer);
 }
 
 lv_layer_t *LVCanvas::acquireLayer(lv_layer_t *tmp)
 {
-    if (m_batchMode) return &m_batchLayer;
+    if (m_batchMode)
+        return &m_batchLayer;
     lv_canvas_init_layer(m_canvas, tmp);
     return tmp;
 }
