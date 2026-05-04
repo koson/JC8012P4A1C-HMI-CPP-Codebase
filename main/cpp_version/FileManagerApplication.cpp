@@ -438,6 +438,14 @@ void FileManagerApplication::ip_event_handler(void *arg, esp_event_base_t event_
 
         app->m_wifi_connected = true;
         app->m_retry_count = 0;
+
+        // Update IP label on display
+        if (app->m_viewer)
+        {
+            lv_lock();
+            app->m_viewer->updateIP(app->m_ip_address);
+            lv_unlock();
+        }
     }
 }
 
@@ -921,6 +929,17 @@ esp_err_t FileManagerApplication::start()
     }
 
     ESP_LOGI(TAG, "FileManager application started");
+
+    // Show initial UI on display
+    if (m_viewer)
+    {
+        ESP_LOGI(TAG, "Creating display UI...");
+        lv_lock();
+        m_viewer->create(lv_screen_active());
+        lv_unlock();
+        ESP_LOGI(TAG, "Display UI created");
+    }
+
     return ESP_OK;
 }
 

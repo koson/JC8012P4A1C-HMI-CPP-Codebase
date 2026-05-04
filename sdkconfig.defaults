@@ -60,7 +60,11 @@ CONFIG_EXAMPLE_LVGL_PORT_AVOID_TEAR_MODE_3=y
 CONFIG_EXAMPLE_LVGL_PORT_AVOID_TEAR_MODE=3
 
 CONFIG_EXAMPLE_LVGL_PORT_ROTATION_90=y
-CONFIG_EXAMPLE_LVGL_PORT_PPA_ROTATION_ENABLE=y
+# CONFIG_EXAMPLE_LVGL_PORT_PPA_ROTATION_ENABLE is not set
+# CONFIG_LVGL_PORT_ENABLE_PPA is not set
+# REASON: PPA + buff_spiram=true causes esp_cache_msync(103) null ptr crash on every frame
+# Root cause: esp_lvgl_port 2.7.2 PPA flush_cb passes invalid addr when buffer is in PSRAM
+# Fix: disable PPA, use CPU for SW rotation. Revisit when esp_lvgl_port fixes PSRAM support.
 
 # Enable experimental features for XIP
 CONFIG_IDF_EXPERIMENTAL_FEATURES=y

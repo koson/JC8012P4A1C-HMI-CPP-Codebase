@@ -9,7 +9,11 @@ static const char *UPLOAD_DIR = "/sdcard/WORKSHOP";
 
 // Constructor
 FileViewerUI::FileViewerUI()
-    : m_parent(nullptr), m_labelIP(nullptr), m_labelStatus(nullptr), m_fileList(nullptr), m_btnRefresh(nullptr), m_btnRender(nullptr), m_btnClear(nullptr), m_canvasContainer(nullptr), m_canvas(nullptr), m_canvasBuffer(nullptr), m_selectedIndex(-1)
+    : m_parent(nullptr), m_fileManagerContainer(nullptr), m_renderScreen(nullptr),
+      m_btnBack(nullptr), m_labelIP(nullptr), m_labelStatus(nullptr),
+      m_fileList(nullptr), m_btnRefresh(nullptr), m_btnRender(nullptr),
+      m_btnClear(nullptr), m_canvasContainer(nullptr),
+      m_canvas(nullptr), m_canvasBuffer(nullptr), m_selectedIndex(-1)
 {
 }
 
@@ -35,15 +39,16 @@ FileViewerUI::~FileViewerUI()
 // Create UI
 void FileViewerUI::create(lv_obj_t *parent)
 {
-    m_parent = parent;
+    m_parent = parent;  // Keep for initialization check
 
-    // Create container with flex layout
-    lv_obj_t *mainContainer = lv_obj_create(parent);
-    lv_obj_set_size(mainContainer, LV_PCT(100), LV_PCT(100));
-    lv_obj_set_flex_flow(mainContainer, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(mainContainer, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_all(mainContainer, 10, 0);
-    lv_obj_set_style_pad_gap(mainContainer, 10, 0);
+    // ===== File Manager Screen (proper LVGL screen, not child of another screen) =====
+    m_fileManagerContainer = lv_obj_create(NULL);  // NULL = top-level screen
+    lv_obj_set_flex_flow(m_fileManagerContainer, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(m_fileManagerContainer, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_all(m_fileManagerContainer, 10, 0);
+    lv_obj_set_style_pad_gap(m_fileManagerContainer, 10, 0);
+
+    lv_obj_t *mainContainer = m_fileManagerContainer;
 
     // ===== Header Section =====
     lv_obj_t *headerContainer = lv_obj_create(mainContainer);
@@ -113,13 +118,32 @@ void FileViewerUI::create(lv_obj_t *parent)
     lv_obj_set_size(m_fileList, LV_PCT(100), LV_PCT(100));
     lv_obj_center(m_fileList);
 
-    // ===== Canvas Container =====
+    // ===== Canvas Container (stub, not used — canvas goes on render screen) =====
     m_canvasContainer = lv_obj_create(mainContainer);
-    lv_obj_set_size(m_canvasContainer, LV_PCT(100), LV_PCT(100));
-    lv_obj_set_style_bg_color(m_canvasContainer, lv_color_hex(0xf0f0f0), 0);
+    lv_obj_set_size(m_canvasContainer, 1, 1);
+    lv_obj_add_flag(m_canvasContainer, LV_OBJ_FLAG_HIDDEN);
 
-    // Initial file scan
+    // ===== Render Screen (separate top-level LVGL screen) =====
+    m_renderScreen = lv_obj_create(NULL);  // NULL = top-level screen
+    lv_obj_set_style_bg_color(m_renderScreen, lv_color_hex(0x1a1a2e), 0);
+    lv_obj_set_style_pad_all(m_renderScreen, 0, 0);
+    lv_obj_clear_flag(m_renderScreen, LV_OBJ_FLAG_SCROLLABLE);
+
+    // Back button (top-left corner of render screen)
+    m_btnBack = lv_button_create(m_renderScreen);
+    lv_obj_set_size(m_btnBack, 90, 40);
+    lv_obj_align(m_btnBack, LV_ALIGN_TOP_LEFT, 8, 8);
+    lv_obj_set_style_bg_color(m_btnBack, lv_color_hex(0x444466), 0);
+    lv_obj_set_style_bg_opa(m_btnBack, LV_OPA_80, 0);
+    lv_obj_add_event_cb(m_btnBack, btnBackClicked, LV_EVENT_CLICKED, this);
+    lv_obj_t *labelBack = lv_label_create(m_btnBack);
+    lv_label_set_text(labelBack, "← Back");
+    lv_obj_set_style_text_font(labelBack, &lv_font_montserrat_14, 0);
+    lv_obj_center(labelBack);
+
+    // Initial file scan and load file manager screen
     refreshFileList();
+    lv_screen_load(m_fileManagerContainer);
 
     ESP_LOGI(TAG, "FileViewerUI created");
 }
@@ -297,16 +321,17 @@ void FileViewerUI::renderSelected()
             return;
         }
 
-        // Create canvas
+        // Create canvas on render screen (full-screen, behind back button)
         m_canvas = new LVCanvas(
-            m_canvasContainer,
+            m_renderScreen,
             CANVAS_WIDTH,
             CANVAS_HEIGHT,
             LV_COLOR_FORMAT_RGB565,
             m_canvasBuffer);
 
-        // Center canvas in container
+        // Center canvas in render screen
         lv_obj_align(m_canvas->obj(), LV_ALIGN_CENTER, 0, 0);
+        lv_obj_move_background(m_canvas->obj());  // Behind back button
 
         // Fill with white background
         m_canvas->fill(LVColor::White);
@@ -326,6 +351,7 @@ void FileViewerUI::renderSelected()
         {
             lv_label_set_text(m_labelStatus, "Status: Render complete ✓");
         }
+        switchToRenderMode();
     }
     else
     {
@@ -373,6 +399,7 @@ bool FileViewerUI::renderFile(const char *filename)
     // Create canvas if needed
     if (!m_canvas)
     {
+        // Canvas fills the full render screen
         const uint16_t CANVAS_WIDTH = 800;
         const uint16_t CANVAS_HEIGHT = 480;
 
@@ -382,17 +409,20 @@ bool FileViewerUI::renderFile(const char *filename)
         if (!m_canvasBuffer)
         {
             ESP_LOGE(TAG, "Failed to allocate canvas buffer");
+            lv_unlock();
             return false;
         }
 
+        // Create canvas directly on render screen (behind back button)
         m_canvas = new LVCanvas(
-            m_canvasContainer,
+            m_renderScreen,
             CANVAS_WIDTH,
             CANVAS_HEIGHT,
             LV_COLOR_FORMAT_RGB565,
             m_canvasBuffer);
 
         lv_obj_align(m_canvas->obj(), LV_ALIGN_CENTER, 0, 0);
+        lv_obj_move_background(m_canvas->obj());  // Behind back button
         m_canvas->fill(LVColor::White);
     }
 
@@ -411,6 +441,8 @@ bool FileViewerUI::renderFile(const char *filename)
         {
             lv_label_set_text_fmt(m_labelStatus, "Rendered: %s ✓", filename);
         }
+        // Switch to full-screen render mode
+        switchToRenderMode();
         success = true;
     }
     else
@@ -427,6 +459,22 @@ bool FileViewerUI::renderFile(const char *filename)
     lv_unlock();
 
     return success;
+}
+
+// Switch to full-screen render mode (load render screen)
+void FileViewerUI::switchToRenderMode()
+{
+    if (m_renderScreen)
+        lv_screen_load(m_renderScreen);
+    ESP_LOGI(TAG, "Switched to render mode");
+}
+
+// Switch back to file manager screen
+void FileViewerUI::switchToFileMode()
+{
+    if (m_fileManagerContainer)
+        lv_screen_load(m_fileManagerContainer);
+    ESP_LOGI(TAG, "Switched to file manager mode");
 }
 
 std::string FileViewerUI::getLastDebugInfo() const
@@ -485,6 +533,12 @@ void FileViewerUI::btnClearClicked(lv_event_t *e)
     {
         lv_label_set_text(ui->m_labelStatus, "Status: Canvas cleared");
     }
+}
+
+void FileViewerUI::btnBackClicked(lv_event_t *e)
+{
+    FileViewerUI *ui = static_cast<FileViewerUI *>(lv_event_get_user_data(e));
+    ui->switchToFileMode();
 }
 
 void FileViewerUI::fileItemClicked(lv_event_t *e)

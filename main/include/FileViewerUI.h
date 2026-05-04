@@ -74,10 +74,14 @@ private:
     static void btnRefreshClicked(lv_event_t *e);
     static void btnRenderClicked(lv_event_t *e);
     static void btnClearClicked(lv_event_t *e);
+    static void btnBackClicked(lv_event_t *e);
     static void fileItemClicked(lv_event_t *e);
 
     // UI components
     lv_obj_t *m_parent;
+    lv_obj_t *m_fileManagerContainer; // File manager UI (shown in file mode)
+    lv_obj_t *m_renderScreen;         // Full-screen render area (shown in render mode)
+    lv_obj_t *m_btnBack;              // Back button overlay on render screen
     lv_obj_t *m_labelIP;
     lv_obj_t *m_labelStatus;
     lv_obj_t *m_fileList;
@@ -105,4 +109,6 @@ private:
     void scanFiles();
     void updateFileListUI();
     std::string getSelectedFilePath();
+    void switchToRenderMode();
+    void switchToFileMode();
 };
