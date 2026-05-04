@@ -11,6 +11,8 @@ CONFIG_IDF_MINIMAL_BUILD=n
 # Flash Configuration
 CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
 CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+# RTS pin ไม่ได้ต่อกับ EN บน JC8012P4A1C — ไม่ให้ esptool reset หลัง flash (กด RESET บอร์ดเอง)
+CONFIG_ESPTOOLPY_AFTER_NOACTION=y
 CONFIG_PARTITION_TABLE_CUSTOM=y
 
 # PSRAM Configuration - 80MHz HEX mode (ESP-HOSTED SDIO compatible)

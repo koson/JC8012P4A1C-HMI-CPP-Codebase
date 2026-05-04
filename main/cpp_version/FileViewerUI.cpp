@@ -1,5 +1,6 @@
 #include "FileViewerUI.h"
 #include "esp_log.h"
+#include "esp_heap_caps.h"
 #include <dirent.h>
 #include <sys/stat.h>
 #include <algorithm>
@@ -31,7 +32,7 @@ FileViewerUI::~FileViewerUI()
     }
     if (m_canvasBuffer)
     {
-        free(m_canvasBuffer);
+        heap_caps_free(m_canvasBuffer);
         m_canvasBuffer = nullptr;
     }
 }
@@ -39,27 +40,31 @@ FileViewerUI::~FileViewerUI()
 // Create UI
 void FileViewerUI::create(lv_obj_t *parent)
 {
-    m_parent = parent;  // Keep for initialization check
+    m_parent = parent; // Keep for initialization check
 
-    // ===== File Manager Screen (proper LVGL screen, not child of another screen) =====
-    m_fileManagerContainer = lv_obj_create(NULL);  // NULL = top-level screen
-    lv_obj_set_flex_flow(m_fileManagerContainer, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(m_fileManagerContainer, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_all(m_fileManagerContainer, 10, 0);
-    lv_obj_set_style_pad_gap(m_fileManagerContainer, 10, 0);
+    // ===== File Manager Screen — fixed 1280×800, NO scroll =====
+    m_fileManagerContainer = lv_obj_create(NULL); // NULL = top-level screen
+    lv_obj_set_size(m_fileManagerContainer, 1280, 800);
+    lv_obj_clear_flag(m_fileManagerContainer, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_pad_all(m_fileManagerContainer, 0, 0);
+    lv_obj_set_style_bg_color(m_fileManagerContainer, lv_color_hex(0xF0F2F5), 0);
 
     lv_obj_t *mainContainer = m_fileManagerContainer;
 
-    // ===== Header Section =====
+    // ===== Header Section — fixed 80px tall =====
     lv_obj_t *headerContainer = lv_obj_create(mainContainer);
-    lv_obj_set_size(headerContainer, LV_PCT(100), LV_SIZE_CONTENT);
-    lv_obj_set_style_pad_all(headerContainer, 10, 0);
+    lv_obj_set_pos(headerContainer, 0, 0);
+    lv_obj_set_size(headerContainer, 1280, 80);
+    lv_obj_clear_flag(headerContainer, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_pad_all(headerContainer, 12, 0);
+    lv_obj_set_style_radius(headerContainer, 0, 0);
+    lv_obj_set_style_border_width(headerContainer, 0, 0);
     lv_obj_set_style_bg_color(headerContainer, lv_color_hex(0x667eea), 0);
 
     // Title
     lv_obj_t *titleLabel = lv_label_create(headerContainer);
-    lv_label_set_text(titleLabel, "📁 LabBuddy File Manager");
-    lv_obj_set_style_text_font(titleLabel, &lv_font_montserrat_20, 0);
+    lv_label_set_text(titleLabel, "LabBuddy File Manager");
+    lv_obj_set_style_text_font(titleLabel, &lv_font_montserrat_22, 0);
     lv_obj_set_style_text_color(titleLabel, lv_color_white(), 0);
     lv_obj_align(titleLabel, LV_ALIGN_TOP_LEFT, 0, 0);
 
@@ -68,55 +73,73 @@ void FileViewerUI::create(lv_obj_t *parent)
     lv_label_set_text(m_labelIP, "IP: Connecting...");
     lv_obj_set_style_text_font(m_labelIP, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_color(m_labelIP, lv_color_white(), 0);
-    lv_obj_align(m_labelIP, LV_ALIGN_TOP_LEFT, 0, 30);
+    lv_obj_align(m_labelIP, LV_ALIGN_BOTTOM_LEFT, 0, 0);
 
-    // Status Label
+    // Status Label (right side of header)
     m_labelStatus = lv_label_create(headerContainer);
-    lv_label_set_text(m_labelStatus, "Status: Ready");
+    lv_label_set_text(m_labelStatus, "Ready");
     lv_obj_set_style_text_font(m_labelStatus, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_color(m_labelStatus, lv_color_white(), 0);
-    lv_obj_align(m_labelStatus, LV_ALIGN_TOP_LEFT, 0, 50);
+    lv_obj_align(m_labelStatus, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
 
     // ===== Control Buttons =====
+    // ===== Button Bar — fixed at y=80, height=60 =====
     lv_obj_t *btnContainer = lv_obj_create(mainContainer);
-    lv_obj_set_size(btnContainer, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_set_pos(btnContainer, 0, 80);
+    lv_obj_set_size(btnContainer, 1280, 60);
+    lv_obj_clear_flag(btnContainer, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_flex_flow(btnContainer, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(btnContainer, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_all(btnContainer, 5, 0);
+    lv_obj_set_flex_align(btnContainer, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_all(btnContainer, 8, 0);
+    lv_obj_set_style_pad_column(btnContainer, 8, 0);
+    lv_obj_set_style_radius(btnContainer, 0, 0);
+    lv_obj_set_style_border_width(btnContainer, 0, 0);
+    lv_obj_set_style_bg_color(btnContainer, lv_color_hex(0xEEEEEE), 0);
 
     // Refresh Button
     m_btnRefresh = lv_button_create(btnContainer);
-    lv_obj_set_size(m_btnRefresh, 120, 50);
+    lv_obj_set_size(m_btnRefresh, 120, 44);
     lv_obj_add_event_cb(m_btnRefresh, btnRefreshClicked, LV_EVENT_CLICKED, this);
     lv_obj_t *labelRefresh = lv_label_create(m_btnRefresh);
-    lv_label_set_text(labelRefresh, "🔄 Refresh");
+    lv_label_set_text(labelRefresh, "Refresh");
+    lv_obj_set_style_text_font(labelRefresh, &lv_font_montserrat_14, 0);
     lv_obj_center(labelRefresh);
 
     // Render Button
     m_btnRender = lv_button_create(btnContainer);
-    lv_obj_set_size(m_btnRender, 120, 50);
+    lv_obj_set_size(m_btnRender, 120, 44);
     lv_obj_add_event_cb(m_btnRender, btnRenderClicked, LV_EVENT_CLICKED, this);
     lv_obj_set_style_bg_color(m_btnRender, lv_color_hex(0x4CAF50), 0);
     lv_obj_t *labelRender = lv_label_create(m_btnRender);
-    lv_label_set_text(labelRender, "▶ Render");
+    lv_label_set_text(labelRender, "Render");
+    lv_obj_set_style_text_font(labelRender, &lv_font_montserrat_14, 0);
     lv_obj_center(labelRender);
 
     // Clear Button
     m_btnClear = lv_button_create(btnContainer);
-    lv_obj_set_size(m_btnClear, 120, 50);
+    lv_obj_set_size(m_btnClear, 120, 44);
     lv_obj_add_event_cb(m_btnClear, btnClearClicked, LV_EVENT_CLICKED, this);
     lv_obj_set_style_bg_color(m_btnClear, lv_color_hex(0xf44336), 0);
     lv_obj_t *labelClear = lv_label_create(m_btnClear);
-    lv_label_set_text(labelClear, "🗑 Clear");
+    lv_label_set_text(labelClear, "Clear");
+    lv_obj_set_style_text_font(labelClear, &lv_font_montserrat_14, 0);
     lv_obj_center(labelClear);
 
-    // ===== File List =====
+    // ===== File List — fixed at y=140, fills remaining screen height =====
+    // Remaining: 800 - 80(header) - 60(buttons) = 660px
     lv_obj_t *listContainer = lv_obj_create(mainContainer);
-    lv_obj_set_size(listContainer, LV_PCT(100), 150);
+    lv_obj_set_pos(listContainer, 0, 140);
+    lv_obj_set_size(listContainer, 1280, 660);
+    lv_obj_clear_flag(listContainer, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_pad_all(listContainer, 0, 0);
+    lv_obj_set_style_radius(listContainer, 0, 0);
+    lv_obj_set_style_border_width(listContainer, 0, 0);
+    lv_obj_set_style_bg_color(listContainer, lv_color_hex(0xF0F2F5), 0);
 
     m_fileList = lv_list_create(listContainer);
-    lv_obj_set_size(m_fileList, LV_PCT(100), LV_PCT(100));
-    lv_obj_center(m_fileList);
+    lv_obj_set_size(m_fileList, 1280, 660);
+    lv_obj_set_pos(m_fileList, 0, 0);
+    // File list itself can scroll internally (within its fixed 660px container)
 
     // ===== Canvas Container (stub, not used — canvas goes on render screen) =====
     m_canvasContainer = lv_obj_create(mainContainer);
@@ -124,7 +147,7 @@ void FileViewerUI::create(lv_obj_t *parent)
     lv_obj_add_flag(m_canvasContainer, LV_OBJ_FLAG_HIDDEN);
 
     // ===== Render Screen (separate top-level LVGL screen) =====
-    m_renderScreen = lv_obj_create(NULL);  // NULL = top-level screen
+    m_renderScreen = lv_obj_create(NULL); // NULL = top-level screen
     lv_obj_set_style_bg_color(m_renderScreen, lv_color_hex(0x1a1a2e), 0);
     lv_obj_set_style_pad_all(m_renderScreen, 0, 0);
     lv_obj_clear_flag(m_renderScreen, LV_OBJ_FLAG_SCROLLABLE);
@@ -144,6 +167,24 @@ void FileViewerUI::create(lv_obj_t *parent)
     // Initial file scan and load file manager screen
     refreshFileList();
     lv_screen_load(m_fileManagerContainer);
+
+    // Log actual display + container sizes for layout debugging
+    lv_display_t *disp = lv_display_get_default();
+    ESP_LOGI(TAG, "=== LAYOUT DEBUG ===");
+    ESP_LOGI(TAG, "Display: %d x %d", lv_display_get_horizontal_resolution(disp), lv_display_get_vertical_resolution(disp));
+    ESP_LOGI(TAG, "Screen:  pos(%d,%d) size(%d x %d)",
+             lv_obj_get_x(m_fileManagerContainer), lv_obj_get_y(m_fileManagerContainer),
+             lv_obj_get_width(m_fileManagerContainer), lv_obj_get_height(m_fileManagerContainer));
+    ESP_LOGI(TAG, "Header:  pos(%d,%d) size(%d x %d)",
+             lv_obj_get_x(headerContainer), lv_obj_get_y(headerContainer),
+             lv_obj_get_width(headerContainer), lv_obj_get_height(headerContainer));
+    ESP_LOGI(TAG, "BtnBar:  pos(%d,%d) size(%d x %d)",
+             lv_obj_get_x(btnContainer), lv_obj_get_y(btnContainer),
+             lv_obj_get_width(btnContainer), lv_obj_get_height(btnContainer));
+    ESP_LOGI(TAG, "FileList: pos(%d,%d) size(%d x %d)",
+             lv_obj_get_x(listContainer), lv_obj_get_y(listContainer),
+             lv_obj_get_width(listContainer), lv_obj_get_height(listContainer));
+    ESP_LOGI(TAG, "===================");
 
     ESP_LOGI(TAG, "FileViewerUI created");
 }
@@ -303,13 +344,13 @@ void FileViewerUI::renderSelected()
     // Create canvas if needed
     if (!m_canvas)
     {
-        // Canvas dimensions
-        const uint16_t CANVAS_WIDTH = 800;
-        const uint16_t CANVAS_HEIGHT = 480;
+        // Canvas = full render screen size (landscape 1280×800)
+        const uint16_t CANVAS_WIDTH = 1280;
+        const uint16_t CANVAS_HEIGHT = 800;
 
-        // Allocate buffer for canvas (RGB565)
+        // Allocate buffer for canvas (RGB565) — must use PSRAM (2MB for 1280×800)
         size_t bufferSize = CANVAS_WIDTH * CANVAS_HEIGHT * sizeof(uint16_t);
-        m_canvasBuffer = malloc(bufferSize);
+        m_canvasBuffer = heap_caps_malloc(bufferSize, MALLOC_CAP_SPIRAM);
 
         if (!m_canvasBuffer)
         {
@@ -331,7 +372,7 @@ void FileViewerUI::renderSelected()
 
         // Center canvas in render screen
         lv_obj_align(m_canvas->obj(), LV_ALIGN_CENTER, 0, 0);
-        lv_obj_move_background(m_canvas->obj());  // Behind back button
+        lv_obj_move_background(m_canvas->obj()); // Behind back button
 
         // Fill with white background
         m_canvas->fill(LVColor::White);
@@ -399,16 +440,17 @@ bool FileViewerUI::renderFile(const char *filename)
     // Create canvas if needed
     if (!m_canvas)
     {
-        // Canvas fills the full render screen
-        const uint16_t CANVAS_WIDTH = 800;
-        const uint16_t CANVAS_HEIGHT = 480;
+        // Canvas = full render screen (landscape 1280×800)
+        const uint16_t CANVAS_WIDTH = 1280;
+        const uint16_t CANVAS_HEIGHT = 800;
 
+        // Must use PSRAM — 1280×800×2 = 2MB exceeds internal RAM
         size_t bufferSize = CANVAS_WIDTH * CANVAS_HEIGHT * sizeof(uint16_t);
-        m_canvasBuffer = malloc(bufferSize);
+        m_canvasBuffer = heap_caps_malloc(bufferSize, MALLOC_CAP_SPIRAM);
 
         if (!m_canvasBuffer)
         {
-            ESP_LOGE(TAG, "Failed to allocate canvas buffer");
+            ESP_LOGE(TAG, "Failed to allocate canvas buffer (%d bytes) in PSRAM", bufferSize);
             lv_unlock();
             return false;
         }
@@ -422,7 +464,7 @@ bool FileViewerUI::renderFile(const char *filename)
             m_canvasBuffer);
 
         lv_obj_align(m_canvas->obj(), LV_ALIGN_CENTER, 0, 0);
-        lv_obj_move_background(m_canvas->obj());  // Behind back button
+        lv_obj_move_background(m_canvas->obj()); // Behind back button
         m_canvas->fill(LVColor::White);
     }
 
@@ -500,11 +542,19 @@ void FileViewerUI::clearCanvas()
     if (m_renderer)
     {
         m_renderer->clear();
+        m_renderer.reset();
     }
 
+    // Destroy canvas so it is recreated at correct size on next render
     if (m_canvas)
     {
-        m_canvas->fill(LVColor::White);
+        delete m_canvas;
+        m_canvas = nullptr;
+    }
+    if (m_canvasBuffer)
+    {
+        heap_caps_free(m_canvasBuffer);
+        m_canvasBuffer = nullptr;
     }
 
     ESP_LOGI(TAG, "Canvas cleared");
