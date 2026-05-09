@@ -105,8 +105,6 @@ namespace JsonRenderer
                     continue;
                 }
 
-                SvgRenderer::Color fillColor = parseColor(widget.fill.empty() ? "#000000" : widget.fill);
-
                 // Build a temporary SvgSymbol with the raw path data.
                 // viewBox 0,0,1280,800 so path coords map 1:1 to screen coords.
                 SvgRenderer::SvgSymbol pathSymbol;
@@ -116,11 +114,27 @@ namespace JsonRenderer
                 pathSymbol.scale = 1.0f;
                 pathSymbol.rotation = 0.0f;
 
-                // x=0, y=0: path data already has absolute screen coordinates
-                m_svgRenderer->renderSymbolFilled(
-                    pathSymbol, 0, 0,
-                    fillColor,
-                    m_scaleX);
+                bool isFillNone = (widget.fill == "none" || widget.fill.empty());
+
+                if (isFillNone && !widget.strokeColor.empty() && widget.strokeColor != "none")
+                {
+                    // Stroke-only path: outline only (no fill)
+                    SvgRenderer::Color strokeColor = parseColor(widget.strokeColor);
+                    int32_t sw = std::max((int32_t)1, (int32_t)(widget.strokeWidth > 0 ? widget.strokeWidth : 2.0f));
+                    m_svgRenderer->renderSymbol(
+                        pathSymbol, 0, 0,
+                        strokeColor, sw,
+                        m_scaleX, 0.0f);
+                }
+                else
+                {
+                    // Filled path (default)
+                    SvgRenderer::Color fillColor = parseColor(isFillNone ? "#000000" : widget.fill);
+                    m_svgRenderer->renderSymbolFilled(
+                        pathSymbol, 0, 0,
+                        fillColor,
+                        m_scaleX);
+                }
 
                 ESP_LOGD(TAG, "Path widget rendered (d len=%d)", (int)widget.d.size());
                 continue;
@@ -146,6 +160,55 @@ namespace JsonRenderer
 
                 ESP_LOGD(TAG, "Label widget rendered: \"%s\" size=%d at (%d,%d)",
                          widget.text.c_str(), scaledFontSize, scaledX, scaledY);
+                continue;
+            }
+
+            // --- type="rect": draw filled rectangle with stroke outline ---
+            if (widget.type == "rect")
+            {
+                int32_t scaledX = (int32_t)(widget.x * m_scaleX + m_offsetX);
+                int32_t scaledY = (int32_t)(widget.y * m_scaleY + m_offsetY);
+                int32_t scaledW = (int32_t)(widget.width * m_scaleX);
+                int32_t scaledH = (int32_t)(widget.height * m_scaleY);
+
+                SvgRenderer::Color fillCol = parseColor(widget.fillColor.empty() ? "#FFFFFF" : widget.fillColor);
+                LVColor lvFill(fillCol.r, fillCol.g, fillCol.b);
+                m_canvas->drawRect(scaledX, scaledY, scaledW, scaledH, lvFill);
+
+                if (widget.strokeWidth > 0 && !widget.strokeColor.empty())
+                {
+                    SvgRenderer::Color strokeCol = parseColor(widget.strokeColor);
+                    LVColor lvStroke(strokeCol.r, strokeCol.g, strokeCol.b);
+                    int32_t sw = std::max((int32_t)1, (int32_t)(widget.strokeWidth * m_scaleX));
+                    m_canvas->drawLine(scaledX, scaledY, scaledX + scaledW, scaledY, lvStroke, sw);
+                    m_canvas->drawLine(scaledX + scaledW, scaledY, scaledX + scaledW, scaledY + scaledH, lvStroke, sw);
+                    m_canvas->drawLine(scaledX + scaledW, scaledY + scaledH, scaledX, scaledY + scaledH, lvStroke, sw);
+                    m_canvas->drawLine(scaledX, scaledY + scaledH, scaledX, scaledY, lvStroke, sw);
+                }
+
+                ESP_LOGD(TAG, "Rect widget rendered at (%d,%d) size %dx%d", scaledX, scaledY, scaledW, scaledH);
+                continue;
+            }
+
+            // --- type="circle": draw filled circle ---
+            if (widget.type == "circle")
+            {
+                int32_t scaledX = (int32_t)(widget.x * m_scaleX + m_offsetX);
+                int32_t scaledY = (int32_t)(widget.y * m_scaleY + m_offsetY);
+
+                // Use rx/ry (derived from width/height) for true ellipse support
+                int32_t scaledRx = (int32_t)(widget.rx * m_scaleX);
+                int32_t scaledRy = (int32_t)(widget.ry * m_scaleY);
+
+                SvgRenderer::Color fillCol = parseColor(widget.fillColor.empty() ? "#FFFFFF" : widget.fillColor);
+                SvgRenderer::Color strokeCol = parseColor(widget.strokeColor.empty() ? "#000000" : widget.strokeColor);
+                LVColor lvFill(fillCol.r, fillCol.g, fillCol.b);
+                LVColor lvStroke(strokeCol.r, strokeCol.g, strokeCol.b);
+
+                int32_t sw = (widget.strokeWidth > 0.0f) ? (int32_t)(widget.strokeWidth * m_scaleX + 0.5f) : 0;
+                m_canvas->drawEllipse(scaledX, scaledY, scaledRx, scaledRy, lvFill, lvStroke, sw);
+
+                ESP_LOGD(TAG, "Ellipse widget rendered at (%d,%d) rx=%d ry=%d sw=%d", scaledX, scaledY, scaledRx, scaledRy, sw);
                 continue;
             }
 
@@ -226,12 +289,119 @@ namespace JsonRenderer
 
         ESP_LOGI(TAG, "Rendering %d wires...", screen.wires.size());
 
+        SvgRenderer::SvgPathParser parser;
+
         for (const auto &wire : screen.wires)
         {
-            // Parse wire path and render
-            // TODO: Implement wire path rendering using SvgPathParser
-            // For now, wires are skipped (symbols are more important)
-            ESP_LOGD(TAG, "  Wire: %s (path rendering not yet implemented)", wire.id.c_str());
+            if (wire.path.empty())
+            {
+                ESP_LOGD(TAG, "  Wire %s: empty path, skipping", wire.id.c_str());
+                continue;
+            }
+
+            SvgRenderer::Color color = parseColor(wire.color.empty() ? "#2C3E50" : wire.color);
+            LVColor lvColor(color.r, color.g, color.b);
+            int32_t sw = std::max((int32_t)1, (int32_t)(wire.strokeWidth * m_scaleX));
+
+            auto commands = parser.parse(wire.path.c_str());
+
+            float cx = 0, cy = 0; // current pen position (JSON coords)
+            float sx = 0, sy = 0; // subpath start (for Z close)
+
+            for (const auto &cmd : commands)
+            {
+                switch (cmd.type)
+                {
+                case 'M':
+                    cx = cmd.args[0];
+                    cy = cmd.args[1];
+                    sx = cx;
+                    sy = cy;
+                    break;
+                case 'm':
+                    cx += cmd.args[0];
+                    cy += cmd.args[1];
+                    sx = cx;
+                    sy = cy;
+                    break;
+                case 'L':
+                {
+                    float tx = cmd.args[0], ty = cmd.args[1];
+                    m_canvas->drawLine(
+                        (int32_t)(cx * m_scaleX + m_offsetX), (int32_t)(cy * m_scaleY + m_offsetY),
+                        (int32_t)(tx * m_scaleX + m_offsetX), (int32_t)(ty * m_scaleY + m_offsetY),
+                        lvColor, sw);
+                    cx = tx;
+                    cy = ty;
+                    break;
+                }
+                case 'l':
+                {
+                    float tx = cx + cmd.args[0], ty = cy + cmd.args[1];
+                    m_canvas->drawLine(
+                        (int32_t)(cx * m_scaleX + m_offsetX), (int32_t)(cy * m_scaleY + m_offsetY),
+                        (int32_t)(tx * m_scaleX + m_offsetX), (int32_t)(ty * m_scaleY + m_offsetY),
+                        lvColor, sw);
+                    cx = tx;
+                    cy = ty;
+                    break;
+                }
+                case 'H':
+                {
+                    float tx = cmd.args[0];
+                    m_canvas->drawLine(
+                        (int32_t)(cx * m_scaleX + m_offsetX), (int32_t)(cy * m_scaleY + m_offsetY),
+                        (int32_t)(tx * m_scaleX + m_offsetX), (int32_t)(cy * m_scaleY + m_offsetY),
+                        lvColor, sw);
+                    cx = tx;
+                    break;
+                }
+                case 'h':
+                {
+                    float tx = cx + cmd.args[0];
+                    m_canvas->drawLine(
+                        (int32_t)(cx * m_scaleX + m_offsetX), (int32_t)(cy * m_scaleY + m_offsetY),
+                        (int32_t)(tx * m_scaleX + m_offsetX), (int32_t)(cy * m_scaleY + m_offsetY),
+                        lvColor, sw);
+                    cx = tx;
+                    break;
+                }
+                case 'V':
+                {
+                    float ty = cmd.args[0];
+                    m_canvas->drawLine(
+                        (int32_t)(cx * m_scaleX + m_offsetX), (int32_t)(cy * m_scaleY + m_offsetY),
+                        (int32_t)(cx * m_scaleX + m_offsetX), (int32_t)(ty * m_scaleY + m_offsetY),
+                        lvColor, sw);
+                    cy = ty;
+                    break;
+                }
+                case 'v':
+                {
+                    float ty = cy + cmd.args[0];
+                    m_canvas->drawLine(
+                        (int32_t)(cx * m_scaleX + m_offsetX), (int32_t)(cy * m_scaleY + m_offsetY),
+                        (int32_t)(cx * m_scaleX + m_offsetX), (int32_t)(ty * m_scaleY + m_offsetY),
+                        lvColor, sw);
+                    cy = ty;
+                    break;
+                }
+                case 'Z':
+                case 'z':
+                    m_canvas->drawLine(
+                        (int32_t)(cx * m_scaleX + m_offsetX), (int32_t)(cy * m_scaleY + m_offsetY),
+                        (int32_t)(sx * m_scaleX + m_offsetX), (int32_t)(sy * m_scaleY + m_offsetY),
+                        lvColor, sw);
+                    cx = sx;
+                    cy = sy;
+                    break;
+                default:
+                    ESP_LOGD(TAG, "  Wire %s: unhandled cmd '%c', skipping segment", wire.id.c_str(), cmd.type);
+                    break;
+                }
+            }
+
+            ESP_LOGD(TAG, "  Wire %s: rendered %d commands", wire.id.c_str(), (int)commands.size());
         }
     }
 

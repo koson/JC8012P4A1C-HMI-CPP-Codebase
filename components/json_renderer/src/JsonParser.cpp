@@ -212,6 +212,25 @@ namespace JsonRenderer
             // For type="path": SVG path data
             widget.d = getString(item, "d", "");
             widget.fill = getString(item, "fill", "#000000");
+            // "stroke" is the key used by PathWidgetDefinition; fall back to strokeColor if not present
+            {
+                std::string strokeVal = getString(item, "stroke", "");
+                if (!strokeVal.empty() && strokeVal != "none" && widget.strokeColor == "#2C3E50")
+                    widget.strokeColor = strokeVal;
+            }
+
+            // For type="rect"
+            widget.width = getFloat(item, "width", 0.0f);
+            widget.height = getFloat(item, "height", 0.0f);
+
+            // For type="circle" — radius is average, rx/ry derived from width/height if present
+            widget.radius = getFloat(item, "radius", 5.0f);
+            {
+                float w = getFloat(item, "width", 0.0f);
+                float h = getFloat(item, "height", 0.0f);
+                widget.rx = (w > 0) ? w / 2.0f : widget.radius;
+                widget.ry = (h > 0) ? h / 2.0f : widget.radius;
+            }
 
             // Additional properties for labels
             widget.text = getString(item, "text", "");

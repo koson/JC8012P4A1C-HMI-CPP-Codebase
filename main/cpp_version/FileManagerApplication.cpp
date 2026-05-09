@@ -807,7 +807,9 @@ esp_err_t FileManagerApplication::delete_handler(httpd_req_t *req)
     else
     {
         ESP_LOGE(TAG, "Failed to delete: %s", filepath);
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Delete failed");
+        httpd_resp_set_type(req, "application/json");
+        httpd_resp_set_status(req, "500 Internal Server Error");
+        httpd_resp_sendstr(req, "{\"success\":false,\"message\":\"Delete failed - file not found or permission error\"}");
         return ESP_FAIL;
     }
 }
@@ -864,7 +866,8 @@ esp_err_t FileManagerApplication::startHTTPServer()
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.lru_purge_enable = true;
     config.max_uri_handlers = 8;
-    config.stack_size = 16384; // Increased from default 4096 to handle large debug responses
+    config.stack_size = 16384;                      // Increased from default 4096 to handle large debug responses
+    config.uri_match_fn = httpd_uri_match_wildcard; // Required for /delete/* and /file/* patterns
 
     ESP_LOGI(TAG, "Starting HTTP server on port %d", config.server_port);
 

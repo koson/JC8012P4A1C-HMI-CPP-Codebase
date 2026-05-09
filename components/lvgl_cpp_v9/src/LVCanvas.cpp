@@ -1,5 +1,6 @@
 #include "LVCanvas.hpp"
 #include <algorithm>
+#include <cmath>
 
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_rect.h"
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_line.h"
@@ -143,6 +144,42 @@ void LVCanvas::drawCircle(int32_t cx, int32_t cy, int32_t radius, LVColor color,
     lv_draw_rect(layer, &dsc, &area);
 
     releaseLayer(&tmp);
+}
+
+void LVCanvas::drawEllipse(int32_t cx, int32_t cy, int32_t rx, int32_t ry, LVColor fillColor, LVColor strokeColor, int32_t strokeWidth, lv_opa_t opa)
+{
+    if (!m_rawBuffer || rx <= 0 || ry <= 0)
+        return;
+
+    // True ellipse via scanlines: for each row y, compute x span from ellipse equation.
+    // (dx/rx)^2 + (dy/ry)^2 = 1  →  dx = rx * sqrt(1 - (dy/ry)^2)
+    //
+    // Two-pass approach for stroke:
+    //   1. Fill outer ellipse (rx, ry) with strokeColor
+    //   2. Fill inner ellipse (rx-sw, ry-sw) with fillColor
+
+    auto fillEllipse = [&](int32_t erx, int32_t ery, LVColor color) {
+        if (erx <= 0 || ery <= 0)
+            return;
+        float erxf = (float)erx;
+        float eryf = (float)ery;
+        for (int32_t dy = -ery; dy <= ery; dy++)
+        {
+            float t = (float)dy / eryf;
+            float dx = erxf * sqrtf(1.0f - t * t);
+            fillHLine(cx - (int32_t)dx, cx + (int32_t)dx, cy + dy, color);
+        }
+    };
+
+    if (strokeWidth > 0)
+    {
+        fillEllipse(rx, ry, strokeColor);
+        fillEllipse(rx - strokeWidth, ry - strokeWidth, fillColor);
+    }
+    else
+    {
+        fillEllipse(rx, ry, fillColor);
+    }
 }
 
 void LVCanvas::drawText(int32_t x, int32_t y, const char *text, LVColor color, int32_t fontSize, int32_t max_width)

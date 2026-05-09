@@ -29,6 +29,16 @@ namespace JsonRenderer
         std::string d;
         std::string fill; // fill color for path, e.g. "#000000"
 
+        // For type="rect"
+        float width;
+        float height;
+
+        // For type="circle" / ellipse — rx and ry store the semi-axes.
+        // radius = (rx+ry)/2 for backward compat; rx/ry used for true ellipse rendering.
+        float radius;
+        float rx; // half-width  (= radius for true circles)
+        float ry; // half-height (= radius for true circles)
+
         // Additional properties for labels
         std::string text;
         int fontSize;
@@ -36,7 +46,8 @@ namespace JsonRenderer
         std::string fontWeight; // "normal" or "bold"
 
         Widget()
-            : x(0), y(0), scale(1.0f), rotation(0.0f), strokeWidth(2.0f), flipHorizontal(false), flipVertical(false), fontSize(16), textColor("#000000"), fontWeight("normal") {}
+            : x(0), y(0), scale(1.0f), rotation(0.0f), strokeWidth(2.0f), flipHorizontal(false), flipVertical(false),
+              width(0), height(0), radius(5.0f), rx(0), ry(0), fontSize(16), textColor("#000000"), fontWeight("normal") {}
     };
 
     /**
