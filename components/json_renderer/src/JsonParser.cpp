@@ -209,9 +209,15 @@ namespace JsonRenderer
             widget.flipHorizontal = getBool(item, "flipHorizontal", false);
             widget.flipVertical = getBool(item, "flipVertical", false);
 
+            // For type="path": SVG path data
+            widget.d = getString(item, "d", "");
+            widget.fill = getString(item, "fill", "#000000");
+
             // Additional properties for labels
             widget.text = getString(item, "text", "");
             widget.fontSize = getInt(item, "fontSize", 16);
+            widget.textColor = getString(item, "textColor", "#000000");
+            widget.fontWeight = getString(item, "fontWeight", "normal");
 
             screen.widgets.push_back(widget);
         }

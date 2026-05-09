@@ -34,7 +34,12 @@ public:
     void drawRect(int32_t x, int32_t y, int32_t w, int32_t h, LVColor color, lv_opa_t opa = LV_OPA_COVER, int32_t radius = 0);
     void drawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, LVColor color, int32_t width = 2, lv_opa_t opa = LV_OPA_COVER);
     void drawCircle(int32_t cx, int32_t cy, int32_t radius, LVColor color, bool filled = true, lv_opa_t opa = LV_OPA_COVER);
-    void drawText(int32_t x, int32_t y, const char *text, LVColor color, int32_t max_width = 0);
+    void drawText(int32_t x, int32_t y, const char *text, LVColor color, int32_t fontSize = 14, int32_t max_width = 0);
+
+    /** Direct RGB565 pixel write — bypasses LVGL draw tasks, much faster for fills. */
+    void fillHLine(int32_t x1, int32_t x2, int32_t y, LVColor color);
+    /** Tell LVGL the canvas buffer has changed and needs redisplay. */
+    void invalidate();
 
     void setPalette(uint8_t idx, LVColor color); // for indexed formats
 
@@ -45,6 +50,7 @@ private:
 
     bool m_batchMode = false;
     lv_layer_t m_batchLayer;
+    void *m_rawBuffer = nullptr; // Raw pixel buffer pointer for direct writes (RGB565)
 
     /** Get active layer: batch layer if open, else init a temporary one. */
     lv_layer_t *acquireLayer(lv_layer_t *tmp);

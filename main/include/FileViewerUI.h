@@ -92,7 +92,8 @@ private:
 
     // Canvas and renderer
     LVCanvas *m_canvas;
-    void *m_canvasBuffer;
+    void *m_canvasBuffer; // front buffer (currently displayed)
+    void *m_backBuffer;   // back buffer (render target, then swap)
     std::unique_ptr<JsonRenderer::JsonRenderer> m_renderer;
 
     // File list data

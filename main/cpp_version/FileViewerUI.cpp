@@ -14,7 +14,7 @@ FileViewerUI::FileViewerUI()
       m_btnBack(nullptr), m_labelIP(nullptr), m_labelStatus(nullptr),
       m_fileList(nullptr), m_btnRefresh(nullptr), m_btnRender(nullptr),
       m_btnClear(nullptr), m_canvasContainer(nullptr),
-      m_canvas(nullptr), m_canvasBuffer(nullptr), m_selectedIndex(-1)
+      m_canvas(nullptr), m_canvasBuffer(nullptr), m_backBuffer(nullptr), m_selectedIndex(-1)
 {
 }
 
@@ -34,6 +34,11 @@ FileViewerUI::~FileViewerUI()
     {
         heap_caps_free(m_canvasBuffer);
         m_canvasBuffer = nullptr;
+    }
+    if (m_backBuffer)
+    {
+        heap_caps_free(m_backBuffer);
+        m_backBuffer = nullptr;
     }
 }
 
@@ -341,66 +346,64 @@ void FileViewerUI::renderSelected()
     // Clear previous canvas
     clearCanvas();
 
-    // Create canvas if needed
+    // Create canvas + double buffers if needed (allocate ONCE, never free between renders)
     if (!m_canvas)
     {
         // Canvas = full render screen size (landscape 1280×800)
         const uint16_t CANVAS_WIDTH = 1280;
         const uint16_t CANVAS_HEIGHT = 800;
-
-        // Allocate buffer for canvas (RGB565) — must use PSRAM (2MB for 1280×800)
         size_t bufferSize = CANVAS_WIDTH * CANVAS_HEIGHT * sizeof(uint16_t);
-        m_canvasBuffer = heap_caps_malloc(bufferSize, MALLOC_CAP_SPIRAM);
 
-        if (!m_canvasBuffer)
+        // Allocate both buffers in PSRAM (2MB each)
+        m_canvasBuffer = heap_caps_malloc(bufferSize, MALLOC_CAP_SPIRAM);
+        m_backBuffer = heap_caps_malloc(bufferSize, MALLOC_CAP_SPIRAM);
+
+        if (!m_canvasBuffer || !m_backBuffer)
         {
-            ESP_LOGE(TAG, "Failed to allocate canvas buffer");
+            ESP_LOGE(TAG, "Failed to allocate canvas buffers");
             if (m_labelStatus)
-            {
                 lv_label_set_text(m_labelStatus, "Error: Out of memory");
-            }
             return;
         }
 
-        // Create canvas on render screen (full-screen, behind back button)
-        m_canvas = new LVCanvas(
-            m_renderScreen,
-            CANVAS_WIDTH,
-            CANVAS_HEIGHT,
-            LV_COLOR_FORMAT_RGB565,
-            m_canvasBuffer);
-
-        // Center canvas in render screen
+        // Create canvas pointing at front buffer
+        m_canvas = new LVCanvas(m_renderScreen, CANVAS_WIDTH, CANVAS_HEIGHT,
+                                LV_COLOR_FORMAT_RGB565, m_canvasBuffer);
         lv_obj_align(m_canvas->obj(), LV_ALIGN_CENTER, 0, 0);
-        lv_obj_move_background(m_canvas->obj()); // Behind back button
-
-        // Fill with white background
+        lv_obj_move_background(m_canvas->obj());
         m_canvas->fill(LVColor::White);
     }
 
-    // Create renderer if needed
+    // Create renderer (points at canvas, will be retargeted to back buffer)
     if (!m_renderer)
     {
         m_renderer = std::make_unique<JsonRenderer::JsonRenderer>(m_canvas);
     }
 
-    // Render JSON
-    if (m_renderer->loadAndRender(filepath.c_str()))
+    // --- Double-buffer render ---
+    // 1. Point canvas at back buffer → render there (front still shows old image)
+    m_canvas->setBuffer(m_backBuffer, 1280, 800, LV_COLOR_FORMAT_RGB565);
+    m_canvas->fill(LVColor::White); // clear back buffer
+
+    bool ok = m_renderer->loadAndRender(filepath.c_str());
+
+    // 2. Swap: front buffer ← back buffer (atomic pointer swap)
+    std::swap(m_canvasBuffer, m_backBuffer);
+    m_canvas->setBuffer(m_canvasBuffer, 1280, 800, LV_COLOR_FORMAT_RGB565);
+    m_canvas->invalidate(); // tell LVGL to redisplay with new buffer
+
+    if (ok)
     {
         ESP_LOGI(TAG, "Render successful");
         if (m_labelStatus)
-        {
-            lv_label_set_text(m_labelStatus, "Status: Render complete ✓");
-        }
+            lv_label_set_text(m_labelStatus, "Status: Render complete \xe2\x9c\x93");
         switchToRenderMode();
     }
     else
     {
         ESP_LOGE(TAG, "Render failed: %s", m_renderer->getLastError());
         if (m_labelStatus)
-        {
             lv_label_set_text_fmt(m_labelStatus, "Error: %s", m_renderer->getLastError());
-        }
     }
 }
 
@@ -437,64 +440,57 @@ bool FileViewerUI::renderFile(const char *filename)
     // Clear previous canvas
     clearCanvas();
 
-    // Create canvas if needed
+    // Create canvas + double buffers if needed
     if (!m_canvas)
     {
-        // Canvas = full render screen (landscape 1280×800)
         const uint16_t CANVAS_WIDTH = 1280;
         const uint16_t CANVAS_HEIGHT = 800;
-
-        // Must use PSRAM — 1280×800×2 = 2MB exceeds internal RAM
         size_t bufferSize = CANVAS_WIDTH * CANVAS_HEIGHT * sizeof(uint16_t);
-        m_canvasBuffer = heap_caps_malloc(bufferSize, MALLOC_CAP_SPIRAM);
 
-        if (!m_canvasBuffer)
+        m_canvasBuffer = heap_caps_malloc(bufferSize, MALLOC_CAP_SPIRAM);
+        m_backBuffer = heap_caps_malloc(bufferSize, MALLOC_CAP_SPIRAM);
+
+        if (!m_canvasBuffer || !m_backBuffer)
         {
-            ESP_LOGE(TAG, "Failed to allocate canvas buffer (%d bytes) in PSRAM", bufferSize);
+            ESP_LOGE(TAG, "Failed to allocate canvas buffers in PSRAM");
             lv_unlock();
             return false;
         }
 
-        // Create canvas directly on render screen (behind back button)
-        m_canvas = new LVCanvas(
-            m_renderScreen,
-            CANVAS_WIDTH,
-            CANVAS_HEIGHT,
-            LV_COLOR_FORMAT_RGB565,
-            m_canvasBuffer);
-
+        m_canvas = new LVCanvas(m_renderScreen, CANVAS_WIDTH, CANVAS_HEIGHT,
+                                LV_COLOR_FORMAT_RGB565, m_canvasBuffer);
         lv_obj_align(m_canvas->obj(), LV_ALIGN_CENTER, 0, 0);
-        lv_obj_move_background(m_canvas->obj()); // Behind back button
+        lv_obj_move_background(m_canvas->obj());
         m_canvas->fill(LVColor::White);
     }
 
-    // Create renderer if needed
     if (!m_renderer)
     {
         m_renderer = std::make_unique<JsonRenderer::JsonRenderer>(m_canvas);
     }
 
-    // Render JSON
-    bool success = false;
-    if (m_renderer->loadAndRender(filepath))
+    // --- Double-buffer render: render to back buffer, then swap ---
+    m_canvas->setBuffer(m_backBuffer, 1280, 800, LV_COLOR_FORMAT_RGB565);
+    m_canvas->fill(LVColor::White);
+
+    bool success = m_renderer->loadAndRender(filepath);
+
+    std::swap(m_canvasBuffer, m_backBuffer);
+    m_canvas->setBuffer(m_canvasBuffer, 1280, 800, LV_COLOR_FORMAT_RGB565);
+    m_canvas->invalidate();
+
+    if (success)
     {
         ESP_LOGI(TAG, "Render successful: %s", filename);
         if (m_labelStatus)
-        {
-            lv_label_set_text_fmt(m_labelStatus, "Rendered: %s ✓", filename);
-        }
-        // Switch to full-screen render mode
+            lv_label_set_text_fmt(m_labelStatus, "Rendered: %s \xe2\x9c\x93", filename);
         switchToRenderMode();
-        success = true;
     }
     else
     {
         ESP_LOGE(TAG, "Render failed: %s - %s", filename, m_renderer->getLastError());
         if (m_labelStatus)
-        {
             lv_label_set_text_fmt(m_labelStatus, "Error: %s", m_renderer->getLastError());
-        }
-        success = false;
     }
 
     // CRITICAL: Release LVGL lock
@@ -545,16 +541,12 @@ void FileViewerUI::clearCanvas()
         m_renderer.reset();
     }
 
-    // Destroy canvas so it is recreated at correct size on next render
+    // Fill front buffer with white (keep canvas and buffers alive for double-buffering)
     if (m_canvas)
     {
-        delete m_canvas;
-        m_canvas = nullptr;
-    }
-    if (m_canvasBuffer)
-    {
-        heap_caps_free(m_canvasBuffer);
-        m_canvasBuffer = nullptr;
+        m_canvas->setBuffer(m_canvasBuffer, 1280, 800, LV_COLOR_FORMAT_RGB565);
+        m_canvas->fill(LVColor::White);
+        m_canvas->invalidate();
     }
 
     ESP_LOGI(TAG, "Canvas cleared");

@@ -96,6 +96,59 @@ namespace JsonRenderer
 
         for (const auto &widget : screen.widgets)
         {
+            // --- type="path": render raw SVG path data (baked text, shapes) ---
+            if (widget.type == "path")
+            {
+                if (widget.d.empty())
+                {
+                    ESP_LOGW(TAG, "Path widget has no 'd' data — skipping");
+                    continue;
+                }
+
+                SvgRenderer::Color fillColor = parseColor(widget.fill.empty() ? "#000000" : widget.fill);
+
+                // Build a temporary SvgSymbol with the raw path data.
+                // viewBox 0,0,1280,800 so path coords map 1:1 to screen coords.
+                SvgRenderer::SvgSymbol pathSymbol;
+                pathSymbol.id = "baked_path";
+                pathSymbol.pathData = widget.d.c_str();
+                pathSymbol.viewBox = SvgRenderer::ViewBox(0, 0, (float)screen.width, (float)screen.height);
+                pathSymbol.scale = 1.0f;
+                pathSymbol.rotation = 0.0f;
+
+                // x=0, y=0: path data already has absolute screen coordinates
+                m_svgRenderer->renderSymbolFilled(
+                    pathSymbol, 0, 0,
+                    fillColor,
+                    m_scaleX);
+
+                ESP_LOGD(TAG, "Path widget rendered (d len=%d)", (int)widget.d.size());
+                continue;
+            }
+
+            // --- type="label": render text using LVGL drawText ---
+            if (widget.type == "label")
+            {
+                if (widget.text.empty())
+                {
+                    ESP_LOGD(TAG, "Label widget has no text — skipping");
+                    continue;
+                }
+
+                SvgRenderer::Color textCol = parseColor(widget.textColor.empty() ? "#000000" : widget.textColor);
+                LVColor lvTextColor(textCol.r, textCol.g, textCol.b);
+
+                int32_t scaledX = (int32_t)(widget.x * m_scaleX + m_offsetX);
+                int32_t scaledY = (int32_t)(widget.y * m_scaleY + m_offsetY);
+                int32_t scaledFontSize = (int32_t)(widget.fontSize * m_scaleY);
+
+                m_canvas->drawText(scaledX, scaledY, widget.text.c_str(), lvTextColor, scaledFontSize);
+
+                ESP_LOGD(TAG, "Label widget rendered: \"%s\" size=%d at (%d,%d)",
+                         widget.text.c_str(), scaledFontSize, scaledX, scaledY);
+                continue;
+            }
+
             if (widget.type != "svgSymbol")
             {
                 ESP_LOGW(TAG, "Unsupported widget type: %s", widget.type.c_str());
@@ -127,7 +180,7 @@ namespace JsonRenderer
             int32_t finalScalePct = (int32_t)(widget.scale * m_scaleX * 1000);
 
             // Verbose debug log (integers only - no float formatting)
-            ESP_LOGE(TAG, "WIDGET[%s]: json=(%d,%d) scale_x1000=%d -> canvas=(%d,%d) finalScale_x1000=%d",
+            ESP_LOGD(TAG, "WIDGET[%s]: json=(%d,%d) scale_x1000=%d -> canvas=(%d,%d) finalScale_x1000=%d",
                      widget.symbolId.c_str(),
                      (int)widget.x, (int)widget.y, (int)(widget.scale * 1000),
                      scaledX, scaledY, finalScalePct);

@@ -23,14 +23,20 @@ namespace JsonRenderer
         float strokeWidth;
         bool flipHorizontal;
         bool flipVertical;
-        std::string type; // "svgSymbol", "label", "image", etc.
+        std::string type; // "svgSymbol", "path", "label", "image", etc.
+
+        // For type="path": SVG path data (d attribute)
+        std::string d;
+        std::string fill; // fill color for path, e.g. "#000000"
 
         // Additional properties for labels
         std::string text;
         int fontSize;
+        std::string textColor;  // e.g. "#000000"
+        std::string fontWeight; // "normal" or "bold"
 
         Widget()
-            : x(0), y(0), scale(1.0f), rotation(0.0f), strokeWidth(2.0f), flipHorizontal(false), flipVertical(false), fontSize(16) {}
+            : x(0), y(0), scale(1.0f), rotation(0.0f), strokeWidth(2.0f), flipHorizontal(false), flipVertical(false), fontSize(16), textColor("#000000"), fontWeight("normal") {}
     };
 
     /**

@@ -1,4 +1,5 @@
 #include "LVCanvas.hpp"
+#include <algorithm>
 
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_rect.h"
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_line.h"
@@ -17,6 +18,7 @@ void LVCanvas::setBuffer(void *buffer, uint16_t width, uint16_t height, lv_color
         return;
     m_width = width;
     m_height = height;
+    m_rawBuffer = buffer; // store for direct pixel writes
     lv_canvas_set_buffer(m_canvas, buffer, width, height, fmt);
 }
 
@@ -143,21 +145,45 @@ void LVCanvas::drawCircle(int32_t cx, int32_t cy, int32_t radius, LVColor color,
     releaseLayer(&tmp);
 }
 
-void LVCanvas::drawText(int32_t x, int32_t y, const char *text, LVColor color, int32_t max_width)
+void LVCanvas::drawText(int32_t x, int32_t y, const char *text, LVColor color, int32_t fontSize, int32_t max_width)
 {
     if (!m_canvas || !text)
         return;
     lv_layer_t tmp;
     lv_layer_t *layer = acquireLayer(&tmp);
 
+    // Map fontSize to nearest available Montserrat built-in font
+    const lv_font_t *font = &lv_font_montserrat_14; // fallback
+    if (fontSize <= 15)
+        font = &lv_font_montserrat_14;
+    else if (fontSize <= 17)
+        font = &lv_font_montserrat_16;
+    else if (fontSize <= 19)
+        font = &lv_font_montserrat_18;
+    else if (fontSize <= 21)
+        font = &lv_font_montserrat_20;
+    else if (fontSize <= 23)
+        font = &lv_font_montserrat_22;
+    else if (fontSize <= 26)
+        font = &lv_font_montserrat_24;
+    else if (fontSize <= 30)
+        font = &lv_font_montserrat_28;
+    else if (fontSize <= 34)
+        font = &lv_font_montserrat_32;
+    else if (fontSize <= 42)
+        font = &lv_font_montserrat_36;
+    else
+        font = &lv_font_montserrat_48;
+
     lv_draw_label_dsc_t dsc;
     lv_draw_label_dsc_init(&dsc);
     dsc.color = color.raw();
+    dsc.font = font;
     dsc.text = text;
     int32_t w = (max_width > 0) ? max_width : lv_obj_get_width(m_canvas) - x;
 
     lv_area_t area;
-    lv_area_set(&area, x, y, x + w - 1, y + 40); // rough height allowance
+    lv_area_set(&area, x, y, x + w - 1, y + fontSize * 2); // height = 2× fontSize to fit descenders
     lv_draw_label(layer, &dsc, &area);
 
     releaseLayer(&tmp);
@@ -169,4 +195,36 @@ void LVCanvas::setPalette(uint8_t idx, LVColor color)
         return;
     lv_color32_t c32 = lv_color_to_32(color.raw(), LV_OPA_COVER);
     lv_canvas_set_palette(m_canvas, idx, c32);
+}
+
+void LVCanvas::fillHLine(int32_t x1, int32_t x2, int32_t y, LVColor color)
+{
+    if (!m_rawBuffer)
+        return;
+    if (y < 0 || y >= (int32_t)m_height)
+        return;
+    if (x1 > x2)
+    {
+        int32_t t = x1;
+        x1 = x2;
+        x2 = t;
+    }
+    if (x1 < 0)
+        x1 = 0;
+    if (x2 >= (int32_t)m_width)
+        x2 = (int32_t)m_width - 1;
+    if (x1 > x2)
+        return;
+
+    // Direct RGB565 write — std::fill lets compiler use SIMD/word writes
+    uint16_t pixel = ((uint16_t)(color.r() >> 3) << 11) | ((uint16_t)(color.g() >> 2) << 5) | ((uint16_t)(color.b() >> 3));
+
+    uint16_t *row = (uint16_t *)m_rawBuffer + y * m_width;
+    std::fill(row + x1, row + x2 + 1, pixel);
+}
+
+void LVCanvas::invalidate()
+{
+    if (m_canvas)
+        lv_obj_invalidate(m_canvas);
 }
