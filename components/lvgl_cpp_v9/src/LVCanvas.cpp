@@ -158,7 +158,8 @@ void LVCanvas::drawEllipse(int32_t cx, int32_t cy, int32_t rx, int32_t ry, LVCol
     //   1. Fill outer ellipse (rx, ry) with strokeColor
     //   2. Fill inner ellipse (rx-sw, ry-sw) with fillColor
 
-    auto fillEllipse = [&](int32_t erx, int32_t ery, LVColor color) {
+    auto fillEllipse = [&](int32_t erx, int32_t ery, LVColor color)
+    {
         if (erx <= 0 || ery <= 0)
             return;
         float erxf = (float)erx;
