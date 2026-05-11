@@ -53,4 +53,5 @@ idf_component_register(
         fatfs
         driver
         esp32_p4_function_ev_board
+        font_thai
 )

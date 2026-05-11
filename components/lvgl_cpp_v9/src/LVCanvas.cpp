@@ -379,10 +379,10 @@ void LVCanvas::drawTextThaiShaped(lv_layer_t *layer, const lv_draw_label_dsc_t *
         lv_font_get_glyph_dsc(dsc->font, &cons_g, tone_list[i].base_cp, 0);
         lv_font_get_glyph_dsc(dsc->font, &tone_g, tone_list[i].cp, 0);
 
-        int32_t cons_top   = (int32_t)cons_g.box_h + (int32_t)cons_g.ofs_y;
-        int32_t tone_bott  = (int32_t)tone_g.ofs_y;
-        int32_t drop       = tone_bott - cons_top - 1;
-        int32_t offset     = (drop > 0) ? drop : 0;
+        int32_t cons_top = (int32_t)cons_g.box_h + (int32_t)cons_g.ofs_y;
+        int32_t tone_bott = (int32_t)tone_g.ofs_y;
+        int32_t drop = tone_bott - cons_top - 1;
+        int32_t offset = (drop > 0) ? drop : 0;
 
         // Build single-character UTF-8 string into arena
         char tbuf[4];

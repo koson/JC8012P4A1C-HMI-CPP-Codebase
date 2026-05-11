@@ -60,9 +60,14 @@ namespace SvgRenderer
             }
             else if (lastCommand != '\0' && lastCommand != 'Z' && lastCommand != 'z')
             {
-                // Implicit command repetition (same command continues)
-                cmd = lastCommand;
-                ESP_LOGD(TAG, "  Implicit repeat of command '%c'", cmd);
+                // Implicit command repetition — SVG spec: after M→L, after m→l, others repeat
+                if (lastCommand == 'M')
+                    cmd = 'L';
+                else if (lastCommand == 'm')
+                    cmd = 'l';
+                else
+                    cmd = lastCommand;
+                ESP_LOGD(TAG, "  Implicit repeat of command '%c' (last='%c')", cmd, lastCommand);
             }
             else
             {

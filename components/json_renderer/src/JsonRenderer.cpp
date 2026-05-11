@@ -115,10 +115,21 @@ namespace JsonRenderer
                 pathSymbol.rotation = 0.0f;
 
                 bool isFillNone = (widget.fill == "none" || widget.fill.empty());
+                bool hasStroke = !widget.strokeColor.empty() && widget.strokeColor != "none" && widget.strokeWidth > 0.0f;
 
-                if (isFillNone && !widget.strokeColor.empty() && widget.strokeColor != "none")
+                // Pass 1: fill (skip if fill=none or fill=white on white bg — open paths)
+                if (!isFillNone)
                 {
-                    // Stroke-only path: outline only (no fill)
+                    SvgRenderer::Color fillColor = parseColor(widget.fill);
+                    m_svgRenderer->renderSymbolFilled(
+                        pathSymbol, 0, 0,
+                        fillColor,
+                        m_scaleX);
+                }
+
+                // Pass 2: stroke (always render when strokeColor is set, independent of fill)
+                if (hasStroke)
+                {
                     SvgRenderer::Color strokeColor = parseColor(widget.strokeColor);
                     int32_t sw = std::max((int32_t)1, (int32_t)(widget.strokeWidth > 0 ? widget.strokeWidth : 2.0f));
                     m_svgRenderer->renderSymbol(
@@ -126,14 +137,12 @@ namespace JsonRenderer
                         strokeColor, sw,
                         m_scaleX, 0.0f);
                 }
-                else
+
+                // Fallback: if neither fill nor stroke, use stroke with default color
+                if (isFillNone && !hasStroke)
                 {
-                    // Filled path (default)
-                    SvgRenderer::Color fillColor = parseColor(isFillNone ? "#000000" : widget.fill);
-                    m_svgRenderer->renderSymbolFilled(
-                        pathSymbol, 0, 0,
-                        fillColor,
-                        m_scaleX);
+                    SvgRenderer::Color strokeColor = parseColor("#000000");
+                    m_svgRenderer->renderSymbol(pathSymbol, 0, 0, strokeColor, 1, m_scaleX, 0.0f);
                 }
 
                 ESP_LOGD(TAG, "Path widget rendered (d len=%d)", (int)widget.d.size());
@@ -158,7 +167,7 @@ namespace JsonRenderer
 
                 m_canvas->drawText(scaledX, scaledY, widget.text.c_str(), lvTextColor, scaledFontSize);
 
-                ESP_LOGD(TAG, "Label widget rendered: \"%s\" size=%d at (%d,%d)",
+                ESP_LOGI(TAG, "Label widget rendered: \"%s\" size=%d at (%d,%d)",
                          widget.text.c_str(), scaledFontSize, scaledX, scaledY);
                 continue;
             }

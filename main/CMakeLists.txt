@@ -51,6 +51,9 @@ idf_component_register(
         
         # File Viewer UI (LVGL UI for FileManager - Option 1.5)
         cpp_version/FileViewerUI.cpp
+
+        # HMI Navigator (Splash → Home → Library, uses lvgl_cpp_v9 ScreenManager)
+        cpp_version/HMINavigator.cpp
         
         # LabHappy SVG Path Renderer Demo
         cpp_version/LabHappySvgDemo.cpp
