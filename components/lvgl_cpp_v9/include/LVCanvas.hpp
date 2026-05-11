@@ -3,6 +3,8 @@
 #include "lvgl.h"
 #include "LVColor.hpp"
 #include <cstdint>
+#include <deque>
+#include <string>
 
 /**
  * @brief Canvas wrapper for LVGL v9 (RGB565/ARGB8888/etc.).
@@ -53,8 +55,22 @@ private:
     lv_layer_t m_batchLayer;
     void *m_rawBuffer = nullptr; // Raw pixel buffer pointer for direct writes (RGB565)
 
+    // Text string arena: keeps Thai-shaped text buffers alive until after finish_layer.
+    // LVGL v9 queues draw tasks asynchronously; lv_draw_label_dsc_t.text must remain
+    // valid until lv_canvas_finish_layer processes the task.
+    std::deque<std::string> m_textArena;
+
     /** Get active layer: batch layer if open, else init a temporary one. */
     lv_layer_t *acquireLayer(lv_layer_t *tmp);
     /** Finish the layer only when NOT in batch mode. */
     void releaseLayer(lv_layer_t *tmp);
+
+    /**
+     * @brief Shaped Thai text rendering: renders 2-layer tone marks at a lower position
+     *        than 3-layer tone marks to avoid "floating" appearance on bare consonants.
+     *        3-layer = consonant + above-vowel + tone → tone stays high (original font ofs_y)
+     *        2-layer = consonant + tone (no above-vowel) → tone rendered at lowered area.y1
+     */
+    void drawTextThaiShaped(lv_layer_t *layer, const lv_draw_label_dsc_t *dsc,
+                            const lv_area_t *area, int32_t fontSize);
 };

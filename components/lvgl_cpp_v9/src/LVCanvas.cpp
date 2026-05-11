@@ -5,6 +5,7 @@
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_rect.h"
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_line.h"
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_label.h"
+#include "font_thai.h"
 
 LVCanvas::LVCanvas(lv_obj_t *parent, uint16_t width, uint16_t height, lv_color_format_t fmt, void *buffer)
     : m_width(width), m_height(height)
@@ -49,6 +50,7 @@ void LVCanvas::endBatch()
         return;
     m_batchMode = false;
     lv_canvas_finish_layer(m_canvas, &m_batchLayer);
+    m_textArena.clear(); // free Thai-shaped text buffers after all tasks have rendered
 }
 
 lv_layer_t *LVCanvas::acquireLayer(lv_layer_t *tmp)
@@ -190,41 +192,214 @@ void LVCanvas::drawText(int32_t x, int32_t y, const char *text, LVColor color, i
     lv_layer_t tmp;
     lv_layer_t *layer = acquireLayer(&tmp);
 
-    // Map fontSize to nearest available Montserrat built-in font
-    const lv_font_t *font = &lv_font_montserrat_14; // fallback
-    if (fontSize <= 15)
-        font = &lv_font_montserrat_14;
-    else if (fontSize <= 17)
-        font = &lv_font_montserrat_16;
-    else if (fontSize <= 19)
-        font = &lv_font_montserrat_18;
-    else if (fontSize <= 21)
-        font = &lv_font_montserrat_20;
-    else if (fontSize <= 23)
-        font = &lv_font_montserrat_22;
-    else if (fontSize <= 26)
-        font = &lv_font_montserrat_24;
-    else if (fontSize <= 30)
-        font = &lv_font_montserrat_28;
-    else if (fontSize <= 34)
-        font = &lv_font_montserrat_32;
-    else if (fontSize <= 42)
-        font = &lv_font_montserrat_36;
-    else
-        font = &lv_font_montserrat_48;
+    // Select font: always TH Niramit for consistent sizing between Thai and Latin-only text.
+    // Montserrat renders Latin at a visually larger size than TH Niramit at the same fontSize,
+    // which confuses users when mixing screens. TH Niramit contains full Latin (U+0020-007F).
+    const lv_font_t *font = th_niramit_select(fontSize);
 
     lv_draw_label_dsc_t dsc;
     lv_draw_label_dsc_init(&dsc);
     dsc.color = color.raw();
     dsc.font = font;
     dsc.text = text;
-    int32_t w = (max_width > 0) ? max_width : lv_obj_get_width(m_canvas) - x;
+    int32_t w = (max_width > 0) ? max_width : (int32_t)m_width - x;
 
     lv_area_t area;
     lv_area_set(&area, x, y, x + w - 1, y + fontSize * 2); // height = 2× fontSize to fit descenders
-    lv_draw_label(layer, &dsc, &area);
+
+    // Always use the Thai shaper path — handles Latin-only passthrough correctly
+    // (no tone marks extracted → base_buf == original text). This also ensures
+    // Latin characters use TH Niramit sizing for consistent appearance.
+    drawTextThaiShaped(layer, &dsc, &area, fontSize);
 
     releaseLayer(&tmp);
+    if (!m_batchMode)
+        m_textArena.clear(); // free Thai-shaped text buffers after non-batch finish_layer
+}
+
+// ─── Thai tone mark shaper ────────────────────────────────────────────────────
+// Thai character classification helpers (static, file-scope)
+static inline bool th_is_above_vowel(uint32_t cp)
+{
+    // ั(0E31)  ิ(0E34) ี(0E35) ึ(0E36) ื(0E37)  ็(0E47)  ํ(0E4D)
+    return (cp == 0x0E31) ||
+           (cp >= 0x0E34 && cp <= 0x0E37) ||
+           (cp == 0x0E47) ||
+           (cp == 0x0E4D);
+}
+
+static inline bool th_is_tone_mark(uint32_t cp)
+{
+    // ่(0E48) ้(0E49) ๊(0E4A) ๋(0E4B)
+    return (cp >= 0x0E48 && cp <= 0x0E4B);
+}
+
+// Read one UTF-8 codepoint from *p, advance *p. Returns 0 at end of string.
+static uint32_t utf8_next_cp(const uint8_t **p)
+{
+    uint8_t b = **p;
+    if (b == 0)
+        return 0;
+    (*p)++;
+    if (b < 0x80)
+        return b;
+    if ((b & 0xE0) == 0xC0)
+    {
+        uint32_t cp = (uint32_t)(b & 0x1F) << 6;
+        cp |= (**p & 0x3F);
+        (*p)++;
+        return cp;
+    }
+    if ((b & 0xF0) == 0xE0)
+    {
+        uint32_t cp = (uint32_t)(b & 0x0F) << 12;
+        cp |= (uint32_t)(**p & 0x3F) << 6;
+        (*p)++;
+        cp |= (**p & 0x3F);
+        (*p)++;
+        return cp;
+    }
+    // 4-byte (outside BMP, skip)
+    (*p) += 3;
+    return 0xFFFD;
+}
+
+// Write one UTF-8 codepoint to buf (must have at least 4 bytes). Returns byte count.
+static int utf8_write_cp(uint8_t *buf, uint32_t cp)
+{
+    if (cp < 0x80)
+    {
+        buf[0] = (uint8_t)cp;
+        return 1;
+    }
+    if (cp < 0x800)
+    {
+        buf[0] = 0xC0 | (uint8_t)(cp >> 6);
+        buf[1] = 0x80 | (uint8_t)(cp & 0x3F);
+        return 2;
+    }
+    buf[0] = 0xE0 | (uint8_t)(cp >> 12);
+    buf[1] = 0x80 | (uint8_t)((cp >> 6) & 0x3F);
+    buf[2] = 0x80 | (uint8_t)(cp & 0x3F);
+    return 3;
+}
+
+void LVCanvas::drawTextThaiShaped(lv_layer_t *layer, const lv_draw_label_dsc_t *dsc,
+                                  const lv_area_t *area, int32_t fontSize)
+{
+    struct ToneMark
+    {
+        int32_t x;        // screen x1 for the separate tone-mark draw call
+        uint32_t cp;      // tone mark codepoint (่ ้ ๊ ๋)
+        uint32_t base_cp; // base consonant codepoint — used to compute dynamic offset
+    };
+
+    static constexpr int MAX_TONES = 64;
+    ToneMark tone_list[MAX_TONES];
+    int tone_count = 0;
+
+    // Build base_buf: original text with 2-layer tone marks removed
+    char base_buf[512];
+    uint8_t *out = (uint8_t *)base_buf;
+
+    const uint8_t *p = (const uint8_t *)dsc->text;
+    uint32_t prev_cp = 0;
+    uint32_t cluster_base_cp = 0; // most recent Thai consonant — sets offset per cluster
+    int32_t x_acc = 0;            // accumulated advance width (pixels) from area->x1
+
+    while (*p)
+    {
+        uint32_t cp = utf8_next_cp(&p);
+        if (cp == 0)
+            break;
+
+        // Track current cluster's base consonant (Thai: 0E01–0E2E)
+        if (cp >= 0x0E01 && cp <= 0x0E2E)
+            cluster_base_cp = cp;
+
+        if (th_is_tone_mark(cp))
+        {
+            bool three_layer = th_is_above_vowel(prev_cp);
+            if (!three_layer)
+            {
+                // 2-layer cluster: save tone mark for separate lowered rendering
+                if (tone_count < MAX_TONES)
+                {
+                    tone_list[tone_count].x = area->x1 + x_acc;
+                    tone_list[tone_count].cp = cp;
+                    tone_list[tone_count].base_cp = cluster_base_cp;
+                    tone_count++;
+                }
+                // Do NOT write to base_buf; skip this character
+                prev_cp = cp;
+                continue;
+            }
+            // 3-layer: fall through and write to base_buf normally
+        }
+
+        // Accumulate advance width
+        lv_font_glyph_dsc_t g;
+        uint32_t next_cp_peek = 0;
+        {
+            const uint8_t *pp = p;
+            next_cp_peek = utf8_next_cp(&pp);
+        }
+        if (lv_font_get_glyph_dsc(dsc->font, &g, cp, next_cp_peek))
+            x_acc += (int32_t)g.adv_w; // adv_w in pixels (LVGL v9)
+
+        out += utf8_write_cp(out, cp);
+        if (out >= (uint8_t *)base_buf + sizeof(base_buf) - 4)
+            break;
+        prev_cp = cp;
+    }
+    *out = '\0';
+
+    // Render base text (3-layer tone marks included, 2-layer tones removed)
+    m_textArena.emplace_back(base_buf);
+    lv_draw_label_dsc_t base_dsc = *dsc;
+    base_dsc.text = m_textArena.back().c_str();
+    lv_draw_label(layer, &base_dsc, area);
+
+    // Render each 2-layer tone mark with a per-consonant dynamic offset
+    for (int i = 0; i < tone_count; i++)
+    {
+        // Compute how many pixels to lower the tone mark so it sits just above the consonant.
+        //
+        // Font coordinate system (positive = up from baseline):
+        //   consonant top = cons_g.box_h + cons_g.ofs_y   (pixels above baseline)
+        //   tone mark bottom = tone_g.ofs_y               (pixels above baseline)
+        //
+        // We want: tone_bottom_on_screen ≈ consonant_top_on_screen + 1 px gap
+        // Since screen y increases downward, "lower the tone by Δ" means area.y1 += Δ.
+        // Δ = tone_bottom - consonant_top - 1
+        // Clamp to 0: tall consonants (ห, บ, ด …) where consonant_top ≈ tone_bottom need
+        // no adjustment (the font already positions them correctly for 2-layer).
+
+        lv_font_glyph_dsc_t cons_g = {}, tone_g = {};
+        lv_font_get_glyph_dsc(dsc->font, &cons_g, tone_list[i].base_cp, 0);
+        lv_font_get_glyph_dsc(dsc->font, &tone_g, tone_list[i].cp, 0);
+
+        int32_t cons_top   = (int32_t)cons_g.box_h + (int32_t)cons_g.ofs_y;
+        int32_t tone_bott  = (int32_t)tone_g.ofs_y;
+        int32_t drop       = tone_bott - cons_top - 1;
+        int32_t offset     = (drop > 0) ? drop : 0;
+
+        // Build single-character UTF-8 string into arena
+        char tbuf[4];
+        int bytes = utf8_write_cp((uint8_t *)tbuf, tone_list[i].cp);
+        tbuf[bytes] = '\0';
+        m_textArena.emplace_back(tbuf, bytes);
+
+        lv_draw_label_dsc_t tone_dsc = *dsc;
+        tone_dsc.text = m_textArena.back().c_str();
+
+        lv_area_t tone_area = *area;
+        tone_area.x1 = tone_list[i].x;
+        tone_area.x2 = tone_list[i].x + fontSize;
+        tone_area.y1 = area->y1 + offset;
+
+        lv_draw_label(layer, &tone_dsc, &tone_area);
+    }
 }
 
 void LVCanvas::setPalette(uint8_t idx, LVColor color)
