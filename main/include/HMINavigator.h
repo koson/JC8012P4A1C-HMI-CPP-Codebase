@@ -31,8 +31,8 @@ private:
     HMINavigator(const HMINavigator &) = delete;
     HMINavigator &operator=(const HMINavigator &) = delete;
 
-    LVScreen *m_splash  = nullptr;
-    LVScreen *m_home    = nullptr;
+    LVScreen *m_splash = nullptr;
+    LVScreen *m_home = nullptr;
     LVScreen *m_library = nullptr;
 
     void buildSplashScreen(LVScreen *scr);

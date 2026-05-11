@@ -34,8 +34,8 @@ void HMINavigator::start()
     ScreenManager &mgr = ScreenManager::getInstance();
 
     // Create screens
-    m_splash  = new LVScreen();
-    m_home    = new LVScreen();
+    m_splash = new LVScreen();
+    m_home = new LVScreen();
     m_library = new LVScreen();
 
     // Populate content
@@ -44,8 +44,8 @@ void HMINavigator::start()
     buildLibraryScreen(m_library);
 
     // Register with existing ScreenManager
-    mgr.registerScreen("splash",  m_splash);
-    mgr.registerScreen("home",    m_home);
+    mgr.registerScreen("splash", m_splash);
+    mgr.registerScreen("home", m_home);
     mgr.registerScreen("library", m_library);
 
     ESP_LOGI(TAG, "Screens registered — loading Splash");
@@ -131,15 +131,15 @@ void HMINavigator::buildHomeScreen(LVScreen *scr)
     };
 
     static const BtnDef BTNS[] = {
-        {LV_SYMBOL_LIST,     "คลังบทเรียน", 0x0f4c75, "library"},
-        {LV_SYMBOL_PLAY,     "ทดลองวงจร",  0x1a5e2a, "library"},
-        {LV_SYMBOL_EDIT,     "แบบฝึกหัด",  0x5e1a1a, "library"},
-        {LV_SYMBOL_SETTINGS, "ตั้งค่า",    0x3a3a1a, "library"},
+        {LV_SYMBOL_LIST, "คลังบทเรียน", 0x0f4c75, "library"},
+        {LV_SYMBOL_PLAY, "ทดลองวงจร", 0x1a5e2a, "library"},
+        {LV_SYMBOL_EDIT, "แบบฝึกหัด", 0x5e1a1a, "library"},
+        {LV_SYMBOL_SETTINGS, "ตั้งค่า", 0x3a3a1a, "library"},
     };
 
-    const int32_t BTN_W  = 270;
-    const int32_t BTN_H  = 120;
-    const int32_t GAP    = 20;
+    const int32_t BTN_W = 270;
+    const int32_t BTN_H = 120;
+    const int32_t GAP = 20;
     const int32_t START_Y = 150;
     const int32_t START_X = (LV_HOR_RES - (BTN_W * 2 + GAP)) / 2;
 
@@ -160,7 +160,7 @@ void HMINavigator::buildHomeScreen(LVScreen *scr)
         lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_clear_flag(btn, LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_set_style_bg_color(btn,
-            lv_color_lighten(lv_color_hex(BTNS[i].color), 40), LV_STATE_PRESSED);
+                                  lv_color_lighten(lv_color_hex(BTNS[i].color), 40), LV_STATE_PRESSED);
 
         lv_obj_t *icon = lv_label_create(btn);
         lv_label_set_text(icon, BTNS[i].icon);
