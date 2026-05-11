@@ -1,6 +1,7 @@
 #include "LessonPlayer.h"
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
+#include "font_thai.h"
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -153,13 +154,13 @@ void LessonPlayer::show()
     // Lesson title
     m_titleLabel = lv_label_create(m_headerBar);
     lv_label_set_text(m_titleLabel, jstr(m_lessonRoot, "title_th", jstr(m_lessonRoot, "title")));
-    lv_obj_set_style_text_font(m_titleLabel, &lv_font_montserrat_20, 0);
+    lv_obj_set_style_text_font(m_titleLabel, th_niramit_select(20), 0);
     lv_obj_set_style_text_color(m_titleLabel, lv_color_hex(0x00d4ff), 0);
     lv_obj_align(m_titleLabel, LV_ALIGN_CENTER, 0, 0);
 
     // Page indicator label (e.g. "2 / 4")
     m_pageIndicator = lv_label_create(m_headerBar);
-    lv_obj_set_style_text_font(m_pageIndicator, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_font(m_pageIndicator, th_niramit_select(16), 0);
     lv_obj_set_style_text_color(m_pageIndicator, lv_color_hex(0x888899), 0);
     lv_obj_align(m_pageIndicator, LV_ALIGN_RIGHT_MID, -12, 0);
 
@@ -193,7 +194,7 @@ void LessonPlayer::show()
     lv_obj_add_event_cb(m_btnBack, onBackBtn, LV_EVENT_CLICKED, this);
     lv_obj_t *lbl_back = lv_label_create(m_btnBack);
     lv_label_set_text(lbl_back, LV_SYMBOL_LEFT "  กลับ");
-    lv_obj_set_style_text_font(lbl_back, &lv_font_montserrat_16, 0);
+    lv_obj_set_style_text_font(lbl_back, th_niramit_select(20), 0);
     lv_obj_set_style_text_color(lbl_back, lv_color_hex(0xccccdd), 0);
     lv_obj_center(lbl_back);
 
@@ -206,7 +207,7 @@ void LessonPlayer::show()
     lv_obj_add_event_cb(m_btnNext, onNextBtn, LV_EVENT_CLICKED, this);
     lv_obj_t *lbl_next = lv_label_create(m_btnNext);
     lv_label_set_text(lbl_next, "ต่อไป  " LV_SYMBOL_RIGHT);
-    lv_obj_set_style_text_font(lbl_next, &lv_font_montserrat_16, 0);
+    lv_obj_set_style_text_font(lbl_next, th_niramit_select(20), 0);
     lv_obj_set_style_text_color(lbl_next, lv_color_hex(0xffffff), 0);
     lv_obj_center(lbl_next);
 
@@ -314,7 +315,7 @@ void LessonPlayer::buildCoverPage(lv_obj_t *cont, cJSON *page)
     // Big title
     lv_obj_t *t = lv_label_create(cont);
     lv_label_set_text(t, jstr(page, "title"));
-    lv_obj_set_style_text_font(t, &lv_font_montserrat_48, 0);
+    lv_obj_set_style_text_font(t, th_niramit_select(48), 0);
     lv_obj_set_style_text_color(t, lv_color_hex(0x00d4ff), 0);
     lv_obj_align(t, LV_ALIGN_TOP_MID, 0, y);
     y += 70;
@@ -322,7 +323,7 @@ void LessonPlayer::buildCoverPage(lv_obj_t *cont, cJSON *page)
     // Subtitle (Thai)
     lv_obj_t *sub = lv_label_create(cont);
     lv_label_set_text(sub, jstr(page, "subtitle"));
-    lv_obj_set_style_text_font(sub, &lv_font_montserrat_28, 0);
+    lv_obj_set_style_text_font(sub, th_niramit_select(28), 0);
     lv_obj_set_style_text_color(sub, lv_color_hex(0x8888bb), 0);
     lv_obj_align(sub, LV_ALIGN_TOP_MID, 0, y);
     y += 56;
@@ -337,7 +338,7 @@ void LessonPlayer::buildCoverPage(lv_obj_t *cont, cJSON *page)
     lv_obj_clear_flag(ic_badge, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_t *ic_lbl = lv_label_create(ic_badge);
     lv_label_set_text(ic_lbl, jstr(page, "ic_label"));
-    lv_obj_set_style_text_font(ic_lbl, &lv_font_montserrat_20, 0);
+    lv_obj_set_style_text_font(ic_lbl, th_niramit_select(20), 0);
     lv_obj_set_style_text_color(ic_lbl, lv_color_hex(0xffffff), 0);
     lv_obj_center(ic_lbl);
     y += 64;
@@ -365,7 +366,7 @@ void LessonPlayer::buildCoverPage(lv_obj_t *cont, cJSON *page)
         // Header
         lv_obj_t *hdr = lv_label_create(panel);
         lv_label_set_text(hdr, LV_SYMBOL_BULLET "  จุดประสงค์การเรียนรู้");
-        lv_obj_set_style_text_font(hdr, &lv_font_montserrat_18, 0);
+        lv_obj_set_style_text_font(hdr, th_niramit_select(24), 0);
         lv_obj_set_style_text_color(hdr, lv_color_hex(0x00d4ff), 0);
 
         int n = cJSON_GetArraySize(objs);
@@ -380,7 +381,7 @@ void LessonPlayer::buildCoverPage(lv_obj_t *cont, cJSON *page)
 
             lv_obj_t *row = lv_label_create(panel);
             lv_label_set_text(row, buf);
-            lv_obj_set_style_text_font(row, &lv_font_montserrat_16, 0);
+            lv_obj_set_style_text_font(row, th_niramit_select(20), 0);
             lv_obj_set_style_text_color(row, lv_color_hex(0xccccdd), 0);
             lv_obj_set_width(row, SCR_W - PAD * 2 - 40);
             lv_label_set_long_mode(row, LV_LABEL_LONG_WRAP);
@@ -410,7 +411,7 @@ void LessonPlayer::buildTheoryPage(lv_obj_t *cont, cJSON *page)
     // Page title
     lv_obj_t *title = lv_label_create(scroll);
     lv_label_set_text(title, jstr(page, "title"));
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_28, 0);
+    lv_obj_set_style_text_font(title, th_niramit_select(28), 0);
     lv_obj_set_style_text_color(title, lv_color_hex(0x00d4ff), 0);
     lv_obj_set_width(title, SCR_W - PAD * 2);
 
@@ -420,7 +421,7 @@ void LessonPlayer::buildTheoryPage(lv_obj_t *cont, cJSON *page)
     {
         lv_obj_t *body_lbl = lv_label_create(scroll);
         lv_label_set_text(body_lbl, body);
-        lv_obj_set_style_text_font(body_lbl, &lv_font_montserrat_18, 0);
+        lv_obj_set_style_text_font(body_lbl, th_niramit_select(20), 0);
         lv_obj_set_style_text_color(body_lbl, lv_color_hex(0xccccdd), 0);
         lv_obj_set_width(body_lbl, SCR_W - PAD * 2);
         lv_label_set_long_mode(body_lbl, LV_LABEL_LONG_WRAP);
@@ -450,7 +451,7 @@ void LessonPlayer::buildTheoryPage(lv_obj_t *cont, cJSON *page)
 
             lv_obj_t *tt_hdr = lv_label_create(tpanel);
             lv_label_set_text(tt_hdr, "Truth Table");
-            lv_obj_set_style_text_font(tt_hdr, &lv_font_montserrat_18, 0);
+            lv_obj_set_style_text_font(tt_hdr, th_niramit_select(20), 0);
             lv_obj_set_style_text_color(tt_hdr, lv_color_hex(0x00d4ff), 0);
             lv_obj_set_pos(tt_hdr, 0, 0);
 
@@ -499,7 +500,7 @@ void LessonPlayer::buildTheoryPage(lv_obj_t *cont, cJSON *page)
             }
 
             // Style the table
-            lv_obj_set_style_text_font(table, &lv_font_montserrat_20, LV_PART_ITEMS);
+            lv_obj_set_style_text_font(table, th_niramit_select(20), LV_PART_ITEMS);
             lv_obj_set_style_text_color(table, lv_color_hex(0xffffff), LV_PART_ITEMS);
             lv_obj_set_style_bg_color(table, lv_color_hex(0x0f0f23), LV_PART_ITEMS);
             lv_obj_set_style_bg_color(table, lv_color_hex(0x0f4c75),
@@ -552,7 +553,7 @@ void LessonPlayer::buildCircuitPage(lv_obj_t *cont, cJSON *page)
     // ── Page title ──────────────────────────────────────────────────
     lv_obj_t *title = lv_label_create(cont);
     lv_label_set_text(title, jstr(page, "title"));
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_22, 0);
+    lv_obj_set_style_text_font(title, th_niramit_select(24), 0);
     lv_obj_set_style_text_color(title, lv_color_hex(0x00d4ff), 0);
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 24);
 
@@ -592,7 +593,7 @@ void LessonPlayer::buildCircuitPage(lv_obj_t *cont, cJSON *page)
         // Label
         lv_obj_t *lbl = lv_label_create(panel);
         lv_label_set_text(lbl, in_name);
-        lv_obj_set_style_text_font(lbl, &lv_font_montserrat_28, 0);
+        lv_obj_set_style_text_font(lbl, th_niramit_select(28), 0);
         lv_obj_set_style_text_color(lbl, lv_color_hex(0xffffff), 0);
         lv_obj_set_pos(lbl, COL_IN, row_y);
 
@@ -636,7 +637,7 @@ void LessonPlayer::buildCircuitPage(lv_obj_t *cont, cJSON *page)
 
     lv_obj_t *gate_lbl = lv_label_create(gate_box);
     lv_label_set_text(gate_lbl, gate_type);
-    lv_obj_set_style_text_font(gate_lbl, &lv_font_montserrat_24, 0);
+    lv_obj_set_style_text_font(gate_lbl, th_niramit_select(24), 0);
     lv_obj_set_style_text_color(gate_lbl, lv_color_hex(0xffffff), 0);
     lv_obj_center(gate_lbl);
 
@@ -662,7 +663,7 @@ void LessonPlayer::buildCircuitPage(lv_obj_t *cont, cJSON *page)
 
     lv_obj_t *out_name_lbl = lv_label_create(panel);
     lv_label_set_text(out_name_lbl, out_name);
-    lv_obj_set_style_text_font(out_name_lbl, &lv_font_montserrat_28, 0);
+    lv_obj_set_style_text_font(out_name_lbl, th_niramit_select(28), 0);
     lv_obj_set_style_text_color(out_name_lbl, lv_color_hex(0xffffff), 0);
     lv_obj_set_pos(out_name_lbl, COL_OUT, gate_cy - 36);
 
@@ -674,7 +675,7 @@ void LessonPlayer::buildCircuitPage(lv_obj_t *cont, cJSON *page)
 
     m_outputLabel = lv_label_create(panel);
     lv_label_set_text(m_outputLabel, "0");
-    lv_obj_set_style_text_font(m_outputLabel, &lv_font_montserrat_28, 0);
+    lv_obj_set_style_text_font(m_outputLabel, th_niramit_select(28), 0);
     lv_obj_set_style_text_color(m_outputLabel, lv_color_hex(0xff6666), 0);
     lv_obj_set_pos(m_outputLabel, COL_OUT + 56, gate_cy - 10);
 
@@ -691,7 +692,7 @@ void LessonPlayer::buildCircuitPage(lv_obj_t *cont, cJSON *page)
     // Hint
     lv_obj_t *hint = lv_label_create(cont);
     lv_label_set_text(hint, jstr(page, "hint"));
-    lv_obj_set_style_text_font(hint, &lv_font_montserrat_16, 0);
+    lv_obj_set_style_text_font(hint, th_niramit_select(20), 0);
     lv_obj_set_style_text_color(hint, lv_color_hex(0x888899), 0);
     lv_obj_align(hint, LV_ALIGN_BOTTOM_MID, 0, -20);
 }
@@ -706,7 +707,7 @@ void LessonPlayer::buildVerifyPage(lv_obj_t *cont, cJSON *page)
     // Title
     lv_obj_t *title = lv_label_create(cont);
     lv_label_set_text(title, jstr(page, "title"));
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_28, 0);
+    lv_obj_set_style_text_font(title, th_niramit_select(28), 0);
     lv_obj_set_style_text_color(title, lv_color_hex(0xf39c12), 0);
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, y);
     y += 56;
@@ -729,7 +730,7 @@ void LessonPlayer::buildVerifyPage(lv_obj_t *cont, cJSON *page)
 
         lv_obj_t *hdr = lv_label_create(panel);
         lv_label_set_text(hdr, "วิธีต่อวงจร:");
-        lv_obj_set_style_text_font(hdr, &lv_font_montserrat_18, 0);
+        lv_obj_set_style_text_font(hdr, th_niramit_select(20), 0);
         lv_obj_set_style_text_color(hdr, lv_color_hex(0x00d4ff), 0);
 
         int n = cJSON_GetArraySize(instrs);
@@ -744,7 +745,7 @@ void LessonPlayer::buildVerifyPage(lv_obj_t *cont, cJSON *page)
 
             lv_obj_t *row = lv_label_create(panel);
             lv_label_set_text(row, buf);
-            lv_obj_set_style_text_font(row, &lv_font_montserrat_16, 0);
+            lv_obj_set_style_text_font(row, th_niramit_select(20), 0);
             lv_obj_set_style_text_color(row, lv_color_hex(0xccccdd), 0);
             lv_obj_set_width(row, SCR_W - PAD * 2 - 40);
             lv_label_set_long_mode(row, LV_LABEL_LONG_WRAP);
@@ -761,7 +762,7 @@ void LessonPlayer::buildVerifyPage(lv_obj_t *cont, cJSON *page)
 
     lv_obj_t *test_lbl = lv_label_create(test_btn);
     lv_label_set_text(test_lbl, LV_SYMBOL_PLAY "  เริ่มทดสอบ");
-    lv_obj_set_style_text_font(test_lbl, &lv_font_montserrat_22, 0);
+    lv_obj_set_style_text_font(test_lbl, th_niramit_select(24), 0);
     lv_obj_set_style_text_color(test_lbl, lv_color_hex(0xffffff), 0);
     lv_obj_center(test_lbl);
 
@@ -777,7 +778,7 @@ void LessonPlayer::buildVerifyPage(lv_obj_t *cont, cJSON *page)
 
     lv_obj_t *res_lbl = lv_label_create(m_verifyResultPanel);
     lv_label_set_text(res_lbl, LV_SYMBOL_OK "  UartBridge: เชื่อมต่อ H7 ในขั้นตอนถัดไป");
-    lv_obj_set_style_text_font(res_lbl, &lv_font_montserrat_20, 0);
+    lv_obj_set_style_text_font(res_lbl, th_niramit_select(20), 0);
     lv_obj_set_style_text_color(res_lbl, lv_color_hex(0xffffff), 0);
     lv_obj_center(res_lbl);
 }

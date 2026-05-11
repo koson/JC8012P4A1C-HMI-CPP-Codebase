@@ -4,6 +4,7 @@
 #include "esp_timer.h"
 #include "src/debugging/sysmon/lv_sysmon.h"
 #include "esp_lvgl_port.h"
+#include "font_thai.h"
 
 static const char *TAG = "HMINavigator";
 
@@ -161,7 +162,8 @@ void HMINavigator::buildHomeScreen(LVScreen *scr)
     lv_obj_t *sub = lv_label_create(root);
     lv_label_set_text(sub, "เลือกหมวดบทเรียน");
     lv_obj_set_style_text_color(sub, lv_color_hex(0x8888aa), 0);
-    lv_obj_align_to(sub, title, LV_ALIGN_OUT_BOTTOM_MID, 0, 8);
+    lv_obj_set_style_text_font(sub, th_niramit_select(40), 0);
+    lv_obj_align_to(sub, title, LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
 
     // Category buttons — 2×2 grid
     struct BtnDef
@@ -207,13 +209,15 @@ void HMINavigator::buildHomeScreen(LVScreen *scr)
         lv_obj_t *icon = lv_label_create(btn);
         lv_label_set_text(icon, BTNS[i].icon);
         lv_obj_set_style_text_font(icon, &lv_font_montserrat_28, 0);
+        // lv_obj_set_style_text_font(icon, th_niramit_select(20), 0);
         lv_obj_set_style_text_color(icon, lv_color_hex(0xffffff), 0);
         lv_obj_align(icon, LV_ALIGN_TOP_MID, 0, 12);
 
         lv_obj_t *lbl = lv_label_create(btn);
         lv_label_set_text(lbl, BTNS[i].label);
         lv_obj_set_style_text_color(lbl, lv_color_hex(0xddddee), 0);
-        lv_obj_align(lbl, LV_ALIGN_BOTTOM_MID, 0, -12);
+        lv_obj_set_style_text_font(lbl, th_niramit_select(40), 0);
+        lv_obj_align(lbl, LV_ALIGN_BOTTOM_MID, 0, 12);
 
         // Store target screen name pointer in user_data
         lv_obj_set_user_data(btn, (void *)BTNS[i].target);

@@ -95,6 +95,7 @@ idf_component_register(
         svg_renderer  # LabHappy SVG Path Renderer
         json_renderer  # LabBuddy JSON Circuit Viewer
         esp_timer  # High-resolution timer for perf tracking
+        font_thai  # TH Niramit Thai+Latin fonts for LessonPlayer
         
     PRIV_REQUIRES
         bsp_extra  # BSP extra functions

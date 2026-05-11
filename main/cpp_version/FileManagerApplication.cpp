@@ -167,6 +167,13 @@ static const char *index_html = R"HTML(
 
         <div class="section">
             <h2>💾 SD Card Files</h2>
+            <div style="margin-bottom:12px;">
+                <label style="font-size:14px;color:#555;">📂 Browse folder: </label>
+                <select id="browseDir" style="padding:6px 12px;border-radius:6px;border:1px solid #ccc;font-size:14px;" onchange="loadFiles()">
+                    <option value="lessons">lessons (บทเรียน)</option>
+                    <option value="WORKSHOP">WORKSHOP (circuits)</option>
+                </select>
+            </div>
             <div class="file-list" id="fileList">Loading...</div>
             <div class="status" style="text-align: center; margin-top: 20px;">
                 <strong>Status:</strong> <span id="fileCount">0</span> file(s) on SD card
@@ -223,8 +230,9 @@ static const char *index_html = R"HTML(
         }
 
         async function loadFiles() {
+            const dir = document.getElementById('browseDir').value;
             try {
-                const response = await fetch('/files');
+                const response = await fetch('/files?dir=' + encodeURIComponent(dir));
                 const data = await response.json();
                 
                 if (data.files && data.files.length > 0) {
@@ -238,7 +246,10 @@ static const char *index_html = R"HTML(
                                 </div>
                             </div>
                             <div class="file-actions">
-                                <button class="btn-small btn-view" onclick="viewFile('${file.name}')">📥</button>
+                                ${dir === 'lessons'
+                                    ? `<button class="btn-small btn-view" onclick="launchLesson('${file.name}')">🚀 Launch</button>`
+                                    : `<button class="btn-small btn-view" onclick="viewFile('${file.name}')">📺 Render</button>`
+                                }
                                 <button class="btn-small btn-delete" onclick="deleteFile('${file.name}')">🗑️</button>
                             </div>
                         </div>
@@ -253,9 +264,25 @@ static const char *index_html = R"HTML(
             }
         }
 
-        async function viewFile(filename) {
+        async function launchLesson(filename) {
+            const dir = document.getElementById('browseDir').value;
             try {
-                const response = await fetch(`/view?file=${encodeURIComponent(filename)}`);
+                const response = await fetch(`/launch?file=${encodeURIComponent(filename)}&dir=${encodeURIComponent(dir)}`);
+                const result = await response.json();
+                if (result.success) {
+                    showMessage('🚀 ' + result.message, 'success');
+                } else {
+                    showMessage('❌ ' + (result.message || 'Launch failed'), 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Launch failed: ' + error.message, 'error');
+            }
+        }
+
+        async function viewFile(filename) {
+            const dir = document.getElementById('browseDir').value;
+            try {
+                const response = await fetch(`/view?file=${encodeURIComponent(filename)}&dir=${encodeURIComponent(dir)}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -512,7 +539,33 @@ esp_err_t FileManagerApplication::root_handler(httpd_req_t *req)
 // HTTP Handler: List files
 esp_err_t FileManagerApplication::list_handler(httpd_req_t *req)
 {
-    DIR *dir = opendir(UPLOAD_DIR);
+    // Allow caller to select directory via ?dir=lessons or ?dir=WORKSHOP
+    char list_dir[64];
+    strlcpy(list_dir, UPLOAD_DIR, sizeof(list_dir)); // default = /sdcard/WORKSHOP
+    {
+        char query[128] = {0};
+        if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK)
+        {
+            char dir_param[64] = {0};
+            if (httpd_query_key_value(query, "dir", dir_param, sizeof(dir_param)) == ESP_OK && strlen(dir_param) > 0)
+            {
+                bool ok = true;
+                for (int i = 0; dir_param[i]; i++)
+                {
+                    char c = dir_param[i];
+                    if (!isalnum((unsigned char)c) && c != '_' && c != '-')
+                    {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok)
+                    snprintf(list_dir, sizeof(list_dir), "/sdcard/%s", dir_param);
+            }
+        }
+    }
+
+    DIR *dir = opendir(list_dir);
     if (!dir)
     {
         httpd_resp_set_status(req, "500 Internal Server Error");
@@ -539,7 +592,7 @@ esp_err_t FileManagerApplication::list_handler(httpd_req_t *req)
         if (entry->d_type == DT_REG)
         {
             char filepath[512];
-            snprintf(filepath, sizeof(filepath), "%s/%s", UPLOAD_DIR, entry->d_name);
+            snprintf(filepath, sizeof(filepath), "%s/%s", list_dir, entry->d_name);
 
             if (stat(filepath, &st) == 0)
             {
@@ -758,8 +811,8 @@ esp_err_t FileManagerApplication::download_handler(httpd_req_t *req)
 // HTTP Handler: View/Render file on LCD
 esp_err_t FileManagerApplication::view_handler(httpd_req_t *req)
 {
-    // Get filename from query string: /view?file=FILENAME.JSON
-    char query[128];
+    // Parse query string: /view?file=FILENAME.JSON&dir=lessons
+    char query[256];
     if (httpd_req_get_url_query_str(req, query, sizeof(query)) != ESP_OK)
     {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing file parameter");
@@ -773,7 +826,32 @@ esp_err_t FileManagerApplication::view_handler(httpd_req_t *req)
         return ESP_FAIL;
     }
 
-    ESP_LOGI(TAG, "View request for: %s", filename);
+    // Optional dir param (default = WORKSHOP)
+    char view_dir[64];
+    strlcpy(view_dir, UPLOAD_DIR, sizeof(view_dir));
+    {
+        char dir_param[64] = {0};
+        if (httpd_query_key_value(query, "dir", dir_param, sizeof(dir_param)) == ESP_OK && strlen(dir_param) > 0)
+        {
+            bool ok = true;
+            for (int i = 0; dir_param[i]; i++)
+            {
+                char c = dir_param[i];
+                if (!isalnum((unsigned char)c) && c != '_' && c != '-')
+                {
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok)
+                snprintf(view_dir, sizeof(view_dir), "/sdcard/%s", dir_param);
+        }
+    }
+
+    char filepath[256];
+    snprintf(filepath, sizeof(filepath), "%s/%s", view_dir, filename);
+
+    ESP_LOGI(TAG, "View request: %s", filepath);
 
     // Get FileManagerApplication instance
     FileManagerApplication &app = FileManagerApplication::getInstance();
@@ -784,8 +862,8 @@ esp_err_t FileManagerApplication::view_handler(httpd_req_t *req)
         return ESP_FAIL;
     }
 
-    // Render file on LCD
-    bool success = app.m_viewer->renderFile(filename);
+    // Render file on LCD using full path
+    bool success = app.m_viewer->renderFilePath(filepath);
 
     // Get debug info from renderer
     std::string debugInfo = app.m_viewer->getLastDebugInfo();
@@ -847,6 +925,68 @@ esp_err_t FileManagerApplication::delete_handler(httpd_req_t *req)
     }
 }
 
+// HTTP Handler: Launch lesson on device via LessonPlayer
+// GET /launch?file=L001_NOT_GATE.JSON&dir=lessons
+esp_err_t FileManagerApplication::launch_handler(httpd_req_t *req)
+{
+    char query[256];
+    if (httpd_req_get_url_query_str(req, query, sizeof(query)) != ESP_OK)
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing file parameter");
+        return ESP_FAIL;
+    }
+
+    char filename[128];
+    if (httpd_query_key_value(query, "file", filename, sizeof(filename)) != ESP_OK)
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid file parameter");
+        return ESP_FAIL;
+    }
+
+    // dir param (default = lessons)
+    char dir_param[64] = "lessons";
+    httpd_query_key_value(query, "dir", dir_param, sizeof(dir_param));
+
+    // Sanitize dir
+    for (int i = 0; dir_param[i]; i++)
+    {
+        char c = dir_param[i];
+        if (!isalnum((unsigned char)c) && c != '_' && c != '-')
+        {
+            strlcpy(dir_param, "lessons", sizeof(dir_param));
+            break;
+        }
+    }
+
+    char filepath[256];
+    snprintf(filepath, sizeof(filepath), "/sdcard/%s/%s", dir_param, filename);
+    ESP_LOGI(TAG, "Launch lesson: %s", filepath);
+
+    // Load lesson (file I/O — must be outside LVGL lock)
+    LessonPlayer &lp = LessonPlayer::getInstance();
+    bool loaded = lp.loadLesson(filepath);
+
+    httpd_resp_set_type(req, "application/json");
+    if (loaded)
+    {
+        // show() acquires LVGL lock internally
+        lp.show();
+        const char *resp = "{\"success\":true,\"message\":\"Lesson launched on device\"}";
+        httpd_resp_sendstr(req, resp);
+        ESP_LOGI(TAG, "Lesson launched: %s", filepath);
+    }
+    else
+    {
+        char resp[256];
+        snprintf(resp, sizeof(resp),
+                 "{\"success\":false,\"message\":\"Failed to load: %s\"}", filepath);
+        httpd_resp_sendstr(req, resp);
+        ESP_LOGW(TAG, "Lesson load failed: %s", filepath);
+    }
+
+    return ESP_OK;
+}
+
 // Register HTTP handlers
 void FileManagerApplication::registerHTTPHandlers()
 {
@@ -891,6 +1031,13 @@ void FileManagerApplication::registerHTTPHandlers()
         .handler = view_handler,
         .user_ctx = NULL};
     httpd_register_uri_handler(m_server, &view_uri);
+
+    httpd_uri_t launch_uri = {
+        .uri = "/launch",
+        .method = HTTP_GET,
+        .handler = launch_handler,
+        .user_ctx = NULL};
+    httpd_register_uri_handler(m_server, &launch_uri);
 }
 
 // Start HTTP server
@@ -898,7 +1045,7 @@ esp_err_t FileManagerApplication::startHTTPServer()
 {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.lru_purge_enable = true;
-    config.max_uri_handlers = 8;
+    config.max_uri_handlers = 9;
     config.stack_size = 16384;                      // Increased from default 4096 to handle large debug responses
     config.uri_match_fn = httpd_uri_match_wildcard; // Required for /delete/* and /file/* patterns
 
@@ -927,7 +1074,7 @@ void FileManagerApplication::stopHTTPServer()
 }
 
 // Start application
-esp_err_t FileManagerApplication::start()
+esp_err_t FileManagerApplication::start(bool show_ui)
 {
     if (!m_initialized)
     {
@@ -966,14 +1113,18 @@ esp_err_t FileManagerApplication::start()
 
     ESP_LOGI(TAG, "FileManager application started");
 
-    // Show initial UI on display
-    if (m_viewer)
+    // Show initial UI on display (skip when HMINavigator owns the display)
+    if (show_ui && m_viewer)
     {
         ESP_LOGI(TAG, "Creating display UI...");
         lv_lock();
         m_viewer->create(lv_screen_active());
         lv_unlock();
         ESP_LOGI(TAG, "Display UI created");
+    }
+    else
+    {
+        ESP_LOGI(TAG, "FileManager UI suppressed (headless mode)");
     }
 
     return ESP_OK;

@@ -20,6 +20,7 @@
 // System & Application managers
 #include "SystemManager.h"
 #include "HMINavigator.h"
+#include "FileManagerApplication.h"
 
 static const char *TAG = "main";
 
@@ -75,6 +76,22 @@ extern "C" void app_main(void)
     HMINavigator::getInstance().start();
 
     ESP_LOGI(TAG, "HMI running");
+
+    // Step 4: Start WiFi + Web File Manager (background task — non-fatal)
+    ESP_LOGI(TAG, "Starting WiFi and Web File Manager...");
+    FileManagerApplication &fileMgr = FileManagerApplication::getInstance();
+    if (fileMgr.init(sysMgr) == ESP_OK)
+    {
+        // Pass false — HMINavigator owns the display, no FileViewerUI overlay
+        if (fileMgr.start(false) == ESP_OK)
+            ESP_LOGI(TAG, "Web File Manager started — IP: %s", fileMgr.getIPAddress());
+        else
+            ESP_LOGW(TAG, "Web File Manager failed to start (WiFi unavailable?)");
+    }
+    else
+    {
+        ESP_LOGW(TAG, "FileManagerApplication init failed");
+    }
 
     // Keep main task alive — LVGL runs in its own task (lvgl_port)
     while (true)

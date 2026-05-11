@@ -48,11 +48,18 @@ public:
     void renderSelected();
 
     /**
-     * @brief Render file by name
-     * @param filename File name to render (e.g., "HALF_ADDER_CIRCUIT.JSON")
+     * @brief Render file by name (looks in /sdcard/WORKSHOP/)
+     * @param filename File name only (e.g., "HALF_ADDER_CIRCUIT.JSON")
      * @return true if render succeeded
      */
     bool renderFile(const char *filename);
+
+    /**
+     * @brief Render file by full path
+     * @param filepath Full SD card path (e.g., "/sdcard/lessons/L001_NOT_GATE.JSON")
+     * @return true if render succeeded
+     */
+    bool renderFilePath(const char *filepath);
 
     /**
      * @brief Get debug info from last render (JSON string)

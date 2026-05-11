@@ -4,6 +4,7 @@
 #include "esp_http_server.h"
 #include "SystemManager.h"
 #include "FileViewerUI.h"
+#include "LessonPlayer.h"
 
 /**
  * @brief FileManagerApplication - Web-based file manager
@@ -43,9 +44,11 @@ public:
 
     /**
      * @brief Start WiFi and HTTP server
+     * @param show_ui  If true (default), creates FileViewerUI on the display.
+     *                 Pass false when HMINavigator already owns the display.
      * @return ESP_OK on success
      */
-    esp_err_t start();
+    esp_err_t start(bool show_ui = true);
 
     /**
      * @brief Stop HTTP server and disconnect WiFi
@@ -99,6 +102,7 @@ private:
     static esp_err_t download_handler(httpd_req_t *req);
     static esp_err_t delete_handler(httpd_req_t *req);
     static esp_err_t view_handler(httpd_req_t *req);
+    static esp_err_t launch_handler(httpd_req_t *req);
 
     SystemManager *m_sysMgr;
     WiFiConfig m_wifi_config;

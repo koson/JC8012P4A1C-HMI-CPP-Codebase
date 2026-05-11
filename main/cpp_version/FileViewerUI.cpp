@@ -408,6 +408,85 @@ void FileViewerUI::renderSelected()
 }
 
 // Render file by name (called from web interface)
+bool FileViewerUI::renderFilePath(const char *filepath)
+{
+    if (!filepath || strlen(filepath) == 0)
+    {
+        ESP_LOGW(TAG, "Empty filepath");
+        return false;
+    }
+
+    ESP_LOGI(TAG, "Rendering: %s", filepath);
+
+    lv_lock();
+
+    // Headless mode: create minimal render screen if not ready
+    if (!m_renderScreen)
+    {
+        m_renderScreen = lv_obj_create(NULL);
+        lv_obj_set_style_bg_color(m_renderScreen, lv_color_hex(0x1a1a2e), 0);
+        lv_obj_set_style_pad_all(m_renderScreen, 0, 0);
+        lv_obj_clear_flag(m_renderScreen, LV_OBJ_FLAG_SCROLLABLE);
+
+        m_btnBack = lv_button_create(m_renderScreen);
+        lv_obj_set_size(m_btnBack, 90, 40);
+        lv_obj_align(m_btnBack, LV_ALIGN_TOP_LEFT, 8, 8);
+        lv_obj_set_style_bg_color(m_btnBack, lv_color_hex(0x444466), 0);
+        lv_obj_set_style_bg_opa(m_btnBack, LV_OPA_80, 0);
+        lv_obj_add_event_cb(m_btnBack, btnBackClicked, LV_EVENT_CLICKED, this);
+        lv_obj_t *labelBack = lv_label_create(m_btnBack);
+        lv_label_set_text(labelBack, "\xe2\x86\x90 Back");
+        lv_obj_set_style_text_font(labelBack, &lv_font_montserrat_14, 0);
+        lv_obj_center(labelBack);
+    }
+
+    // Create canvas if needed
+    if (!m_canvas)
+    {
+        const uint16_t CANVAS_WIDTH = 1280;
+        const uint16_t CANVAS_HEIGHT = 800;
+        size_t bufferSize = CANVAS_WIDTH * CANVAS_HEIGHT * sizeof(uint16_t);
+        m_canvasBuffer = heap_caps_malloc(bufferSize, MALLOC_CAP_SPIRAM);
+        m_backBuffer   = heap_caps_malloc(bufferSize, MALLOC_CAP_SPIRAM);
+        if (!m_canvasBuffer || !m_backBuffer)
+        {
+            ESP_LOGE(TAG, "Failed to allocate canvas buffers");
+            lv_unlock();
+            return false;
+        }
+        m_canvas = new LVCanvas(m_renderScreen, CANVAS_WIDTH, CANVAS_HEIGHT,
+                                LV_COLOR_FORMAT_RGB565, m_canvasBuffer);
+        lv_obj_align(m_canvas->obj(), LV_ALIGN_CENTER, 0, 0);
+        lv_obj_move_background(m_canvas->obj());
+        m_canvas->fill(LVColor::White);
+    }
+
+    if (!m_renderer)
+        m_renderer = std::make_unique<JsonRenderer::JsonRenderer>(m_canvas);
+
+    m_canvas->setBuffer(m_backBuffer, 1280, 800, LV_COLOR_FORMAT_RGB565);
+    m_canvas->fill(LVColor::White);
+
+    bool success = m_renderer->loadAndRender(filepath);
+
+    std::swap(m_canvasBuffer, m_backBuffer);
+    m_canvas->setBuffer(m_canvasBuffer, 1280, 800, LV_COLOR_FORMAT_RGB565);
+    m_canvas->invalidate();
+
+    if (success)
+    {
+        ESP_LOGI(TAG, "Render OK: %s", filepath);
+        lv_screen_load(m_renderScreen);
+    }
+    else
+    {
+        ESP_LOGE(TAG, "Render failed: %s", m_renderer->getLastError());
+    }
+
+    lv_unlock();
+    return success;
+}
+
 bool FileViewerUI::renderFile(const char *filename)
 {
     if (!filename || strlen(filename) == 0)
