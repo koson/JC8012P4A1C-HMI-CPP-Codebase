@@ -14,6 +14,8 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <sys/stat.h>
+#include <errno.h>
 
 // System & Application managers
 #include "SystemManager.h"
@@ -50,6 +52,22 @@ extern "C" void app_main(void)
     if (sysMgr.mountSDCard() != ESP_OK)
     {
         ESP_LOGW(TAG, "SD card not available — Library will show placeholder items");
+    }
+    else
+    {
+        // Ensure required directories exist so web upload can place files directly
+        const char *dirs[] = {"/sdcard/lessons", "/sdcard/WORKSHOP"};
+        for (const char *d : dirs)
+        {
+            struct stat st;
+            if (stat(d, &st) != 0)
+            {
+                if (mkdir(d, 0775) == 0)
+                    ESP_LOGI(TAG, "Created dir: %s", d);
+                else
+                    ESP_LOGW(TAG, "mkdir %s failed: %d", d, errno);
+            }
+        }
     }
 
     // Step 3: Start HMI — shows Splash then auto-navigates to Home

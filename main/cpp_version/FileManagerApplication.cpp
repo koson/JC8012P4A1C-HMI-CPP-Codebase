@@ -150,8 +150,13 @@ static const char *index_html = R"HTML(
         </div>
         
         <div class="section">
-            <h2>📤 Upload File</h2>
-            <div class="upload-area" id="uploadArea">
+            <h2>📤 Upload File</h2>            <div style="margin-bottom:12px;">
+                <label style="font-size:14px;color:#555;">📂 Upload to folder: </label>
+                <select id="uploadDir" style="padding:6px 12px;border-radius:6px;border:1px solid #ccc;font-size:14px;">
+                    <option value="WORKSHOP">WORKSHOP (circuits)</option>
+                    <option value="lessons">lessons (บทเรียน)</option>
+                </select>
+            </div>            <div class="upload-area" id="uploadArea">
                 <div class="upload-icon">📄</div>
                 <div class="upload-text">Drag & drop JSON file here or click to browse</div>
                 <button class="btn" onclick="document.getElementById('fileInput').click()">Upload</button>
@@ -193,11 +198,12 @@ static const char *index_html = R"HTML(
             const file = fileInput.files[0];
             if (!file) return;
 
+            const dir = document.getElementById('uploadDir').value;
             const formData = new FormData();
             formData.append('file', file);
 
             try {
-                const response = await fetch('/upload', { method: 'POST', body: formData });
+                const response = await fetch('/upload?dir=' + encodeURIComponent(dir), { method: 'POST', body: formData });
                 const result = await response.json();
                 
                 if (result.success) {
@@ -567,7 +573,34 @@ esp_err_t FileManagerApplication::upload_handler(httpd_req_t *req)
     char filename[128] = {0};
     FILE *file = NULL;
 
-    ESP_LOGI(TAG, "Upload request: content_len=%d", req->content_len);
+    // Parse optional ?dir= query parameter to choose upload subdirectory
+    char upload_dir[64];
+    strlcpy(upload_dir, UPLOAD_DIR, sizeof(upload_dir)); // default
+    {
+        char query[128] = {0};
+        if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK)
+        {
+            char dir_param[64] = {0};
+            if (httpd_query_key_value(query, "dir", dir_param, sizeof(dir_param)) == ESP_OK && strlen(dir_param) > 0)
+            {
+                // Sanitize: allow alphanumeric, underscore, hyphen only
+                bool ok = true;
+                for (int i = 0; dir_param[i]; i++)
+                {
+                    char c = dir_param[i];
+                    if (!isalnum((unsigned char)c) && c != '_' && c != '-')
+                    {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok)
+                    snprintf(upload_dir, sizeof(upload_dir), "/sdcard/%s", dir_param);
+            }
+        }
+    }
+
+    ESP_LOGI(TAG, "Upload request: content_len=%d dir=%s", req->content_len, upload_dir);
 
     char buf[1024];
     int received;
@@ -611,7 +644,7 @@ esp_err_t FileManagerApplication::upload_handler(httpd_req_t *req)
         return ESP_FAIL;
     }
 
-    snprintf(filepath, sizeof(filepath), "%s/%s", UPLOAD_DIR, filename);
+    snprintf(filepath, sizeof(filepath), "%s/%s", upload_dir, filename);
     ESP_LOGI(TAG, "Uploading: %s", filepath);
 
     // Find file data start

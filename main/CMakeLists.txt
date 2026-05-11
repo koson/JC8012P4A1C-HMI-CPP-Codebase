@@ -54,6 +54,9 @@ idf_component_register(
 
         # HMI Navigator (Splash → Home → Library, uses lvgl_cpp_v9 ScreenManager)
         cpp_version/HMINavigator.cpp
+
+        # Lesson Player (multi-page interactive lesson engine)
+        cpp_version/LessonPlayer.cpp
         
         # LabHappy SVG Path Renderer Demo
         cpp_version/LabHappySvgDemo.cpp
@@ -91,6 +94,7 @@ idf_component_register(
         fatfs  # For LVStorage component
         svg_renderer  # LabHappy SVG Path Renderer
         json_renderer  # LabBuddy JSON Circuit Viewer
+        esp_timer  # High-resolution timer for perf tracking
         
     PRIV_REQUIRES
         bsp_extra  # BSP extra functions
@@ -98,4 +102,5 @@ idf_component_register(
         esp_wifi  # WiFi component
         esp_http_server  # HTTP server
         nvs_flash  # NVS storage for WiFi
+        json  # cJSON parsing for LessonPlayer
 )
