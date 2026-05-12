@@ -28,6 +28,7 @@ idf_component_register(
         "src/LVRoller.cpp"
         "src/LVScreen.cpp"
         "src/LVSlider.cpp"
+        "src/ThaiLabel.cpp"
         "src/LVSpinbox.cpp"
         "src/LVSpinner.cpp"
         "src/LVStorage.cpp"

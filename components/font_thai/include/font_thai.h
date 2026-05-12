@@ -17,12 +17,12 @@ extern "C"
 
 #include "lvgl.h"
 
-    extern const lv_font_t th_niramit_16;
-    extern const lv_font_t th_niramit_20;
-    extern const lv_font_t th_niramit_24;
-    extern const lv_font_t th_niramit_32;
-    extern const lv_font_t th_niramit_40;
-    extern const lv_font_t th_niramit_48;
+    extern lv_font_t th_niramit_16;
+    extern lv_font_t th_niramit_20;
+    extern lv_font_t th_niramit_24;
+    extern lv_font_t th_niramit_32;
+    extern lv_font_t th_niramit_40;
+    extern lv_font_t th_niramit_48;
 
     /**
      * @brief Select the closest Thai font for a given pixel size
@@ -42,6 +42,24 @@ extern "C"
         if (size <= 44)
             return &th_niramit_40;
         return &th_niramit_48;
+    }
+
+    /**
+     * @brief Set Montserrat as fallback on all th_niramit fonts so LVGL symbols render.
+     *
+     * Call once at startup (after lvgl_port_init). The fonts must be non-const
+     * (DRAM) so their .fallback field can be written at runtime.
+     *
+     * Available Montserrat sizes (from sdkconfig): 16, 20, 24, 28, 32, 36, 48.
+     */
+    static inline void th_niramit_init_symbols(void)
+    {
+        th_niramit_16.fallback = &lv_font_montserrat_16;
+        th_niramit_20.fallback = &lv_font_montserrat_20;
+        th_niramit_24.fallback = &lv_font_montserrat_24;
+        th_niramit_32.fallback = &lv_font_montserrat_32;
+        th_niramit_40.fallback = &lv_font_montserrat_36; /* no 40 in sdkconfig */
+        th_niramit_48.fallback = &lv_font_montserrat_48;
     }
 
     /**

@@ -5,6 +5,7 @@
 #include "src/debugging/sysmon/lv_sysmon.h"
 #include "esp_lvgl_port.h"
 #include "font_thai.h"
+#include "ThaiLabel.h"
 
 static const char *TAG = "HMINavigator";
 
@@ -159,10 +160,11 @@ void HMINavigator::buildHomeScreen(LVScreen *scr)
     lv_obj_set_style_text_color(title, lv_color_hex(0x00d4ff), 0);
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 56);
 
-    lv_obj_t *sub = lv_label_create(root);
-    lv_label_set_text(sub, "เลือกหมวดบทเรียน");
-    lv_obj_set_style_text_color(sub, lv_color_hex(0x8888aa), 0);
-    lv_obj_set_style_text_font(sub, th_niramit_select(40), 0);
+    lv_obj_t *sub = thai_label_create(root);
+    thai_label_set_text(sub, "เลือกหมวดบทเรียน");
+    thai_label_set_color(sub, lv_color_hex(0x8888aa));
+    thai_label_set_font(sub, th_niramit_select(40));
+    lv_obj_set_size(sub, 600, 60);
     lv_obj_align_to(sub, title, LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
 
     // Category buttons — 2×2 grid
@@ -213,11 +215,12 @@ void HMINavigator::buildHomeScreen(LVScreen *scr)
         lv_obj_set_style_text_color(icon, lv_color_hex(0xffffff), 0);
         lv_obj_align(icon, LV_ALIGN_TOP_MID, 0, 12);
 
-        lv_obj_t *lbl = lv_label_create(btn);
-        lv_label_set_text(lbl, BTNS[i].label);
-        lv_obj_set_style_text_color(lbl, lv_color_hex(0xddddee), 0);
-        lv_obj_set_style_text_font(lbl, th_niramit_select(40), 0);
-        lv_obj_align(lbl, LV_ALIGN_BOTTOM_MID, 0, 12);
+        lv_obj_t *lbl = thai_label_create(btn);
+        thai_label_set_text(lbl, BTNS[i].label);
+        thai_label_set_color(lbl, lv_color_hex(0xddddee));
+        thai_label_set_font(lbl, th_niramit_select(40));
+        lv_obj_set_size(lbl, BTN_W - 8, 52);
+        lv_obj_align(lbl, LV_ALIGN_BOTTOM_MID, 0, 20);
 
         // Store target screen name pointer in user_data
         lv_obj_set_user_data(btn, (void *)BTNS[i].target);
@@ -256,11 +259,12 @@ void HMINavigator::buildLibraryScreen(LVScreen *scr)
     lv_label_set_text(back_lbl, LV_SYMBOL_LEFT " Back");
     lv_obj_center(back_lbl);
 
-    lv_obj_t *hdr_title = lv_label_create(header);
-    lv_label_set_text(hdr_title, "คลังบทเรียน");
-    lv_obj_set_style_text_font(hdr_title, &lv_font_montserrat_20, 0);
-    lv_obj_set_style_text_color(hdr_title, lv_color_hex(0x00d4ff), 0);
-    lv_obj_align(hdr_title, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_t *hdr_title = thai_label_create(header);
+    thai_label_set_text(hdr_title, "คลังบทเรียน");
+    thai_label_set_font(hdr_title, th_niramit_select(32));
+    thai_label_set_color(hdr_title, lv_color_hex(0x00d4ff));
+    lv_obj_set_size(hdr_title, 400, 52);
+    lv_obj_align(hdr_title, LV_ALIGN_CENTER, 0, 10);
 
     // Lesson list
     lv_obj_t *list = lv_obj_create(root);
@@ -278,11 +282,11 @@ void HMINavigator::buildLibraryScreen(LVScreen *scr)
         bool available;
     };
     static const LessonEntry LESSONS[] = {
-        {"L001 \xe2\x80\x94 NOT Gate", "/sdcard/lessons/L001_not_gate.json", true},
-        {"L002 \xe2\x80\x94 AND Gate", nullptr, false},
-        {"L003 \xe2\x80\x94 OR Gate", nullptr, false},
-        {"L004 \xe2\x80\x94 NAND / NOR", nullptr, false},
-        {"L005 \xe2\x80\x94 Half Adder", nullptr, false},
+        {"L001 - NOT Gate", "/sdcard/lessons/L001_not_gate.json", true},
+        {"L002 - AND Gate", nullptr, false},
+        {"L003 - OR Gate", nullptr, false},
+        {"L004 - NAND / NOR", nullptr, false},
+        {"L005 - Half Adder", nullptr, false},
     };
 
     for (const auto &lesson : LESSONS)
@@ -316,11 +320,12 @@ void HMINavigator::buildLibraryScreen(LVScreen *scr)
             lv_obj_align(arrow, LV_ALIGN_RIGHT_MID, -16, 0);
         }
 
-        lv_obj_t *lbl = lv_label_create(item);
-        lv_label_set_text(lbl, lesson.display);
-        lv_obj_set_style_text_font(lbl, &lv_font_montserrat_18, 0);
-        lv_obj_set_style_text_color(lbl,
-                                    lesson.available ? lv_color_hex(0xffffff) : lv_color_hex(0x556677), 0);
+        lv_obj_t *lbl = thai_label_create(item);
+        thai_label_set_text(lbl, lesson.display);
+        thai_label_set_font(lbl, th_niramit_select(24));
+        thai_label_set_color(lbl, lesson.available ? lv_color_hex(0xffffff) : lv_color_hex(0x556677));
+        thai_label_set_align(lbl, LV_TEXT_ALIGN_LEFT);
+        lv_obj_set_size(lbl, 500, 48);
         lv_obj_align(lbl, LV_ALIGN_LEFT_MID, 16, 0);
     }
 

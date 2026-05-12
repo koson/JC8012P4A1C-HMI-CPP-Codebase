@@ -21,6 +21,7 @@
 #include "SystemManager.h"
 #include "HMINavigator.h"
 #include "FileManagerApplication.h"
+#include "font_thai.h"
 
 static const char *TAG = "main";
 
@@ -47,6 +48,9 @@ extern "C" void app_main(void)
         ESP_LOGE(TAG, "Failed to initialize display");
         return;
     }
+
+    // Init Thai font symbol fallback (Montserrat for LV_SYMBOL_*)
+    th_niramit_init_symbols();
 
     // Step 2: Mount SD card (non-fatal — library may still show without it)
     ESP_LOGI(TAG, "Mounting SD card...");

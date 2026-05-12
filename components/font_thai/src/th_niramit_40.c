@@ -3101,9 +3101,7 @@ static LV_ATTRIBUTE_LARGE_CONST const uint8_t glyph_bitmap[] = {
     0x0, 0x19, 0xff, 0xff, 0xfb, 0x30, 0x0, 0x0,
     0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
     0x0, 0x0, 0x2, 0x32, 0x0, 0x0, 0x0, 0x0,
-    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0
-};
-
+    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 
 /*---------------------
  *  GLYPH DESCRIPTION
@@ -3293,33 +3291,18 @@ static const lv_font_fmt_txt_glyph_dsc_t glyph_dsc[] = {
     {.bitmap_index = 20459, .adv_w = 340, .box_w = 21, .box_h = 17, .ofs_x = 1, .ofs_y = 0},
     {.bitmap_index = 20638, .adv_w = 312, .box_w = 21, .box_h = 17, .ofs_x = 1, .ofs_y = 0},
     {.bitmap_index = 20817, .adv_w = 298, .box_w = 17, .box_h = 17, .ofs_x = 1, .ofs_y = -1},
-    {.bitmap_index = 20962, .adv_w = 568, .box_w = 32, .box_h = 15, .ofs_x = 2, .ofs_y = 1}
-};
+    {.bitmap_index = 20962, .adv_w = 568, .box_w = 32, .box_h = 15, .ofs_x = 2, .ofs_y = 1}};
 
 /*---------------------
  *  CHARACTER MAPPING
  *--------------------*/
 
-
-
 /*Collect the unicode lists and glyph_id offsets*/
 static const lv_font_fmt_txt_cmap_t cmaps[] =
-{
     {
-        .range_start = 32, .range_length = 95, .glyph_id_start = 1,
-        .unicode_list = NULL, .glyph_id_ofs_list = NULL, .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY
-    },
-    {
-        .range_start = 3584, .range_length = 59, .glyph_id_start = 96,
-        .unicode_list = NULL, .glyph_id_ofs_list = NULL, .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY
-    },
-    {
-        .range_start = 3647, .range_length = 29, .glyph_id_start = 155,
-        .unicode_list = NULL, .glyph_id_ofs_list = NULL, .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY
-    }
-};
-
-
+        {.range_start = 32, .range_length = 95, .glyph_id_start = 1, .unicode_list = NULL, .glyph_id_ofs_list = NULL, .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY},
+        {.range_start = 3584, .range_length = 59, .glyph_id_start = 96, .unicode_list = NULL, .glyph_id_ofs_list = NULL, .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY},
+        {.range_start = 3647, .range_length = 29, .glyph_id_start = 155, .unicode_list = NULL, .glyph_id_ofs_list = NULL, .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY}};
 
 /*--------------------
  *  ALL CUSTOM DATA
@@ -3327,7 +3310,7 @@ static const lv_font_fmt_txt_cmap_t cmaps[] =
 
 #if LVGL_VERSION_MAJOR == 8
 /*Store all the custom data of the font*/
-static  lv_font_fmt_txt_glyph_cache_t cache;
+static lv_font_fmt_txt_glyph_cache_t cache;
 #endif
 
 #if LVGL_VERSION_MAJOR >= 8
@@ -3349,22 +3332,20 @@ static lv_font_fmt_txt_dsc_t font_dsc = {
 #endif
 };
 
-
-
 /*-----------------
  *  PUBLIC FONT
  *----------------*/
 
 /*Initialize a public general font descriptor*/
 #if LVGL_VERSION_MAJOR >= 8
-const lv_font_t th_niramit_40 = {
+lv_font_t th_niramit_40 = {
 #else
 lv_font_t th_niramit_40 = {
 #endif
-    .get_glyph_dsc = lv_font_get_glyph_dsc_fmt_txt,    /*Function pointer to get glyph's data*/
-    .get_glyph_bitmap = lv_font_get_bitmap_fmt_txt,    /*Function pointer to get glyph's bitmap*/
-    .line_height = 44,          /*The maximum line height required by the font*/
-    .base_line = 10,             /*Baseline measured from the bottom of the line*/
+    .get_glyph_dsc = lv_font_get_glyph_dsc_fmt_txt, /*Function pointer to get glyph's data*/
+    .get_glyph_bitmap = lv_font_get_bitmap_fmt_txt, /*Function pointer to get glyph's bitmap*/
+    .line_height = 44,                              /*The maximum line height required by the font*/
+    .base_line = 10,                                /*Baseline measured from the bottom of the line*/
 #if !(LVGL_VERSION_MAJOR == 6 && LVGL_VERSION_MINOR == 0)
     .subpx = LV_FONT_SUBPX_NONE,
 #endif
@@ -3372,14 +3353,11 @@ lv_font_t th_niramit_40 = {
     .underline_position = -1,
     .underline_thickness = 1,
 #endif
-    .dsc = &font_dsc,          /*The custom font data. Will be accessed by `get_glyph_bitmap/dsc` */
+    .dsc = &font_dsc, /*The custom font data. Will be accessed by `get_glyph_bitmap/dsc` */
 #if LV_VERSION_CHECK(8, 2, 0) || LVGL_VERSION_MAJOR >= 9
     .fallback = NULL,
 #endif
     .user_data = NULL,
 };
 
-
-
 #endif /*#if TH_NIRAMIT_40*/
-
