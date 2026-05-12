@@ -14,17 +14,18 @@ static bool s_initialized = false;
 
 void uart_bridge_init(void)
 {
-    if (s_initialized) return;
+    if (s_initialized)
+        return;
 
     const uart_config_t cfg = {
-        .baud_rate  = UART_BRIDGE_BAUD,
-        .data_bits  = UART_DATA_8_BITS,
-        .parity     = UART_PARITY_DISABLE,
-        .stop_bits  = UART_STOP_BITS_1,
-        .flow_ctrl  = UART_HW_FLOWCTRL_DISABLE,
+        .baud_rate = UART_BRIDGE_BAUD,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .rx_flow_ctrl_thresh = 0,
         .source_clk = UART_SCLK_DEFAULT,
-        .flags      = 0,
+        .flags = 0,
     };
 
     ESP_ERROR_CHECK(uart_param_config(UART_BRIDGE_PORT, &cfg));
@@ -45,7 +46,8 @@ void uart_bridge_init(void)
 
 void uart_bridge_deinit(void)
 {
-    if (!s_initialized) return;
+    if (!s_initialized)
+        return;
     uart_driver_delete(UART_BRIDGE_PORT);
     s_initialized = false;
     ESP_LOGI(TAG, "UART%d deinit", UART_BRIDGE_PORT);
@@ -71,13 +73,14 @@ static uart_bridge_err_t send_command(uint8_t cmd,
                                       uint8_t param_lo,
                                       uint8_t *result)
 {
-    if (!s_initialized) return UB_ERR_NOT_INIT;
+    if (!s_initialized)
+        return UB_ERR_NOT_INIT;
 
     // Flush any stale RX data before sending
     uart_flush_input(UART_BRIDGE_PORT);
 
     // Send 4-byte command frame
-    uint8_t tx_buf[4] = { UB_START_CMD, cmd, param_hi, param_lo };
+    uint8_t tx_buf[4] = {UB_START_CMD, cmd, param_hi, param_lo};
     uart_write_bytes(UART_BRIDGE_PORT, (const char *)tx_buf, sizeof(tx_buf));
 
     // Wait for 2-byte response with timeout
@@ -86,12 +89,14 @@ static uart_bridge_err_t send_command(uint8_t cmd,
                                  rx_buf,
                                  sizeof(rx_buf),
                                  pdMS_TO_TICKS(UART_BRIDGE_TIMEOUT_MS));
-    if (rx_len < 2) {
+    if (rx_len < 2)
+    {
         ESP_LOGW(TAG, "cmd=0x%02X timeout (got %d bytes)", cmd, rx_len);
         return UB_ERR_TIMEOUT;
     }
 
-    if (rx_buf[0] != UB_START_RSP) {
+    if (rx_buf[0] != UB_START_RSP)
+    {
         ESP_LOGW(TAG, "cmd=0x%02X bad response header 0x%02X", cmd, rx_buf[0]);
         return UB_ERR_FRAMING;
     }
@@ -106,7 +111,8 @@ uart_bridge_err_t uart_bridge_set_output(uint8_t pin_mask)
 {
     uint8_t result = 0;
     uart_bridge_err_t err = send_command(UB_CMD_SET_OUTPUT, 0, pin_mask, &result);
-    if (err == UB_OK) {
+    if (err == UB_OK)
+    {
         ESP_LOGD(TAG, "set_output mask=0x%02X → ack=0x%02X", pin_mask, result);
     }
     return err;
@@ -114,11 +120,13 @@ uart_bridge_err_t uart_bridge_set_output(uint8_t pin_mask)
 
 uart_bridge_err_t uart_bridge_read_input(uint8_t *pin_mask)
 {
-    if (!pin_mask) return UB_ERR_NOT_INIT;
+    if (!pin_mask)
+        return UB_ERR_NOT_INIT;
 
     uint8_t result = 0;
     uart_bridge_err_t err = send_command(UB_CMD_READ_INPUT, 0, 0, &result);
-    if (err == UB_OK) {
+    if (err == UB_OK)
+    {
         *pin_mask = result;
         ESP_LOGD(TAG, "read_input → 0x%02X", result);
     }

@@ -873,7 +873,8 @@ void LessonPlayer::onVerifyBtn(lv_event_t *e)
 
     // Set all output pins HIGH to drive all banana-jack outputs (example: 4ch = 0x0F)
     uart_bridge_err_t err = uart_bridge_set_output(0x0F);
-    if (err != UB_OK) {
+    if (err != UB_OK)
+    {
         ESP_LOGW(TAG, "set_output failed: %d", (int)err);
     }
 
@@ -882,26 +883,35 @@ void LessonPlayer::onVerifyBtn(lv_event_t *e)
     err = uart_bridge_read_input(&result);
 
     // Update result panel
-    if (self->m_verifyResultPanel) {
+    if (self->m_verifyResultPanel)
+    {
         lv_obj_remove_flag(self->m_verifyResultPanel, LV_OBJ_FLAG_HIDDEN);
 
         // Find the label inside the panel (first child)
         lv_obj_t *lbl = lv_obj_get_child(self->m_verifyResultPanel, 0);
 
-        if (err == UB_OK) {
+        if (err == UB_OK)
+        {
             ESP_LOGI(TAG, "read_input result=0x%02X", result);
-            if (lbl) {
+            if (lbl)
+            {
                 char msg[48];
                 snprintf(msg, sizeof(msg), "ผล: 0x%02X", result);
                 lv_label_set_text(lbl, msg);
             }
             lv_obj_set_style_bg_color(self->m_verifyResultPanel, lv_color_hex(0x1a5e2a), 0);
-        } else if (err == UB_ERR_TIMEOUT) {
+        }
+        else if (err == UB_ERR_TIMEOUT)
+        {
             ESP_LOGW(TAG, "H7 ไม่ตอบสนอง (timeout)");
-            if (lbl) lv_label_set_text(lbl, "ไม่ได้รับสัญญาณจาก LabBuddy");
+            if (lbl)
+                lv_label_set_text(lbl, "ไม่ได้รับสัญญาณจาก LabBuddy");
             lv_obj_set_style_bg_color(self->m_verifyResultPanel, lv_color_hex(0x8b1a1a), 0);
-        } else {
-            if (lbl) lv_label_set_text(lbl, "ข้อผิดพลาดในการสื่อสาร");
+        }
+        else
+        {
+            if (lbl)
+                lv_label_set_text(lbl, "ข้อผิดพลาดในการสื่อสาร");
             lv_obj_set_style_bg_color(self->m_verifyResultPanel, lv_color_hex(0x8b1a1a), 0);
         }
     }
