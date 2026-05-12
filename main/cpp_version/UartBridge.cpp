@@ -17,17 +17,18 @@ static bool s_initialized = false;
 
 void uart_bridge_init(void)
 {
-    if (s_initialized) return;
+    if (s_initialized)
+        return;
 
     const uart_config_t cfg = {
-        .baud_rate           = UART_BRIDGE_BAUD,
-        .data_bits           = UART_DATA_8_BITS,
-        .parity              = UART_PARITY_DISABLE,
-        .stop_bits           = UART_STOP_BITS_1,
-        .flow_ctrl           = UART_HW_FLOWCTRL_DISABLE,
+        .baud_rate = UART_BRIDGE_BAUD,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .rx_flow_ctrl_thresh = 0,
-        .source_clk          = UART_SCLK_DEFAULT,
-        .flags               = 0,
+        .source_clk = UART_SCLK_DEFAULT,
+        .flags = 0,
     };
 
     ESP_ERROR_CHECK(uart_param_config(UART_BRIDGE_PORT, &cfg));
@@ -46,7 +47,8 @@ void uart_bridge_init(void)
 
 void uart_bridge_deinit(void)
 {
-    if (!s_initialized) return;
+    if (!s_initialized)
+        return;
     uart_driver_delete(UART_BRIDGE_PORT);
     s_initialized = false;
     ESP_LOGI(TAG, "UART%d deinit", UART_BRIDGE_PORT);
@@ -57,7 +59,8 @@ void uart_bridge_deinit(void)
 static uart_bridge_err_t scpi_transact(const char *cmd,
                                        char *resp, size_t resp_len)
 {
-    if (!s_initialized) return UB_ERR_NOT_INIT;
+    if (!s_initialized)
+        return UB_ERR_NOT_INIT;
 
     uart_flush_input(UART_BRIDGE_PORT);
     uart_write_bytes(UART_BRIDGE_PORT, cmd, strlen(cmd));
@@ -67,24 +70,31 @@ static uart_bridge_err_t scpi_transact(const char *cmd,
     size_t idx = 0;
     TickType_t deadline = xTaskGetTickCount() + pdMS_TO_TICKS(UART_BRIDGE_TIMEOUT_MS);
 
-    while (xTaskGetTickCount() < deadline) {
+    while (xTaskGetTickCount() < deadline)
+    {
         uint8_t b = 0;
         int n = uart_read_bytes(UART_BRIDGE_PORT, &b, 1, pdMS_TO_TICKS(100));
-        if (n < 1) continue;
-        if (b == '\n') break;
-        if (idx < resp_len - 1) resp[idx++] = (char)b;
+        if (n < 1)
+            continue;
+        if (b == '\n')
+            break;
+        if (idx < resp_len - 1)
+            resp[idx++] = (char)b;
     }
     resp[idx] = '\0';
-    if (idx > 0 && resp[idx - 1] == '\r') resp[--idx] = '\0';
+    if (idx > 0 && resp[idx - 1] == '\r')
+        resp[--idx] = '\0';
 
-    if (idx == 0) {
+    if (idx == 0)
+    {
         ESP_LOGW(TAG, "cmd='%s' timeout", cmd);
         return UB_ERR_TIMEOUT;
     }
 
     ESP_LOGD(TAG, "cmd='%s' resp='%s'", cmd, resp);
 
-    if (strncmp(resp, "ERROR:", 6) == 0) {
+    if (strncmp(resp, "ERROR:", 6) == 0)
+    {
         ESP_LOGW(TAG, "H7 error: %s", resp);
         return UB_ERR_H7;
     }
@@ -131,12 +141,14 @@ uart_bridge_err_t uart_bridge_set_pin(uint8_t dip_pin, uint8_t val)
 
 uart_bridge_err_t uart_bridge_read_pin(uint8_t ch, uint8_t *val)
 {
-    if (!val) return UB_ERR_NOT_INIT;
+    if (!val)
+        return UB_ERR_NOT_INIT;
     char cmd[32];
     snprintf(cmd, sizeof(cmd), "DIG:IN? %u", ch);
     char resp[32];
     uart_bridge_err_t err = scpi_transact(cmd, resp, sizeof(resp));
-    if (err == UB_OK) *val = (uint8_t)atoi(resp);
+    if (err == UB_OK)
+        *val = (uint8_t)atoi(resp);
     return err;
 }
 
@@ -147,4 +159,3 @@ uart_bridge_err_t uart_bridge_pwr(uint8_t on)
     char resp[32];
     return scpi_transact(cmd, resp, sizeof(resp));
 }
-
