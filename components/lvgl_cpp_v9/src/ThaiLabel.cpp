@@ -13,6 +13,7 @@
 
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_label.h"
 #include "../../managed_components/lvgl__lvgl/src/misc/lv_text.h"
+#include "../../managed_components/lvgl__lvgl/src/misc/lv_text_private.h"
 
 #include <cstring>
 #include <string>
@@ -95,11 +96,20 @@ static int utf8_write_cp(uint8_t *buf, uint32_t cp)
 
 /**
  * Draw @p text using Thai tone-mark shaping into @p layer.
- * 2-layer tone marks are removed from the base run and redrawn at a
- * font-metric-derived vertical offset so they sit just above the consonant.
  *
- * Each lv_draw_label call uses text_local=1 so LVGL heap-copies the text
- * string into the draw task — no external arena needed.
+ * Strategy:
+ *   - Build base_buf = original text with 2-layer tone marks stripped.
+ *     TH Niramit tone marks have adv_w≈0 so line-break points are identical.
+ *   - Walk original text LINE-BY-LINE (same wrap width as lv_draw_label will use).
+ *     Per-line: compute alignment offset and x_acc cursor tracking.
+ *     Record each tone mark with the CURSOR POSITION AFTER ITS CONSONANT and
+ *     the absolute y1 of the line.  The font's own ofs_x (negative) is left to
+ *     overlay the tone glyph onto the consonant — we must NOT subtract
+ *     prev_adv here because ofs_x already encodes that offset.
+ *   - Render base_buf with lv_draw_label (handles alignment & wrapping).
+ *   - For each recorded tone mark, render it via a separate lv_draw_label call
+ *     with LEFT alignment so pos.x == tone_area.x1 == cursor-after-consonant.
+ *     Each task uses text_local=1 (LVGL heap-copies) for pipeline safety.
  */
 static void thai_draw_shaped(lv_layer_t *layer,
                              const lv_draw_label_dsc_t *dsc,
@@ -107,95 +117,183 @@ static void thai_draw_shaped(lv_layer_t *layer,
 {
     struct ToneMark
     {
-        int32_t x;
-        uint32_t cp;
-        uint32_t base_cp;
+        int32_t abs_x;    // cursor after consonant, absolute screen coords
+        int32_t abs_y1;   // line top, absolute screen coords
+        uint32_t cp;      // tone mark codepoint
+        uint32_t base_cp; // preceding consonant codepoint (for vert-offset calc)
     };
+
     static constexpr int MAX_TONES = 64;
     ToneMark tone_list[MAX_TONES];
     int tone_count = 0;
 
+    int32_t area_w = area->x2 - area->x1 + 1;
+    int32_t line_h = dsc->font->line_height + dsc->line_space;
+
+    // ── Pass 1: build base_buf by stripping 2-layer tone marks ────────────────
     char base_buf[512];
-    uint8_t *out = (uint8_t *)base_buf;
-
-    const uint8_t *p = (const uint8_t *)dsc->text;
-    uint32_t prev_cp = 0;
-    uint32_t cluster_base = 0;
-    int32_t x_acc = 0; // pixel advance from area->x1
-
-    while (*p)
+    uint8_t *base_out = (uint8_t *)base_buf;
     {
-        uint32_t cp = utf8_next_cp(&p);
-        if (cp == 0)
+        const uint8_t *p = (const uint8_t *)dsc->text;
+        uint32_t prev = 0;
+        while (*p)
+        {
+            uint32_t cp = utf8_next_cp(&p);
+            if (!cp)
+                break;
+            if (th_is_tone_mark(cp) && !th_is_above_vowel(prev))
+            {
+                prev = cp;
+                continue;
+            }
+            base_out += utf8_write_cp(base_out, cp);
+            if (base_out >= (uint8_t *)base_buf + sizeof(base_buf) - 4)
+                break;
+            prev = cp;
+        }
+        *base_out = '\0';
+    }
+    uint32_t base_len = (uint32_t)(base_out - (uint8_t *)base_buf);
+
+    // ── Pass 2: walk original text line-by-line to record tone mark positions ─
+    //
+    // lv_text_get_next_line wraps on adv_w; TH Niramit tone marks have adv_w=0
+    // so wrapping of the original text equals wrapping of base_buf. ✓
+    const char *txt = dsc->text;
+    uint32_t full_len = dsc->text_length > 0
+                            ? dsc->text_length
+                            : (uint32_t)lv_strlen(txt);
+    uint32_t line_start = 0;
+    int32_t cursor_y = 0; // relative to area->y1
+
+    while (line_start < full_len && txt[line_start] != '\0')
+    {
+        // Find where this line ends (using same wrap width as lv_draw_label)
+        lv_text_attributes_t lat = {};
+        lat.letter_space = dsc->letter_space;
+        lat.line_space = dsc->line_space;
+        lat.max_width = area_w;
+        lat.text_flags = dsc->flag;
+
+        uint32_t remaining = full_len - line_start;
+        int32_t used_w = 0;
+        uint32_t line_len = lv_text_get_next_line(
+            &txt[line_start], remaining, dsc->font, &used_w, &lat);
+        if (line_len == 0)
             break;
 
-        if (cp >= 0x0E01 && cp <= 0x0E2E)
-            cluster_base = cp;
-
-        if (th_is_tone_mark(cp))
+        // Compute per-line alignment offset
+        // (tone marks have adv_w=0 → lv_text_get_width on original line = base line width)
+        int32_t align_ofs = 0;
+        if (dsc->align != LV_TEXT_ALIGN_LEFT)
         {
-            if (!th_is_above_vowel(prev_cp))
+            lv_text_attributes_t wa = {};
+            wa.letter_space = dsc->letter_space;
+            wa.max_width = LV_COORD_MAX;
+            // Exclude trailing \n/\r from width measurement
+            uint32_t mlen = line_len;
+            while (mlen > 0 && (txt[line_start + mlen - 1] == '\n' ||
+                                txt[line_start + mlen - 1] == '\r'))
+                mlen--;
+            int32_t lw = lv_text_get_width(&txt[line_start], mlen, dsc->font, &wa);
+            align_ofs = (dsc->align == LV_TEXT_ALIGN_CENTER) ? (area_w - lw) / 2
+                                                             : area_w - lw;
+            if (align_ofs < 0)
+                align_ofs = 0;
+        }
+
+        // Walk this line's codepoints, track cursor x, record tone marks
+        int tone_line_start = tone_count;
+        const uint8_t *lp = (const uint8_t *)&txt[line_start];
+        const uint8_t *lend = lp + line_len;
+        uint32_t prev_cp = 0;
+        uint32_t cluster_base = 0;
+        int32_t x_acc = 0;
+
+        while (lp < lend)
+        {
+            if (*lp == '\n' || *lp == '\r' || *lp == '\0')
+                break;
+            uint32_t cp = utf8_next_cp(&lp);
+            if (!cp || cp == '\n' || cp == '\r')
+                break;
+
+            if (cp >= 0x0E01 && cp <= 0x0E2E)
+                cluster_base = cp;
+
+            if (th_is_tone_mark(cp) && !th_is_above_vowel(prev_cp))
             {
                 if (tone_count < MAX_TONES)
                 {
-                    tone_list[tone_count++] = {area->x1 + x_acc, cp, cluster_base};
+                    // Record cursor AFTER consonant (x_acc already includes consonant adv_w).
+                    // We do NOT subtract prev_adv: the font's ofs_x (negative) handles
+                    // the horizontal overlay onto the consonant.
+                    tone_list[tone_count++] = {
+                        x_acc,    // relative to line text start; patched below
+                        cursor_y, // relative to area->y1; patched below
+                        cp, cluster_base};
                 }
                 prev_cp = cp;
-                continue; // skip from base text
+                continue; // tone marks have adv_w≈0; do NOT advance x_acc
             }
-            // 3-layer cluster: include normally
+
+            lv_font_glyph_dsc_t g;
+            const uint8_t *pp = lp;
+            uint32_t nxt = utf8_next_cp(&pp);
+            int32_t adv = 0;
+            if (lv_font_get_glyph_dsc(dsc->font, &g, cp, nxt))
+                adv = g.adv_w;
+            x_acc += adv;
+            prev_cp = cp;
         }
 
-        // Accumulate advance
-        lv_font_glyph_dsc_t g;
-        const uint8_t *pp = p;
-        uint32_t next_peek = utf8_next_cp(&pp);
-        if (lv_font_get_glyph_dsc(dsc->font, &g, cp, next_peek))
-            x_acc += (int32_t)g.adv_w;
+        // Patch tone marks to absolute screen coordinates
+        for (int i = tone_line_start; i < tone_count; i++)
+        {
+            tone_list[i].abs_x = area->x1 + align_ofs + tone_list[i].abs_x;
+            tone_list[i].abs_y1 = area->y1 + tone_list[i].abs_y1;
+        }
 
-        out += utf8_write_cp(out, cp);
-        if (out >= (uint8_t *)base_buf + sizeof(base_buf) - 4)
-            break;
-        prev_cp = cp;
+        line_start += line_len;
+        cursor_y += line_h;
     }
-    *out = '\0';
 
-    // Draw base text (tone marks removed).
-    // text_local=1: lv_draw_label heap-copies the text into the draw task.
-    // text_length: byte count so remaining_len is correct in lv_draw_label_iterate_characters.
+    // ── Render base text ──────────────────────────────────────────────────────
     lv_draw_label_dsc_t base_dsc = *dsc;
     base_dsc.text = base_buf;
-    base_dsc.text_length = (uint32_t)(out - (uint8_t *)base_buf);
-    base_dsc.text_local = 1;
+    base_dsc.text_length = base_len;
+    base_dsc.text_local = 1; // LVGL heap-copies; safe across pipeline frames
     lv_draw_label(layer, &base_dsc, area);
 
-    // Draw each 2-layer tone mark at computed offset
+    // ── Render each 2-layer tone mark ─────────────────────────────────────────
     for (int i = 0; i < tone_count; i++)
     {
         lv_font_glyph_dsc_t cons_g = {}, tone_g = {};
         lv_font_get_glyph_dsc(dsc->font, &cons_g, tone_list[i].base_cp, 0);
         lv_font_get_glyph_dsc(dsc->font, &tone_g, tone_list[i].cp, 0);
 
+        // Vertical adjustment: push tone mark up if it would overlap consonant cap
         int32_t cons_top = (int32_t)cons_g.box_h + (int32_t)cons_g.ofs_y;
         int32_t tone_bott = (int32_t)tone_g.ofs_y;
         int32_t drop = tone_bott - cons_top - 1;
-        int32_t offset = (drop > 0) ? drop : 0;
+        int32_t y_offset = (drop > 0) ? drop : 0;
 
         char tbuf[4];
         int bytes = utf8_write_cp((uint8_t *)tbuf, tone_list[i].cp);
         tbuf[bytes] = '\0';
 
-        // text_local=1: lv_draw_label heap-copies tbuf (stack) into the task.
         lv_draw_label_dsc_t tone_dsc = *dsc;
         tone_dsc.text = tbuf;
         tone_dsc.text_length = (uint32_t)bytes;
         tone_dsc.text_local = 1;
+        // LEFT: pos.x == tone_area.x1 == cursor-after-consonant.
+        // Font's ofs_x (negative) overlays the glyph onto the consonant.
+        tone_dsc.align = LV_TEXT_ALIGN_LEFT;
 
-        int32_t font_sz = dsc->font->line_height;
         lv_area_t tone_area = *area;
-        tone_area.x1 = tone_list[i].x;
-        tone_area.x2 = tone_list[i].x + font_sz;
-        tone_area.y1 = area->y1 + offset;
+        tone_area.x1 = tone_list[i].abs_x;
+        tone_area.x2 = tone_list[i].abs_x + dsc->font->line_height; // generous width
+        tone_area.y1 = tone_list[i].abs_y1 + y_offset;
 
         lv_draw_label(layer, &tone_dsc, &tone_area);
     }

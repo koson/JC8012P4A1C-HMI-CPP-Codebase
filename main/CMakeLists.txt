@@ -57,6 +57,9 @@ idf_component_register(
 
         # Lesson Player (multi-page interactive lesson engine)
         cpp_version/LessonPlayer.cpp
+
+        # UartBridge: command TX/RX to STM32H7 measurement module
+        cpp_version/UartBridge.cpp
         
         # LabHappy SVG Path Renderer Demo
         cpp_version/LabHappySvgDemo.cpp
@@ -104,4 +107,5 @@ idf_component_register(
         esp_http_server  # HTTP server
         nvs_flash  # NVS storage for WiFi
         json  # cJSON parsing for LessonPlayer
+        driver  # UART/GPIO driver for UartBridge
 )
