@@ -874,39 +874,58 @@ void LessonPlayer::onVerifyBtn(lv_event_t *e)
 
     uart_bridge_init();
 
-    // ── NOT gate verification: DIP pin 1 = input (H7 drives), pin 2 = output (H7 reads) ──
-    // This matches a 74HC04 single gate: pin1=A, pin2=Y in DIP-14
+    // NOT gate: PA0 drives IC input A, PD0 reads IC output Y
     bool pass = true;
     char fail_reason[64] = "";
 
-    static const struct { uint8_t in_val; uint8_t expected_out; } cases[] = {
-        { 0, 1 },
-        { 1, 0 },
-    };
+    // VCC off before test
+    uart_bridge_pwr(0);
 
-    // Configure pins (reset first)
-    uart_bridge_reset();
-    uart_bridge_err_t err = uart_bridge_conf_output(1);  // DIP1 = H7 drives → IC input A
-    if (err != UB_OK) { pass = false; snprintf(fail_reason, sizeof(fail_reason), "ไม่ได้รับสัญญาณจาก LabBuddy"); goto done; }
+    uart_bridge_err_t err = uart_bridge_reset();
+    if (err != UB_OK) {
+        pass = false;
+        snprintf(fail_reason, sizeof(fail_reason), "ไม่ได้รับสัญญาณจาก LabBuddy");
+        goto done;
+    }
 
-    err = uart_bridge_conf_input(2);  // DIP2 = H7 reads ← IC output Y
-    if (err != UB_OK) { pass = false; snprintf(fail_reason, sizeof(fail_reason), "ไม่ได้รับสัญญาณจาก LabBuddy"); goto done; }
+    // VCC on — power protoboard
+    err = uart_bridge_pwr(1);
+    if (err != UB_OK) {
+        pass = false;
+        snprintf(fail_reason, sizeof(fail_reason), "เปิด VCC ไม่ได้ (timeout)");
+        goto done;
+    }
 
-    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
-        err = uart_bridge_set_pin(1, cases[i].in_val);
-        if (err != UB_OK) { pass = false; snprintf(fail_reason, sizeof(fail_reason), "ส่งสัญญาณไม่ได้ (timeout)"); break; }
-
-        uint8_t out = 0;
-        err = uart_bridge_read_pin(2, &out);
-        if (err != UB_OK) { pass = false; snprintf(fail_reason, sizeof(fail_reason), "อ่านสัญญาณไม่ได้ (timeout)"); break; }
-
-        if (out != cases[i].expected_out) {
-            pass = false;
-            snprintf(fail_reason, sizeof(fail_reason),
-                     "A=%u ได้ Y=%u คาดหวัง Y=%u", cases[i].in_val, out, cases[i].expected_out);
-            break;
+    {
+        static const struct { uint8_t in_val; uint8_t expected_out; } cases[] = {
+            {0, 1},
+            {1, 0},
+        };
+        for (size_t i = 0; i < 2; i++) {
+            err = uart_bridge_set_pin(0, cases[i].in_val);   // PA0 = A
+            if (err != UB_OK) {
+                pass = false;
+                snprintf(fail_reason, sizeof(fail_reason), "ส่งสัญญาณไม่ได้ (timeout)");
+                break;
+            }
+            uint8_t out = 0;
+            err = uart_bridge_read_pin(0, &out);              // PD0 = Y
+            if (err != UB_OK) {
+                pass = false;
+                snprintf(fail_reason, sizeof(fail_reason), "อ่านสัญญาณไม่ได้ (timeout)");
+                break;
+            }
+            if (out != cases[i].expected_out) {
+                pass = false;
+                snprintf(fail_reason, sizeof(fail_reason),
+                         "A=%u ได้ Y=%u คาดหวัง Y=%u",
+                         cases[i].in_val, out, cases[i].expected_out);
+                break;
+            }
         }
     }
+
+    uart_bridge_pwr(0);  // VCC off after test
 
 done:
     if (pass) {
@@ -920,12 +939,13 @@ done:
     }
 }
 
+
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const char *LessonPlayer::jstr(cJSON *obj, const char *key, const char *fallback)
 {
-    if (!obj)
-        return fallback;
+    if (!obj) return fallback;
     cJSON *item = cJSON_GetObjectItem(obj, key);
     if (item && cJSON_IsString(item) && item->valuestring)
         return item->valuestring;

@@ -100,11 +100,17 @@ uart_bridge_err_t uart_bridge_conf_input(uint8_t dip_pin);
 uart_bridge_err_t uart_bridge_set_pin(uint8_t dip_pin, uint8_t val);
 
 /**
- * @brief DIG:IN? <pin> — read DIP input pin level.
- * @param dip_pin  DIP-14 pin number configured as INPUT.
+ * @brief DIG:IN? <ch> — read input pin level.
+ * @param ch   Channel 0-7 (→ PD0-PD7 on H7).
  * @param[out] val  0 or 1.
  */
-uart_bridge_err_t uart_bridge_read_pin(uint8_t dip_pin, uint8_t *val);
+uart_bridge_err_t uart_bridge_read_pin(uint8_t ch, uint8_t *val);
+
+/**
+ * @brief PWR <0|1> — control VCC via PC0 P-channel MOSFET.
+ * @param on  1 = VCC ON (MOSFET ON), 0 = VCC OFF (safe state).
+ */
+uart_bridge_err_t uart_bridge_pwr(uint8_t on);
 
 #ifdef __cplusplus
 }

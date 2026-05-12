@@ -129,13 +129,22 @@ uart_bridge_err_t uart_bridge_set_pin(uint8_t dip_pin, uint8_t val)
     return scpi_transact(cmd, resp, sizeof(resp));
 }
 
-uart_bridge_err_t uart_bridge_read_pin(uint8_t dip_pin, uint8_t *val)
+uart_bridge_err_t uart_bridge_read_pin(uint8_t ch, uint8_t *val)
 {
     if (!val) return UB_ERR_NOT_INIT;
     char cmd[32];
-    snprintf(cmd, sizeof(cmd), "DIG:IN? %u", dip_pin);
+    snprintf(cmd, sizeof(cmd), "DIG:IN? %u", ch);
     char resp[32];
     uart_bridge_err_t err = scpi_transact(cmd, resp, sizeof(resp));
     if (err == UB_OK) *val = (uint8_t)atoi(resp);
     return err;
 }
+
+uart_bridge_err_t uart_bridge_pwr(uint8_t on)
+{
+    char cmd[16];
+    snprintf(cmd, sizeof(cmd), "PWR %u", on & 1u);
+    char resp[32];
+    return scpi_transact(cmd, resp, sizeof(resp));
+}
+
