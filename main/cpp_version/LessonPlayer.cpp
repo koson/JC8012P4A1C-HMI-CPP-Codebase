@@ -865,55 +865,58 @@ void LessonPlayer::onInputToggle(lv_event_t *e)
 void LessonPlayer::onVerifyBtn(lv_event_t *e)
 {
     LessonPlayer *self = static_cast<LessonPlayer *>(lv_event_get_user_data(e));
+    ESP_LOGI(TAG, "Verify button pressed");
 
-    ESP_LOGI(TAG, "Verify button pressed — starting UartBridge sequence");
+    if (!self->m_verifyResultPanel) return;
 
-    // Ensure UartBridge is ready
+    lv_obj_remove_flag(self->m_verifyResultPanel, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_t *lbl = lv_obj_get_child(self->m_verifyResultPanel, 0);
+
     uart_bridge_init();
 
-    // Set all output pins HIGH to drive all banana-jack outputs (example: 4ch = 0x0F)
-    uart_bridge_err_t err = uart_bridge_set_output(0x0F);
-    if (err != UB_OK)
-    {
-        ESP_LOGW(TAG, "set_output failed: %d", (int)err);
+    // ── NOT gate verification: DIP pin 1 = input (H7 drives), pin 2 = output (H7 reads) ──
+    // This matches a 74HC04 single gate: pin1=A, pin2=Y in DIP-14
+    bool pass = true;
+    char fail_reason[64] = "";
+
+    static const struct { uint8_t in_val; uint8_t expected_out; } cases[] = {
+        { 0, 1 },
+        { 1, 0 },
+    };
+
+    // Configure pins (reset first)
+    uart_bridge_reset();
+    uart_bridge_err_t err = uart_bridge_conf_output(1);  // DIP1 = H7 drives → IC input A
+    if (err != UB_OK) { pass = false; snprintf(fail_reason, sizeof(fail_reason), "ไม่ได้รับสัญญาณจาก LabBuddy"); goto done; }
+
+    err = uart_bridge_conf_input(2);  // DIP2 = H7 reads ← IC output Y
+    if (err != UB_OK) { pass = false; snprintf(fail_reason, sizeof(fail_reason), "ไม่ได้รับสัญญาณจาก LabBuddy"); goto done; }
+
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        err = uart_bridge_set_pin(1, cases[i].in_val);
+        if (err != UB_OK) { pass = false; snprintf(fail_reason, sizeof(fail_reason), "ส่งสัญญาณไม่ได้ (timeout)"); break; }
+
+        uint8_t out = 0;
+        err = uart_bridge_read_pin(2, &out);
+        if (err != UB_OK) { pass = false; snprintf(fail_reason, sizeof(fail_reason), "อ่านสัญญาณไม่ได้ (timeout)"); break; }
+
+        if (out != cases[i].expected_out) {
+            pass = false;
+            snprintf(fail_reason, sizeof(fail_reason),
+                     "A=%u ได้ Y=%u คาดหวัง Y=%u", cases[i].in_val, out, cases[i].expected_out);
+            break;
+        }
     }
 
-    // Read input result
-    uint8_t result = 0;
-    err = uart_bridge_read_input(&result);
-
-    // Update result panel
-    if (self->m_verifyResultPanel)
-    {
-        lv_obj_remove_flag(self->m_verifyResultPanel, LV_OBJ_FLAG_HIDDEN);
-
-        // Find the label inside the panel (first child)
-        lv_obj_t *lbl = lv_obj_get_child(self->m_verifyResultPanel, 0);
-
-        if (err == UB_OK)
-        {
-            ESP_LOGI(TAG, "read_input result=0x%02X", result);
-            if (lbl)
-            {
-                char msg[48];
-                snprintf(msg, sizeof(msg), "ผล: 0x%02X", result);
-                lv_label_set_text(lbl, msg);
-            }
-            lv_obj_set_style_bg_color(self->m_verifyResultPanel, lv_color_hex(0x1a5e2a), 0);
-        }
-        else if (err == UB_ERR_TIMEOUT)
-        {
-            ESP_LOGW(TAG, "H7 ไม่ตอบสนอง (timeout)");
-            if (lbl)
-                lv_label_set_text(lbl, "ไม่ได้รับสัญญาณจาก LabBuddy");
-            lv_obj_set_style_bg_color(self->m_verifyResultPanel, lv_color_hex(0x8b1a1a), 0);
-        }
-        else
-        {
-            if (lbl)
-                lv_label_set_text(lbl, "ข้อผิดพลาดในการสื่อสาร");
-            lv_obj_set_style_bg_color(self->m_verifyResultPanel, lv_color_hex(0x8b1a1a), 0);
-        }
+done:
+    if (pass) {
+        ESP_LOGI(TAG, "Verification PASS");
+        if (lbl) lv_label_set_text(lbl, "✓ ผ่าน — NOT gate ถูกต้อง");
+        lv_obj_set_style_bg_color(self->m_verifyResultPanel, lv_color_hex(0x1a5e2a), 0);
+    } else {
+        ESP_LOGW(TAG, "Verification FAIL: %s", fail_reason);
+        if (lbl) lv_label_set_text(lbl, fail_reason);
+        lv_obj_set_style_bg_color(self->m_verifyResultPanel, lv_color_hex(0x8b1a1a), 0);
     }
 }
 
