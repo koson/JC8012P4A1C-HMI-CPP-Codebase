@@ -428,7 +428,7 @@ void HMINavigator::onPerfLogTimerCb(lv_timer_t *timer)
     float max_ms = (float)p.render_max_us / 1000.0f;
     float last_ms = (float)p.render_time_us / 1000.0f;
 
-    ESP_LOGI(TAG, "[PERF] FPS: %.1f  frames: %lu  render: avg=%.2f min=%.2f max=%.2f last=%.2f (ms)",
+    ESP_LOGD(TAG, "[PERF] FPS: %.1f  frames: %lu  render: avg=%.2f min=%.2f max=%.2f last=%.2f (ms)",
              fps, (unsigned long)p.frame_count, avg_ms, min_ms, max_ms, last_ms);
 
     // Reset window

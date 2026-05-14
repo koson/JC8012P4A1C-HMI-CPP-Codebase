@@ -4,6 +4,8 @@
 #include "esp_lvgl_port.h"
 #include "font_thai.h"
 #include "ThaiLabel.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -867,7 +869,8 @@ void LessonPlayer::onVerifyBtn(lv_event_t *e)
     LessonPlayer *self = static_cast<LessonPlayer *>(lv_event_get_user_data(e));
     ESP_LOGI(TAG, "Verify button pressed");
 
-    if (!self->m_verifyResultPanel) return;
+    if (!self->m_verifyResultPanel)
+        return;
 
     lv_obj_remove_flag(self->m_verifyResultPanel, LV_OBJ_FLAG_HIDDEN);
     lv_obj_t *lbl = lv_obj_get_child(self->m_verifyResultPanel, 0);
@@ -877,75 +880,90 @@ void LessonPlayer::onVerifyBtn(lv_event_t *e)
     // NOT gate: PA0 drives IC input A, PD0 reads IC output Y
     bool pass = true;
     char fail_reason[64] = "";
+    uart_bridge_err_t err;
 
-    // VCC off before test
+    // VCC off → settle → VCC on
+    // Note: *RST is NOT used here — it also calls pwr_set(0) internally which
+    // would cut VCC again right after we turn it on. Instead reset PA manually.
     uart_bridge_pwr(0);
+    vTaskDelay(pdMS_TO_TICKS(50)); // let VCC rail discharge and MOSFET settle
 
-    uart_bridge_err_t err = uart_bridge_reset();
-    if (err != UB_OK) {
-        pass = false;
-        snprintf(fail_reason, sizeof(fail_reason), "ไม่ได้รับสัญญาณจาก LabBuddy");
-        goto done;
-    }
-
-    // VCC on — power protoboard
     err = uart_bridge_pwr(1);
-    if (err != UB_OK) {
+    if (err != UB_OK)
+    {
         pass = false;
         snprintf(fail_reason, sizeof(fail_reason), "เปิด VCC ไม่ได้ (timeout)");
         goto done;
     }
+    vTaskDelay(pdMS_TO_TICKS(150)); // wait for VCC rail to rise and IC to stabilise
 
     {
-        static const struct { uint8_t in_val; uint8_t expected_out; } cases[] = {
+        static const struct
+        {
+            uint8_t in_val;
+            uint8_t expected_out;
+        } cases[] = {
             {0, 1},
             {1, 0},
         };
-        for (size_t i = 0; i < 2; i++) {
-            err = uart_bridge_set_pin(0, cases[i].in_val);   // PA0 = A
-            if (err != UB_OK) {
+        for (size_t i = 0; i < 2; i++)
+        {
+            err = uart_bridge_set_pin(0, cases[i].in_val); // PA0 = A
+            if (err != UB_OK)
+            {
                 pass = false;
                 snprintf(fail_reason, sizeof(fail_reason), "ส่งสัญญาณไม่ได้ (timeout)");
-                break;
+                break; // UART timeout — cannot continue
             }
+            vTaskDelay(pdMS_TO_TICKS(20)); // wait for IC output to settle
             uint8_t out = 0;
-            err = uart_bridge_read_pin(0, &out);              // PD0 = Y
-            if (err != UB_OK) {
+            err = uart_bridge_read_pin(0, &out); // PD0 = Y
+            if (err != UB_OK)
+            {
                 pass = false;
                 snprintf(fail_reason, sizeof(fail_reason), "อ่านสัญญาณไม่ได้ (timeout)");
-                break;
+                break; // UART timeout — cannot continue
             }
-            if (out != cases[i].expected_out) {
+            ESP_LOGI(TAG, "Test case %d: A=%u Y=%u (expect %u)",
+                     (int)i, cases[i].in_val, out, cases[i].expected_out);
+            if (out != cases[i].expected_out)
+            {
+                // Record first failure but keep running all cases
+                if (pass) // only overwrite fail_reason on first failure
+                    snprintf(fail_reason, sizeof(fail_reason),
+                             "A=%u ได้ Y=%u คาดหวัง Y=%u",
+                             cases[i].in_val, out, cases[i].expected_out);
                 pass = false;
-                snprintf(fail_reason, sizeof(fail_reason),
-                         "A=%u ได้ Y=%u คาดหวัง Y=%u",
-                         cases[i].in_val, out, cases[i].expected_out);
-                break;
+                // no break — continue to test remaining cases
             }
         }
     }
 
-    uart_bridge_pwr(0);  // VCC off after test
+    uart_bridge_pwr(0); // VCC off after test
 
 done:
-    if (pass) {
+    if (pass)
+    {
         ESP_LOGI(TAG, "Verification PASS");
-        if (lbl) lv_label_set_text(lbl, "✓ ผ่าน — NOT gate ถูกต้อง");
+        if (lbl)
+            thai_label_set_text(lbl, "PASS  ผ่าน  NOT gate ถูกต้อง");
         lv_obj_set_style_bg_color(self->m_verifyResultPanel, lv_color_hex(0x1a5e2a), 0);
-    } else {
+    }
+    else
+    {
         ESP_LOGW(TAG, "Verification FAIL: %s", fail_reason);
-        if (lbl) lv_label_set_text(lbl, fail_reason);
+        if (lbl)
+            thai_label_set_text(lbl, fail_reason);
         lv_obj_set_style_bg_color(self->m_verifyResultPanel, lv_color_hex(0x8b1a1a), 0);
     }
 }
-
-
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const char *LessonPlayer::jstr(cJSON *obj, const char *key, const char *fallback)
 {
-    if (!obj) return fallback;
+    if (!obj)
+        return fallback;
     cJSON *item = cJSON_GetObjectItem(obj, key);
     if (item && cJSON_IsString(item) && item->valuestring)
         return item->valuestring;

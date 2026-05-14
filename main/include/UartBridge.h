@@ -40,77 +40,79 @@
  */
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 // ── Hardware config ───────────────────────────────────────────────────────────
-#define UART_BRIDGE_PORT        UART_NUM_1
-#define UART_BRIDGE_BAUD        115200
-#define UART_BRIDGE_TX_PIN      4       ///< ESP32-P4 TX → H7 PA10 (USART1_RX)
-#define UART_BRIDGE_RX_PIN      5       ///< ESP32-P4 RX ← H7 PA9  (USART1_TX)
-#define UART_BRIDGE_TIMEOUT_MS  2000    ///< 2-second response timeout
+#define UART_BRIDGE_PORT UART_NUM_0
+#define UART_BRIDGE_BAUD 115200
+#define UART_BRIDGE_TX_PIN 37       ///< ESP32-P4 GPIO37 TX → H7 PA10 (USART1_RX) [logic-analyzer verified May 5]
+#define UART_BRIDGE_RX_PIN 38       ///< ESP32-P4 GPIO38 RX ← H7 PA9  (USART1_TX) [logic-analyzer verified May 5]
+#define UART_BRIDGE_TIMEOUT_MS 2000 ///< 2-second response timeout
 
-// ── Error codes ───────────────────────────────────────────────────────────────
-typedef enum {
-    UB_OK            = 0,
-    UB_ERR_TIMEOUT   = 1,  ///< No response within UART_BRIDGE_TIMEOUT_MS
-    UB_ERR_H7        = 2,  ///< H7 returned "ERROR:..."
-    UB_ERR_NOT_INIT  = 3,  ///< uart_bridge_init() not called
-} uart_bridge_err_t;
+    // ── Error codes ───────────────────────────────────────────────────────────────
+    typedef enum
+    {
+        UB_OK = 0,
+        UB_ERR_TIMEOUT = 1,  ///< No response within UART_BRIDGE_TIMEOUT_MS
+        UB_ERR_H7 = 2,       ///< H7 returned "ERROR:..."
+        UB_ERR_NOT_INIT = 3, ///< uart_bridge_init() not called
+    } uart_bridge_err_t;
 
-// ── Lifecycle ─────────────────────────────────────────────────────────────────
+    // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
-/** Initialise UART peripheral. Safe to call multiple times (no-op on re-call). */
-void uart_bridge_init(void);
+    /** Initialise UART peripheral. Safe to call multiple times (no-op on re-call). */
+    void uart_bridge_init(void);
 
-/** Deinitialise UART driver. Call before sleep or reconfiguration. */
-void uart_bridge_deinit(void);
+    /** Deinitialise UART driver. Call before sleep or reconfiguration. */
+    void uart_bridge_deinit(void);
 
-// ── SCPI commands ─────────────────────────────────────────────────────────────
+    // ── SCPI commands ─────────────────────────────────────────────────────────────
 
-/**
- * @brief *IDN? — query H7 identity string.
- * @param[out] buf  Buffer for response (NUL-terminated, strips \\r\\n).
- * @param       len  Buffer size.
- */
-uart_bridge_err_t uart_bridge_idn(char *buf, size_t len);
+    /**
+     * @brief *IDN? — query H7 identity string.
+     * @param[out] buf  Buffer for response (NUL-terminated, strips \\r\\n).
+     * @param       len  Buffer size.
+     */
+    uart_bridge_err_t uart_bridge_idn(char *buf, size_t len);
 
-/**
- * @brief *RST — reset all DIP pins to floating input state.
- */
-uart_bridge_err_t uart_bridge_reset(void);
+    /**
+     * @brief *RST — reset all DIP pins to floating input state.
+     */
+    uart_bridge_err_t uart_bridge_reset(void);
 
-/**
- * @brief CONF:PIN:MODE <pin>,OUTPUT — configure DIP pin as output (H7 drives it).
- * @param dip_pin  DIP-14 pin number (1–13, not 7 or 14).
- */
-uart_bridge_err_t uart_bridge_conf_output(uint8_t dip_pin);
+    /**
+     * @brief CONF:PIN:MODE <pin>,OUTPUT — configure DIP pin as output (H7 drives it).
+     * @param dip_pin  DIP-14 pin number (1–13, not 7 or 14).
+     */
+    uart_bridge_err_t uart_bridge_conf_output(uint8_t dip_pin);
 
-/**
- * @brief CONF:PIN:MODE <pin>,INPUT — configure DIP pin as input (H7 reads it).
- * @param dip_pin  DIP-14 pin number (1–13, not 7 or 14).
- */
-uart_bridge_err_t uart_bridge_conf_input(uint8_t dip_pin);
+    /**
+     * @brief CONF:PIN:MODE <pin>,INPUT — configure DIP pin as input (H7 reads it).
+     * @param dip_pin  DIP-14 pin number (1–13, not 7 or 14).
+     */
+    uart_bridge_err_t uart_bridge_conf_input(uint8_t dip_pin);
 
-/**
- * @brief DIG:OUT <pin>,<val> — drive DIP output pin.
- * @param dip_pin  DIP-14 pin number configured as OUTPUT.
- * @param val      0 or 1.
- */
-uart_bridge_err_t uart_bridge_set_pin(uint8_t dip_pin, uint8_t val);
+    /**
+     * @brief DIG:OUT <pin>,<val> — drive DIP output pin.
+     * @param dip_pin  DIP-14 pin number configured as OUTPUT.
+     * @param val      0 or 1.
+     */
+    uart_bridge_err_t uart_bridge_set_pin(uint8_t dip_pin, uint8_t val);
 
-/**
- * @brief DIG:IN? <ch> — read input pin level.
- * @param ch   Channel 0-7 (→ PD0-PD7 on H7).
- * @param[out] val  0 or 1.
- */
-uart_bridge_err_t uart_bridge_read_pin(uint8_t ch, uint8_t *val);
+    /**
+     * @brief DIG:IN? <ch> — read input pin level.
+     * @param ch   Channel 0-7 (→ PD0-PD7 on H7).
+     * @param[out] val  0 or 1.
+     */
+    uart_bridge_err_t uart_bridge_read_pin(uint8_t ch, uint8_t *val);
 
-/**
- * @brief PWR <0|1> — control VCC via PC0 P-channel MOSFET.
- * @param on  1 = VCC ON (MOSFET ON), 0 = VCC OFF (safe state).
- */
-uart_bridge_err_t uart_bridge_pwr(uint8_t on);
+    /**
+     * @brief PWR <0|1> — control VCC via PC0 P-channel MOSFET.
+     * @param on  1 = VCC ON (MOSFET ON), 0 = VCC OFF (safe state).
+     */
+    uart_bridge_err_t uart_bridge_pwr(uint8_t on);
 
 #ifdef __cplusplus
 }
