@@ -159,3 +159,22 @@ uart_bridge_err_t uart_bridge_pwr(uint8_t on)
     char resp[32];
     return scpi_transact(cmd, resp, sizeof(resp));
 }
+
+uart_bridge_err_t uart_bridge_port_out(uint8_t mask)
+{
+    char cmd[24];
+    snprintf(cmd, sizeof(cmd), "PORT:OUT %u", mask);
+    char resp[32];
+    return scpi_transact(cmd, resp, sizeof(resp));
+}
+
+uart_bridge_err_t uart_bridge_port_in(uint8_t *mask)
+{
+    if (!mask)
+        return UB_ERR_NOT_INIT;
+    char resp[32];
+    uart_bridge_err_t err = scpi_transact("PORT:IN?", resp, sizeof(resp));
+    if (err == UB_OK)
+        *mask = (uint8_t)atoi(resp);
+    return err;
+}

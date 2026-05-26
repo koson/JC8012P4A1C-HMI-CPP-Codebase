@@ -114,6 +114,18 @@ extern "C"
      */
     uart_bridge_err_t uart_bridge_pwr(uint8_t on);
 
+    /**
+     * @brief PORT:OUT <mask> — write 8-bit mask to GPIOA output port (PA0–PA7).
+     * @param mask  Bit mask: bit N = 1 → PA_N high, bit N = 0 → PA_N low.
+     */
+    uart_bridge_err_t uart_bridge_port_out(uint8_t mask);
+
+    /**
+     * @brief PORT:IN? — read 8-bit state of GPIOD input port (PD0–PD7).
+     * @param[out] mask  Bit mask: bit N = state of PD_N.
+     */
+    uart_bridge_err_t uart_bridge_port_in(uint8_t *mask);
+
 #ifdef __cplusplus
 }
 #endif

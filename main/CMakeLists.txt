@@ -60,6 +60,9 @@ idf_component_register(
 
         # UartBridge: command TX/RX to STM32H7 measurement module
         cpp_version/UartBridge.cpp
+
+        # VerificationEngine: truth-table-based IC verification over UartBridge
+        cpp_version/VerificationEngine.cpp
         
         # LabHappy SVG Path Renderer Demo
         cpp_version/LabHappySvgDemo.cpp
