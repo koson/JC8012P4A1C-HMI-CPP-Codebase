@@ -44,12 +44,12 @@ extern "C"
 {
 #endif
 
-// ── Hardware config ───────────────────────────────────────────────────────────
-#define UART_BRIDGE_PORT UART_NUM_0
-#define UART_BRIDGE_BAUD 115200
-#define UART_BRIDGE_TX_PIN 37       ///< ESP32-P4 GPIO37 TX → H7 PA10 (USART1_RX) [logic-analyzer verified May 5]
-#define UART_BRIDGE_RX_PIN 38       ///< ESP32-P4 GPIO38 RX ← H7 PA9  (USART1_TX) [logic-analyzer verified May 5]
-#define UART_BRIDGE_TIMEOUT_MS 2000 ///< 2-second response timeout
+// ── USB CDC transport config ──────────────────────────────────────────────────
+// Physical connection: USB cable between ESP32-P4 (USB Host) and STM32H723 (USB CDC Device)
+// H7 firmware enumerates as VID=0x0483 (STMicroelectronics), PID=0x5740 (LabBuddy CDC VCP)
+#define USB_BRIDGE_VID 0x0483u      ///< STMicroelectronics VID
+#define USB_BRIDGE_PID 0x5740u      ///< LabBuddy Worker PID
+#define UART_BRIDGE_TIMEOUT_MS 2000 ///< 2-second SCPI response timeout
 
     // ── Error codes ───────────────────────────────────────────────────────────────
     typedef enum

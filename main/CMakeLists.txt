@@ -102,6 +102,7 @@ idf_component_register(
         json_renderer  # LabBuddy JSON Circuit Viewer
         esp_timer  # High-resolution timer for perf tracking
         font_thai  # TH Niramit Thai+Latin fonts for LessonPlayer
+        usb_cdc_host  # USB CDC-ACM Host transport to STM32H7 (replaces UART bridge)
         
     PRIV_REQUIRES
         bsp_extra  # BSP extra functions
@@ -110,5 +111,9 @@ idf_component_register(
         esp_http_server  # HTTP server
         nvs_flash  # NVS storage for WiFi
         json  # cJSON parsing for LessonPlayer
-        driver  # UART/GPIO driver for UartBridge
+        driver  # GPIO/peripheral driver (still needed by BSP and other components)
+        # NOTE: 'usb' is intentionally NOT listed here — usb_cdc_host idf_component.yml
+        # declares it as a managed dependency.  Listing it explicitly causes USB host
+        # system-init functions to run before LVGL allocates its SPIRAM framebuffers,
+        # resulting in esp_cache_msync null-pointer crashes on display flush.
 )

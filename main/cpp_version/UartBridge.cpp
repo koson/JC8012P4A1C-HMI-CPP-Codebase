@@ -1,6 +1,6 @@
 #include "UartBridge.h"
 
-#include "driver/uart.h"
+#include "usb_cdc_host.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -12,46 +12,57 @@
 static const char *TAG = "UartBridge";
 
 static bool s_initialized = false;
+static bool s_host_installed = false;
 
 // ── Init / Deinit ─────────────────────────────────────────────────────────────
 
 void uart_bridge_init(void)
 {
-    if (s_initialized)
-        return;
-
-    const uart_config_t cfg = {
-        .baud_rate = UART_BRIDGE_BAUD,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .rx_flow_ctrl_thresh = 0,
-        .source_clk = UART_SCLK_DEFAULT,
-        .flags = 0,
-    };
-
-    ESP_ERROR_CHECK(uart_param_config(UART_BRIDGE_PORT, &cfg));
-    ESP_ERROR_CHECK(uart_set_pin(UART_BRIDGE_PORT,
-                                 UART_BRIDGE_TX_PIN,
-                                 UART_BRIDGE_RX_PIN,
-                                 UART_PIN_NO_CHANGE,
-                                 UART_PIN_NO_CHANGE));
-    ESP_ERROR_CHECK(uart_driver_install(UART_BRIDGE_PORT, 256, 256, 0, NULL, 0));
-
-    s_initialized = true;
-    ESP_LOGI(TAG, "UART%d init OK  TX=%d RX=%d %dbaud",
-             UART_BRIDGE_PORT, UART_BRIDGE_TX_PIN, UART_BRIDGE_RX_PIN,
-             UART_BRIDGE_BAUD);
+    // Intentionally a no-op: USB host is installed lazily on the first SCPI
+    // command (in scpi_transact).  Installing at startup would allocate USB DMA
+    // buffers from SPIRAM before LVGL allocates its framebuffers, corrupting
+    // the display flush path (esp_cache_msync null-pointer crash).
 }
 
 void uart_bridge_deinit(void)
 {
-    if (!s_initialized)
-        return;
-    uart_driver_delete(UART_BRIDGE_PORT);
     s_initialized = false;
-    ESP_LOGI(TAG, "UART%d deinit", UART_BRIDGE_PORT);
+    // USB host daemon continues running; it will reconnect on next open attempt.
+}
+
+// ── Internal: ensure USB host + device open ───────────────────────────────────
+
+static uart_bridge_err_t ensure_connected(void)
+{
+    // 1. Install USB host stack once (allocates DMA buffers — deferred to here)
+    if (!s_host_installed)
+    {
+        esp_err_t err = usb_cdc_host_install();
+        if (err != ESP_OK && err != ESP_ERR_INVALID_STATE)
+        {
+            ESP_LOGE(TAG, "usb_cdc_host_install: %s", esp_err_to_name(err));
+            return UB_ERR_NOT_INIT;
+        }
+        s_host_installed = true;
+    }
+
+    if (s_initialized)
+        return UB_OK;
+
+    // 2. Try to open the device with a short timeout — do NOT block for seconds
+    if (!usb_cdc_host_is_connected())
+    {
+        return UB_ERR_NOT_INIT;
+    }
+    esp_err_t err = usb_cdc_host_open(USB_BRIDGE_VID, USB_BRIDGE_PID, 0, 300);
+    if (err != ESP_OK)
+    {
+        return UB_ERR_NOT_INIT;
+    }
+    s_initialized = true;
+    ESP_LOGI(TAG, "USB CDC H7 connected  VID=%04X PID=%04X",
+             USB_BRIDGE_VID, USB_BRIDGE_PID);
+    return UB_OK;
 }
 
 // ── Internal: SCPI transact ───────────────────────────────────────────────────
@@ -59,37 +70,31 @@ void uart_bridge_deinit(void)
 static uart_bridge_err_t scpi_transact(const char *cmd,
                                        char *resp, size_t resp_len)
 {
-    if (!s_initialized)
-        return UB_ERR_NOT_INIT;
-
-    uart_flush_input(UART_BRIDGE_PORT);
-    uart_write_bytes(UART_BRIDGE_PORT, cmd, strlen(cmd));
-    uart_write_bytes(UART_BRIDGE_PORT, "\n", 1);
-
-    // Read byte-by-byte until '\n' or deadline
-    size_t idx = 0;
-    TickType_t deadline = xTaskGetTickCount() + pdMS_TO_TICKS(UART_BRIDGE_TIMEOUT_MS);
-
-    while (xTaskGetTickCount() < deadline)
+    uart_bridge_err_t ub = ensure_connected();
+    if (ub != UB_OK)
     {
-        uint8_t b = 0;
-        int n = uart_read_bytes(UART_BRIDGE_PORT, &b, 1, pdMS_TO_TICKS(100));
-        if (n < 1)
-            continue;
-        if (b == '\n')
-            break;
-        if (idx < resp_len - 1)
-            resp[idx++] = (char)b;
+        ESP_LOGW(TAG, "cmd='%s' — H7 not connected", cmd);
+        return ub;
     }
-    resp[idx] = '\0';
-    if (idx > 0 && resp[idx - 1] == '\r')
-        resp[--idx] = '\0';
 
-    if (idx == 0)
+    esp_err_t err = usb_cdc_host_send(cmd);
+    if (err != ESP_OK)
     {
-        ESP_LOGW(TAG, "cmd='%s' timeout", cmd);
+        ESP_LOGW(TAG, "cmd='%s' send failed: %s", cmd, esp_err_to_name(err));
         return UB_ERR_TIMEOUT;
     }
+
+    err = usb_cdc_host_recv_line(resp, (int)resp_len, UART_BRIDGE_TIMEOUT_MS);
+    if (err != ESP_OK)
+    {
+        ESP_LOGW(TAG, "cmd='%s' recv timeout", cmd);
+        return UB_ERR_TIMEOUT;
+    }
+
+    // Strip trailing CR if present (H7 sends "OK\r\n", usb_cdc_host strips \n)
+    size_t rlen = strlen(resp);
+    if (rlen > 0 && resp[rlen - 1] == '\r')
+        resp[--rlen] = '\0';
 
     ESP_LOGD(TAG, "cmd='%s' resp='%s'", cmd, resp);
 

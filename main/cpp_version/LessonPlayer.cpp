@@ -911,7 +911,25 @@ void LessonPlayer::onVerifyBtn(lv_event_t *e)
     char fail_reason[64] = "";
     uart_bridge_err_t err;
 
-    uart_bridge_pwr(0);
+    /* Quick link check before spending 4 s on two PWR timeouts */
+    {
+        char idn[80] = "";
+        if (uart_bridge_idn(idn, sizeof(idn)) != UB_OK)
+        {
+            pass = false;
+            snprintf(fail_reason, sizeof(fail_reason),
+                     "H7 ไม่ตอบสนอง — ตรวจ UART cable");
+            goto done;
+        }
+        ESP_LOGI(TAG, "H7 link OK: %s", idn);
+    }
+
+    if (uart_bridge_pwr(0) != UB_OK)
+    {
+        pass = false;
+        snprintf(fail_reason, sizeof(fail_reason), "PWR OFF failed (timeout)");
+        goto done;
+    }
     vTaskDelay(pdMS_TO_TICKS(50));
 
     err = uart_bridge_pwr(1);
