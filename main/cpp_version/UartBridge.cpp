@@ -44,17 +44,25 @@ static uart_bridge_err_t ensure_connected(void)
             return UB_ERR_NOT_INIT;
         }
         s_host_installed = true;
+        // Give USB daemon task time to enumerate devices already on the bus.
+        // In ESP32_LabBuddy the host starts at boot and H7 needs ~400 ms to
+        // enumerate; mirror that here for the lazy-install path.
+        vTaskDelay(pdMS_TO_TICKS(600));
     }
 
+    // 2. If previously opened, check still alive; reset if H7 disconnected
     if (s_initialized)
-        return UB_OK;
-
-    // 2. Try to open the device with a short timeout — do NOT block for seconds
-    if (!usb_cdc_host_is_connected())
     {
-        return UB_ERR_NOT_INIT;
+        if (usb_cdc_host_is_connected())
+            return UB_OK;
+        // H7 disconnected since last open — allow re-open
+        s_initialized = false;
+        ESP_LOGW(TAG, "H7 disconnected — will re-open");
     }
-    esp_err_t err = usb_cdc_host_open(USB_BRIDGE_VID, USB_BRIDGE_PID, 0, 300);
+
+    // 3. Open the device — 1500 ms gives enough time for first enumeration.
+    //    If H7 is already enumerated this returns in <50 ms.
+    esp_err_t err = usb_cdc_host_open(USB_BRIDGE_VID, USB_BRIDGE_PID, 0, 1500);
     if (err != ESP_OK)
     {
         return UB_ERR_NOT_INIT;

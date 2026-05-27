@@ -98,7 +98,7 @@ VerifResult VerificationEngine::run(cJSON *verif_obj)
     if (uart_bridge_idn(idn, sizeof(idn)) != UB_OK)
     {
         snprintf(res.msg, sizeof(res.msg),
-                 "H7 ไม่ตอบสนอง — ตรวจ UART (GPIO37->PA10, GPIO38<-PA9) และ power H7");
+                 "H7 ไม่ตอบสนอง — ตรวจ USB cable ระหว่าง H7 กับ USB Host port ของบอร์ด");
         return res;
     }
     ESP_LOGI(TAG, "H7 link OK: %s", idn);
