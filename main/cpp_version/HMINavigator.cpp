@@ -6,6 +6,7 @@
 #include "esp_lvgl_port.h"
 #include "font_thai.h"
 #include "ThaiLabel.h"
+#include "FileManagerApplication.h"
 
 static const char *TAG = "HMINavigator";
 
@@ -32,6 +33,11 @@ HMINavigator::~HMINavigator()
     {
         lv_timer_delete(m_perfLogTimer);
         m_perfLogTimer = nullptr;
+    }
+    if (m_wifiStatusTimer)
+    {
+        lv_timer_delete(m_wifiStatusTimer);
+        m_wifiStatusTimer = nullptr;
     }
     delete m_splash;
     delete m_home;
@@ -97,6 +103,10 @@ void HMINavigator::start()
     m_splashTimer = lv_timer_create(onSplashTimerCb, SPLASH_DURATION_MS, this);
     lv_timer_set_repeat_count(m_splashTimer, 1);
 
+    // Refresh WiFi/RSSI badge on the Home status bar.
+    m_wifiStatusTimer = lv_timer_create(onWiFiStatusTimerCb, 2000, this);
+    updateHomeWiFiStatus();
+
     lvgl_port_unlock();
 }
 
@@ -147,11 +157,11 @@ void HMINavigator::buildHomeScreen(LVScreen *scr)
     lv_obj_set_style_pad_all(bar, 0, 0);
     lv_obj_clear_flag(bar, LV_OBJ_FLAG_SCROLLABLE);
 
-    lv_obj_t *lbl_wifi = lv_label_create(bar);
-    lv_label_set_text(lbl_wifi, LV_SYMBOL_WIFI "  LabBuddy");
-    lv_obj_set_style_text_color(lbl_wifi, lv_color_hex(0x00d4ff), 0);
-    lv_obj_set_style_text_font(lbl_wifi, &lv_font_montserrat_14, 0);
-    lv_obj_align(lbl_wifi, LV_ALIGN_LEFT_MID, 12, 0);
+    m_homeWifiLabel = lv_label_create(bar);
+    lv_label_set_text(m_homeWifiLabel, LV_SYMBOL_WIFI "  LabBuddy");
+    lv_obj_set_style_text_color(m_homeWifiLabel, lv_color_hex(0x00d4ff), 0);
+    lv_obj_set_style_text_font(m_homeWifiLabel, &lv_font_montserrat_14, 0);
+    lv_obj_align(m_homeWifiLabel, LV_ALIGN_LEFT_MID, 12, 0);
 
     // Title
     lv_obj_t *title = lv_label_create(root);
@@ -342,6 +352,69 @@ void HMINavigator::onSplashTimerCb(lv_timer_t *timer)
     ScreenManager::getInstance().navigateTo("home", LVScreen::Transition::FadeIn, 400);
 }
 
+void HMINavigator::updateHomeWiFiStatus()
+{
+    if (!m_homeWifiLabel)
+    {
+        return;
+    }
+
+    FileManagerApplication &fm = FileManagerApplication::getInstance();
+    char buf[96] = {0};
+
+    if (!fm.isWiFiConnected())
+    {
+        snprintf(buf, sizeof(buf), LV_SYMBOL_WIFI "  LabBuddy (offline)");
+        lv_obj_set_style_text_color(m_homeWifiLabel, lv_color_hex(0xff8c8c), 0);
+        lv_label_set_text(m_homeWifiLabel, buf);
+        return;
+    }
+
+    int rssi = fm.getWiFiRSSI();
+    const char *quality = "Unknown";
+    lv_color_t color = lv_color_hex(0x00d4ff);
+
+    if (rssi > -55)
+    {
+        quality = "Excellent";
+        color = lv_color_hex(0x70f2a3);
+    }
+    else if (rssi > -67)
+    {
+        quality = "Good";
+        color = lv_color_hex(0x8be9fd);
+    }
+    else if (rssi > -75)
+    {
+        quality = "Fair";
+        color = lv_color_hex(0xffd166);
+    }
+    else
+    {
+        quality = "Weak";
+        color = lv_color_hex(0xff8c8c);
+    }
+
+    snprintf(buf, sizeof(buf), LV_SYMBOL_WIFI "  %d dBm (%s)", rssi, quality);
+    lv_obj_set_style_text_color(m_homeWifiLabel, color, 0);
+    lv_label_set_text(m_homeWifiLabel, buf);
+}
+
+void HMINavigator::onWiFiStatusTimerCb(lv_timer_t *timer)
+{
+    if (!timer)
+    {
+        return;
+    }
+
+    HMINavigator *self = static_cast<HMINavigator *>(lv_timer_get_user_data(timer));
+    if (!self)
+    {
+        return;
+    }
+
+    self->updateHomeWiFiStatus();
+}
 void HMINavigator::onHomeBtnClicked(lv_event_t *e)
 {
     lv_obj_t *btn = lv_event_get_target_obj(e);

@@ -35,10 +35,12 @@ private:
     LVScreen *m_splash = nullptr;
     LVScreen *m_home = nullptr;
     LVScreen *m_library = nullptr;
+    lv_obj_t *m_homeWifiLabel = nullptr;
 
     void buildSplashScreen(LVScreen *scr);
     void buildHomeScreen(LVScreen *scr);
     void buildLibraryScreen(LVScreen *scr);
+    void updateHomeWiFiStatus();
 
     // Static LVGL event handlers
     static void onHomeBtnClicked(lv_event_t *e);
@@ -48,6 +50,8 @@ private:
     // Splash auto-advance timer
     static void onSplashTimerCb(lv_timer_t *timer);
     lv_timer_t *m_splashTimer = nullptr;
+    lv_timer_t *m_wifiStatusTimer = nullptr;
+    static void onWiFiStatusTimerCb(lv_timer_t *timer);
 
     // ── Performance tracking ─────────────────────────────────────────
     struct PerfStats

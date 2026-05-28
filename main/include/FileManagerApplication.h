@@ -66,6 +66,11 @@ public:
     const char *getIPAddress() const { return m_ip_address; }
 
     /**
+     * @brief Get current WiFi RSSI in dBm (returns -127 when unavailable)
+     */
+    int getWiFiRSSI() const;
+
+    /**
      * @brief Get HTTP server handle
      */
     httpd_handle_t getServerHandle() const { return m_server; }

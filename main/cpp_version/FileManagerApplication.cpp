@@ -358,6 +358,23 @@ FileManagerApplication::WiFiConfig FileManagerApplication::getDefaultWiFiConfig(
         .connect_timeout_ms = 10000};
 }
 
+int FileManagerApplication::getWiFiRSSI() const
+{
+    if (!m_wifi_connected)
+    {
+        return -127;
+    }
+
+    wifi_ap_record_t ap_info = {};
+    esp_err_t ret = esp_wifi_sta_get_ap_info(&ap_info);
+    if (ret != ESP_OK)
+    {
+        return -127;
+    }
+
+    return ap_info.rssi;
+}
+
 // Initialize
 esp_err_t FileManagerApplication::init(SystemManager &sysMgr, const WiFiConfig *wifi_config)
 {
