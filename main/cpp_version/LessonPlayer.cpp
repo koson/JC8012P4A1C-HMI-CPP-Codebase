@@ -1,8 +1,11 @@
 #include "LessonPlayer.h"
 #include "UartBridge.h"
 #include "VerificationEngine.h"
+#include "JsonRenderer.hpp"
+#include "LVCanvas.hpp"
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
+#include "esp_heap_caps.h"
 #include "font_thai.h"
 #include "ThaiLabel.h"
 #include "freertos/FreeRTOS.h"
@@ -10,8 +13,225 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <sys/stat.h>
 
 static const char *TAG = "LessonPlayer";
+
+static bool file_exists(const char *path)
+{
+    if (!path || !path[0])
+        return false;
+
+    struct stat st;
+    if (stat(path, &st) != 0)
+        return false;
+    return S_ISREG(st.st_mode);
+}
+
+static const char *basename_ptr(const char *path)
+{
+    if (!path)
+        return "";
+    const char *slash = strrchr(path, '/');
+    return slash ? (slash + 1) : path;
+}
+
+static int hex_nibble(char c)
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    c = (char)tolower((unsigned char)c);
+    if (c >= 'a' && c <= 'f')
+        return 10 + (c - 'a');
+    return -1;
+}
+
+static void normalize_circuit_path(const char *raw_path, char *out, size_t out_size)
+{
+    if (!out || out_size == 0)
+        return;
+
+    out[0] = '\0';
+    if (!raw_path)
+        return;
+
+    // Trim leading spaces.
+    const char *s = raw_path;
+    while (*s && isspace((unsigned char)*s))
+        ++s;
+
+    size_t j = 0;
+    while (*s && *s != '?' && *s != '#')
+    {
+        char ch = *s;
+        if (ch == '\\')
+            ch = '/';
+
+        // Decode percent-encoded characters (e.g. %20, %2F).
+        if (ch == '%' && s[1] && s[2])
+        {
+            int hi = hex_nibble(s[1]);
+            int lo = hex_nibble(s[2]);
+            if (hi >= 0 && lo >= 0)
+            {
+                ch = (char)((hi << 4) | lo);
+                s += 2;
+                if (ch == '\\')
+                    ch = '/';
+            }
+        }
+
+        if (j + 1 < out_size)
+            out[j++] = ch;
+        ++s;
+    }
+
+    // Trim trailing spaces.
+    while (j > 0 && isspace((unsigned char)out[j - 1]))
+        --j;
+    out[j] = '\0';
+
+    // Remove leading ./ patterns.
+    while (out[0] == '.' && out[1] == '/')
+        memmove(out, out + 2, strlen(out + 2) + 1);
+
+    // Collapse duplicate slashes.
+    size_t r = 0;
+    for (size_t i = 0; out[i] != '\0'; ++i)
+    {
+        if (out[i] == '/' && r > 0 && out[r - 1] == '/')
+            continue;
+        out[r++] = out[i];
+    }
+    out[r] = '\0';
+}
+
+static cJSON *find_verification_in_page(cJSON *page)
+{
+    if (!page || !cJSON_IsObject(page))
+        return nullptr;
+
+    cJSON *v = cJSON_GetObjectItem(page, "verification");
+    if (v && cJSON_IsObject(v))
+        return v;
+
+    v = cJSON_GetObjectItem(page, "verification_profile");
+    if (v && cJSON_IsObject(v))
+        return v;
+
+    v = cJSON_GetObjectItem(page, "verify");
+    if (v && cJSON_IsObject(v))
+        return v;
+
+    return nullptr;
+}
+
+static cJSON *find_verification_anywhere(cJSON *lesson_root, cJSON *pages_array, int current_page)
+{
+    // 1) Current page first
+    cJSON *cur = pages_array ? cJSON_GetArrayItem(pages_array, current_page) : nullptr;
+    cJSON *v = find_verification_in_page(cur);
+    if (v)
+        return v;
+
+    // 2) Root-level fallback
+    v = find_verification_in_page(lesson_root);
+    if (v)
+        return v;
+
+    // 3) Search all pages
+    if (pages_array && cJSON_IsArray(pages_array))
+    {
+        int n = cJSON_GetArraySize(pages_array);
+        for (int i = 0; i < n; i++)
+        {
+            cJSON *p = cJSON_GetArrayItem(pages_array, i);
+            v = find_verification_in_page(p);
+            if (v)
+                return v;
+        }
+    }
+
+    return nullptr;
+}
+
+static const char *find_first_gate_type(cJSON *pages_array)
+{
+    if (!pages_array || !cJSON_IsArray(pages_array))
+        return nullptr;
+
+    int n = cJSON_GetArraySize(pages_array);
+    for (int i = 0; i < n; i++)
+    {
+        cJSON *p = cJSON_GetArrayItem(pages_array, i);
+        cJSON *pt = p ? cJSON_GetObjectItem(p, "page_type") : nullptr;
+        if (!pt || !cJSON_IsString(pt) || !pt->valuestring)
+            continue;
+
+        if (strcasecmp(pt->valuestring, "circuit") != 0)
+            continue;
+
+        cJSON *gt = cJSON_GetObjectItem(p, "gate_type");
+        if (gt && cJSON_IsString(gt) && gt->valuestring && gt->valuestring[0])
+            return gt->valuestring;
+    }
+
+    return nullptr;
+}
+
+static cJSON *make_row(int drive, int expected)
+{
+    cJSON *row = cJSON_CreateObject();
+    if (!row)
+        return nullptr;
+    cJSON_AddNumberToObject(row, "drive", drive);
+    cJSON_AddNumberToObject(row, "expected", expected);
+    return row;
+}
+
+static cJSON *build_gate_fallback_verification(const char *gate_type)
+{
+    if (!gate_type || !gate_type[0])
+        return nullptr;
+
+    cJSON *obj = cJSON_CreateObject();
+    if (!obj)
+        return nullptr;
+
+    cJSON *rows = cJSON_CreateArray();
+    if (!rows)
+    {
+        cJSON_Delete(obj);
+        return nullptr;
+    }
+
+    if (strcasecmp(gate_type, "HALF_ADDER") == 0)
+    {
+        // A=bit0, B=bit1 ; expected bit0=Sum, bit1=Carry
+        cJSON_AddNumberToObject(obj, "read_mask", 0x03);
+        cJSON_AddNumberToObject(obj, "settle_ms", 20);
+        cJSON_AddItemToArray(rows, make_row(0x00, 0x00));
+        cJSON_AddItemToArray(rows, make_row(0x01, 0x01));
+        cJSON_AddItemToArray(rows, make_row(0x02, 0x01));
+        cJSON_AddItemToArray(rows, make_row(0x03, 0x02));
+    }
+    else if (strcasecmp(gate_type, "NOT") == 0)
+    {
+        cJSON_AddNumberToObject(obj, "read_mask", 0x01);
+        cJSON_AddNumberToObject(obj, "settle_ms", 20);
+        cJSON_AddItemToArray(rows, make_row(0x00, 0x01));
+        cJSON_AddItemToArray(rows, make_row(0x01, 0x00));
+    }
+    else
+    {
+        cJSON_Delete(rows);
+        cJSON_Delete(obj);
+        return nullptr;
+    }
+
+    cJSON_AddItemToObject(obj, "rows", rows);
+    return obj;
+}
 
 // ── Screen geometry ───────────────────────────────────────────────────────────
 static const int32_t SCR_W = 1280;
@@ -31,6 +251,7 @@ LessonPlayer::LessonPlayer() {}
 
 LessonPlayer::~LessonPlayer()
 {
+    releaseCircuitRenderer();
     if (m_lessonRoot)
         cJSON_Delete(m_lessonRoot);
     delete m_screen;
@@ -41,6 +262,8 @@ LessonPlayer::~LessonPlayer()
 bool LessonPlayer::loadLesson(const char *json_path)
 {
     ESP_LOGI(TAG, "Loading lesson: %s", json_path);
+    strncpy(m_loadedLessonPath, json_path ? json_path : "", sizeof(m_loadedLessonPath) - 1);
+    m_loadedLessonPath[sizeof(m_loadedLessonPath) - 1] = '\0';
 
     // Free previous lesson
     if (m_lessonRoot)
@@ -280,11 +503,249 @@ void LessonPlayer::showPage(int index)
 void LessonPlayer::clearContent()
 {
     lv_obj_clean(m_contentArea);
+    releaseCircuitRenderer();
     m_outputLed = nullptr;
     m_outputLabel = nullptr;
     m_circuitPage = nullptr;
     m_verifyResultPanel = nullptr;
     memset(m_inputStates, 0, sizeof(m_inputStates));
+}
+
+void LessonPlayer::releaseCircuitRenderer()
+{
+    m_circuitRenderer.reset();
+
+    if (m_circuitCanvas)
+    {
+        delete m_circuitCanvas;
+        m_circuitCanvas = nullptr;
+    }
+
+    if (m_circuitCanvasBuffer)
+    {
+        heap_caps_free(m_circuitCanvasBuffer);
+        m_circuitCanvasBuffer = nullptr;
+    }
+
+    if (m_circuitBackBuffer)
+    {
+        heap_caps_free(m_circuitBackBuffer);
+        m_circuitBackBuffer = nullptr;
+    }
+}
+
+bool LessonPlayer::resolveCircuitPath(const char *raw_path, char *resolved_path, size_t resolved_size) const
+{
+    if (!resolved_path || resolved_size == 0)
+        return false;
+
+    resolved_path[0] = '\0';
+
+    if (!raw_path || !raw_path[0])
+        return false;
+
+    auto try_candidate = [&](const char *candidate) -> bool
+    {
+        if (!candidate || !candidate[0])
+            return false;
+
+        if (!resolved_path[0])
+            snprintf(resolved_path, resolved_size, "%s", candidate);
+
+        if (file_exists(candidate))
+        {
+            snprintf(resolved_path, resolved_size, "%s", candidate);
+            return true;
+        }
+        return false;
+    };
+
+    char normalized[256] = {0};
+    normalize_circuit_path(raw_path, normalized, sizeof(normalized));
+    if (!normalized[0])
+        return false;
+
+    if (strncmp(normalized, "/sdcard/", 8) == 0)
+    {
+        if (try_candidate(normalized))
+            return true;
+
+        char upper_abs[256];
+        snprintf(upper_abs, sizeof(upper_abs), "%s", normalized);
+        char *fname = strrchr(upper_abs, '/');
+        if (fname)
+        {
+            for (char *p = fname + 1; *p; ++p)
+                *p = (char)toupper((unsigned char)*p);
+            if (try_candidate(upper_abs))
+                return true;
+        }
+
+        return false;
+    }
+
+    const char *norm = normalized;
+    while (*norm == '/')
+        norm++;
+
+    char lesson_dir[256] = {0};
+    if (m_loadedLessonPath[0])
+    {
+        snprintf(lesson_dir, sizeof(lesson_dir), "%s", m_loadedLessonPath);
+        char *slash = strrchr(lesson_dir, '/');
+        if (slash)
+            *slash = '\0';
+    }
+
+    char candidate[256];
+
+    if (lesson_dir[0])
+    {
+        snprintf(candidate, sizeof(candidate), "%s/%s", lesson_dir, norm);
+        if (try_candidate(candidate))
+            return true;
+    }
+
+    snprintf(candidate, sizeof(candidate), "/sdcard/lessons/%s", norm);
+    if (try_candidate(candidate))
+        return true;
+
+    snprintf(candidate, sizeof(candidate), "/sdcard/WORKSHOP/%s", norm);
+    if (try_candidate(candidate))
+        return true;
+
+    if (strncasecmp(norm, "lessons/", 8) == 0)
+    {
+        const char *tail = norm + 8;
+        snprintf(candidate, sizeof(candidate), "/sdcard/lessons/%s", tail);
+        if (try_candidate(candidate))
+            return true;
+    }
+
+    if (strncasecmp(norm, "WORKSHOP/", 9) == 0)
+    {
+        const char *tail = norm + 9;
+        snprintf(candidate, sizeof(candidate), "/sdcard/WORKSHOP/%s", tail);
+        if (try_candidate(candidate))
+            return true;
+    }
+
+    if (strncasecmp(norm, "sample-labs/", 12) == 0)
+    {
+        const char *tail = norm + 12;
+        snprintf(candidate, sizeof(candidate), "/sdcard/lessons/%s", tail);
+        if (try_candidate(candidate))
+            return true;
+        snprintf(candidate, sizeof(candidate), "/sdcard/WORKSHOP/%s", tail);
+        if (try_candidate(candidate))
+            return true;
+    }
+
+    if (strncasecmp(norm, "circuits/", 9) == 0)
+    {
+        const char *tail = norm + 9;
+        snprintf(candidate, sizeof(candidate), "/sdcard/WORKSHOP/%s", tail);
+        if (try_candidate(candidate))
+            return true;
+
+        snprintf(candidate, sizeof(candidate), "/sdcard/lessons/%s", tail);
+        if (try_candidate(candidate))
+            return true;
+    }
+
+    const char *base = basename_ptr(norm);
+    snprintf(candidate, sizeof(candidate), "/sdcard/lessons/circuits/%s", base);
+    if (try_candidate(candidate))
+        return true;
+
+    snprintf(candidate, sizeof(candidate), "/sdcard/WORKSHOP/circuits/%s", base);
+    if (try_candidate(candidate))
+        return true;
+
+    snprintf(candidate, sizeof(candidate), "/sdcard/WORKSHOP/%s", base);
+    if (try_candidate(candidate))
+        return true;
+
+    snprintf(candidate, sizeof(candidate), "/sdcard/lessons/%s", base);
+    if (try_candidate(candidate))
+        return true;
+
+    // Uppercase filename fallback for FAT/web-upload naming
+    char base_upper[128];
+    snprintf(base_upper, sizeof(base_upper), "%s", base);
+    for (char *p = base_upper; *p; ++p)
+        *p = (char)toupper((unsigned char)*p);
+
+    snprintf(candidate, sizeof(candidate), "/sdcard/WORKSHOP/%s", base_upper);
+    if (try_candidate(candidate))
+        return true;
+
+    snprintf(candidate, sizeof(candidate), "/sdcard/lessons/%s", base_upper);
+    if (try_candidate(candidate))
+        return true;
+
+    return false;
+}
+
+bool LessonPlayer::tryRenderCircuitFromJson(lv_obj_t *cont, cJSON *page)
+{
+    const char *raw_path = jstr(page, "circuit_file", "");
+    if (!raw_path || !raw_path[0])
+        return false;
+
+    char resolved_path[256] = {0};
+    const bool found = resolveCircuitPath(raw_path, resolved_path, sizeof(resolved_path));
+    if (!found)
+    {
+        ESP_LOGW(TAG, "Circuit file not found: raw='%s' first_try='%s'", raw_path, resolved_path);
+        return false;
+    }
+
+    const uint16_t CANVAS_WIDTH = 1180;
+    const uint16_t CANVAS_HEIGHT = 460;
+    const size_t buffer_size = (size_t)CANVAS_WIDTH * (size_t)CANVAS_HEIGHT * sizeof(uint16_t);
+
+    m_circuitCanvasBuffer = heap_caps_malloc(buffer_size, MALLOC_CAP_SPIRAM);
+    m_circuitBackBuffer = heap_caps_malloc(buffer_size, MALLOC_CAP_SPIRAM);
+    if (!m_circuitCanvasBuffer || !m_circuitBackBuffer)
+    {
+        ESP_LOGE(TAG, "OOM allocating circuit render buffers");
+        releaseCircuitRenderer();
+        return false;
+    }
+
+    m_circuitCanvas = new LVCanvas(cont, CANVAS_WIDTH, CANVAS_HEIGHT,
+                                   LV_COLOR_FORMAT_RGB565, m_circuitCanvasBuffer);
+    lv_obj_align(m_circuitCanvas->obj(), LV_ALIGN_TOP_MID, 0, 80);
+    m_circuitCanvas->fill(LVColor::White);
+
+    m_circuitRenderer = std::make_unique<JsonRenderer::JsonRenderer>(m_circuitCanvas);
+
+    m_circuitCanvas->setBuffer(m_circuitBackBuffer, CANVAS_WIDTH, CANVAS_HEIGHT, LV_COLOR_FORMAT_RGB565);
+    m_circuitCanvas->fill(LVColor::White);
+
+    const bool ok = m_circuitRenderer->loadAndRender(resolved_path);
+
+    std::swap(m_circuitCanvasBuffer, m_circuitBackBuffer);
+    m_circuitCanvas->setBuffer(m_circuitCanvasBuffer, CANVAS_WIDTH, CANVAS_HEIGHT, LV_COLOR_FORMAT_RGB565);
+    m_circuitCanvas->invalidate();
+
+    if (!ok)
+    {
+        ESP_LOGW(TAG, "Circuit render failed (%s): %s", resolved_path, m_circuitRenderer->getLastError());
+        releaseCircuitRenderer();
+        return false;
+    }
+
+    lv_obj_t *path_info = lv_label_create(cont);
+    lv_label_set_text_fmt(path_info, "Circuit: %s", resolved_path);
+    lv_obj_set_style_text_font(path_info, th_niramit_select(20), 0);
+    lv_obj_set_style_text_color(path_info, lv_color_hex(0x66ccff), 0);
+    lv_obj_set_width(path_info, SCR_W - 80);
+    lv_obj_align(path_info, LV_ALIGN_BOTTOM_MID, 0, -60);
+
+    ESP_LOGI(TAG, "Circuit rendered from %s", resolved_path);
+    return true;
 }
 
 void LessonPlayer::updateNavButtons()
@@ -569,6 +1030,19 @@ void LessonPlayer::buildCircuitPage(lv_obj_t *cont, cJSON *page)
     lv_obj_set_size(title, SCR_W - 80, 48);
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 24);
 
+    // Try full circuit rendering from circuit_file first.
+    // If not available, fallback to the built-in simplified gate simulation below.
+    if (tryRenderCircuitFromJson(cont, page))
+    {
+        lv_obj_t *hint = thai_label_create(cont);
+        thai_label_set_text(hint, jstr(page, "hint"));
+        thai_label_set_font(hint, th_niramit_select(24));
+        thai_label_set_color(hint, lv_color_hex(0x888899));
+        lv_obj_set_size(hint, SCR_W - 80, 40);
+        lv_obj_align(hint, LV_ALIGN_BOTTOM_MID, 0, -20);
+        return;
+    }
+
     // ── Main circuit panel ──────────────────────────────────────────
     // Layout: [Input toggles] ──── [Gate box] ──── [Output LED]
     const int32_t PANEL_W = 900;
@@ -708,6 +1182,23 @@ void LessonPlayer::buildCircuitPage(lv_obj_t *cont, cJSON *page)
     thai_label_set_color(hint, lv_color_hex(0x888899));
     lv_obj_set_size(hint, SCR_W - 80, 40);
     lv_obj_align(hint, LV_ALIGN_BOTTOM_MID, 0, -20);
+
+    const char *circuit_file = jstr(page, "circuit_file", "");
+    if (circuit_file && circuit_file[0])
+    {
+        char resolved_path[256] = {0};
+        const bool found = resolveCircuitPath(circuit_file, resolved_path, sizeof(resolved_path));
+
+        lv_obj_t *diag = lv_label_create(cont);
+        if (found)
+            lv_label_set_text_fmt(diag, "JSON circuit found: %s (fallback to simulated gate view)", resolved_path);
+        else
+            lv_label_set_text_fmt(diag, "JSON circuit not found: %s", resolved_path[0] ? resolved_path : circuit_file);
+        lv_obj_set_style_text_font(diag, th_niramit_select(18), 0);
+        lv_obj_set_style_text_color(diag, found ? lv_color_hex(0x66ccff) : lv_color_hex(0xff8888), 0);
+        lv_obj_set_width(diag, SCR_W - 80);
+        lv_obj_align(diag, LV_ALIGN_BOTTOM_MID, 0, -60);
+    }
 }
 
 // ── Verify page ───────────────────────────────────────────────────────────────
@@ -877,14 +1368,29 @@ void LessonPlayer::onVerifyBtn(lv_event_t *e)
     lv_obj_t *lbl = lv_obj_get_child(self->m_verifyResultPanel, 0);
 
     /* ---- Try JSON-driven verification first ---- */
-    cJSON *cur_page = (self->m_pagesArray)
-                          ? cJSON_GetArrayItem(self->m_pagesArray, self->m_currentPage)
-                          : nullptr;
-    cJSON *verif_obj = cur_page ? cJSON_GetObjectItem(cur_page, "verification") : nullptr;
+    cJSON *verif_obj = find_verification_anywhere(self->m_lessonRoot, self->m_pagesArray, self->m_currentPage);
+    cJSON *owned_fallback_verif = nullptr;
+
+    if (!verif_obj)
+    {
+        const char *gate_type = find_first_gate_type(self->m_pagesArray);
+        owned_fallback_verif = build_gate_fallback_verification(gate_type);
+        verif_obj = owned_fallback_verif;
+        if (verif_obj)
+        {
+            ESP_LOGW(TAG, "No explicit verification JSON; synthesized fallback for gate_type=%s", gate_type ? gate_type : "?");
+        }
+    }
 
     if (verif_obj)
     {
         VerifResult res = VerificationEngine::run(verif_obj);
+        if (owned_fallback_verif)
+        {
+            cJSON_Delete(owned_fallback_verif);
+            owned_fallback_verif = nullptr;
+        }
+
         if (res.pass)
         {
             ESP_LOGI(TAG, "Verification PASS (%d/%d)", res.passed, res.total);

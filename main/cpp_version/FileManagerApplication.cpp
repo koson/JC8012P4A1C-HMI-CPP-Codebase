@@ -16,8 +16,106 @@
 
 static const char *TAG = "FileManager";
 
+static const char *wifi_disc_reason_to_str(uint8_t reason)
+{
+    switch (reason)
+    {
+    case WIFI_REASON_NO_AP_FOUND:
+        return "NO_AP_FOUND";
+    case WIFI_REASON_AUTH_FAIL:
+        return "AUTH_FAIL";
+    case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT:
+        return "4WAY_HANDSHAKE_TIMEOUT";
+    case WIFI_REASON_HANDSHAKE_TIMEOUT:
+        return "HANDSHAKE_TIMEOUT";
+    case WIFI_REASON_ASSOC_FAIL:
+        return "ASSOC_FAIL";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+static int hex_nibble(char c)
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return 10 + (c - 'a');
+    if (c >= 'A' && c <= 'F')
+        return 10 + (c - 'A');
+    return -1;
+}
+
+static bool extract_and_decode_uri_tail(const char *uri, size_t prefix_len, char *out, size_t out_size)
+{
+    if (!uri || !out || out_size == 0)
+        return false;
+
+    size_t ulen = strlen(uri);
+    if (ulen <= prefix_len)
+    {
+        out[0] = '\0';
+        return false;
+    }
+
+    const char *src = uri + prefix_len;
+    size_t oi = 0;
+
+    while (*src && *src != '?' && *src != '#')
+    {
+        unsigned char ch = (unsigned char)*src;
+
+        if (ch == '%')
+        {
+            int hi = hex_nibble(*(src + 1));
+            int lo = hex_nibble(*(src + 2));
+            if (hi >= 0 && lo >= 0)
+            {
+                ch = (unsigned char)((hi << 4) | lo);
+                src += 3;
+            }
+            else
+            {
+                src++;
+            }
+        }
+        else
+        {
+            src++;
+        }
+
+        // Guard against encoded query/fragment delimiters (%3F / %23)
+        if (ch == '?' || ch == '#')
+            break;
+
+        if (oi + 1 >= out_size)
+            return false;
+        out[oi++] = (char)ch;
+    }
+
+    out[oi] = '\0';
+    return oi > 0;
+}
+
+static bool is_safe_filename(const char *name)
+{
+    if (!name || !name[0])
+        return false;
+    if (strstr(name, "..") != nullptr)
+        return false;
+
+    for (const char *p = name; *p; ++p)
+    {
+        if (*p == '/' || *p == '\\')
+            return false;
+    }
+
+    return true;
+}
+
 // Default upload directory
 #define UPLOAD_DIR "/sdcard/WORKSHOP"
+#define LESSONS_DIR "/sdcard/lessons"
 
 // HTML UI (embedded in code)
 static const char *index_html = R"HTML(
@@ -296,14 +394,17 @@ static const char *index_html = R"HTML(
         }
 
         function downloadFile(filename) {
-            window.location.href = '/file/' + filename;
+            const dir = document.getElementById('browseDir').value;
+            window.location.href = '/file/' + encodeURIComponent(filename) + '?dir=' + encodeURIComponent(dir);
         }
 
         async function deleteFile(filename) {
             if (!confirm(`Delete ${filename}?`)) return;
 
+            const dir = document.getElementById('browseDir').value;
+
             try {
-                const response = await fetch(`/delete/${filename}`, { method: 'DELETE' });
+                const response = await fetch(`/delete/${encodeURIComponent(filename)}?dir=${encodeURIComponent(dir)}`, { method: 'DELETE' });
                 const result = await response.json();
                 
                 if (result.success) {
@@ -352,8 +453,8 @@ FileManagerApplication::~FileManagerApplication()
 FileManagerApplication::WiFiConfig FileManagerApplication::getDefaultWiFiConfig()
 {
     return WiFiConfig{
-        .ssid = "AESFIBER",
-        .password = "29052552",
+        .ssid = "AIS 4G Hi-Speed Home WiFi_769475",
+        .password = "50769475",
         .max_retry = 5,
         .connect_timeout_ms = 10000};
 }
@@ -403,16 +504,27 @@ esp_err_t FileManagerApplication::init(SystemManager &sysMgr, const WiFiConfig *
         return ESP_FAIL;
     }
 
-    // Create upload directory
-    struct stat st;
-    if (stat(UPLOAD_DIR, &st) != 0)
+    // Ensure required directories exist
+    auto ensure_dir = [](const char *path) -> bool
     {
-        ESP_LOGI(TAG, "Creating directory: %s", UPLOAD_DIR);
-        if (mkdir(UPLOAD_DIR, 0755) != 0)
+        struct stat st;
+        if (stat(path, &st) == 0)
         {
-            ESP_LOGE(TAG, "Failed to create directory: %s (errno: %d)", UPLOAD_DIR, errno);
-            return ESP_FAIL;
+            return true;
         }
+
+        ESP_LOGI(TAG, "Creating directory: %s", path);
+        if (mkdir(path, 0755) != 0)
+        {
+            ESP_LOGE(TAG, "Failed to create directory: %s (errno: %d)", path, errno);
+            return false;
+        }
+        return true;
+    };
+
+    if (!ensure_dir(UPLOAD_DIR) || !ensure_dir(LESSONS_DIR))
+    {
+        return ESP_FAIL;
     }
 
     // Initialize NVS (required for WiFi)
@@ -454,7 +566,12 @@ void FileManagerApplication::wifi_event_handler(void *arg, esp_event_base_t even
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
         wifi_event_sta_disconnected_t *disconn = (wifi_event_sta_disconnected_t *)event_data;
-        ESP_LOGW(TAG, "WiFi disconnected (reason: %d)", disconn->reason);
+        ESP_LOGW(TAG, "WiFi disconnected (reason: %d, %s)", disconn->reason, wifi_disc_reason_to_str(disconn->reason));
+
+        if (disconn->reason == WIFI_REASON_NO_AP_FOUND)
+        {
+            ESP_LOGW(TAG, "No AP found: check SSID exact match, 2.4GHz enabled, and visibility");
+        }
 
         if (app->m_retry_count < app->m_wifi_config.max_retry)
         {
@@ -524,7 +641,20 @@ esp_err_t FileManagerApplication::initWiFi()
         this, &instance_ip));
 
     wifi_config_t wifi_config = {};
-    strncpy((char *)wifi_config.sta.ssid, m_wifi_config.ssid, sizeof(wifi_config.sta.ssid) - 1);
+
+    size_t ssid_len = strnlen(m_wifi_config.ssid, sizeof(wifi_config.sta.ssid) + 1);
+    if (ssid_len == 0 || ssid_len > sizeof(wifi_config.sta.ssid))
+    {
+        ESP_LOGE(TAG, "Invalid SSID length: %u (allowed: 1..%u)", (unsigned)ssid_len, (unsigned)sizeof(wifi_config.sta.ssid));
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    memcpy(wifi_config.sta.ssid, m_wifi_config.ssid, ssid_len);
+    if (ssid_len < sizeof(wifi_config.sta.ssid))
+    {
+        wifi_config.sta.ssid[ssid_len] = '\0';
+    }
+
     strncpy((char *)wifi_config.sta.password, m_wifi_config.password, sizeof(wifi_config.sta.password) - 1);
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
@@ -793,10 +923,40 @@ esp_err_t FileManagerApplication::upload_handler(httpd_req_t *req)
 // HTTP Handler: Download file
 esp_err_t FileManagerApplication::download_handler(httpd_req_t *req)
 {
-    const char *filename = req->uri + 6; // Skip "/file/"
+    char filename[128] = {0};
+    if (!extract_and_decode_uri_tail(req->uri, 6, filename, sizeof(filename)) || !is_safe_filename(filename))
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid file path");
+        return ESP_FAIL;
+    }
+
+    char download_dir[64];
+    strlcpy(download_dir, UPLOAD_DIR, sizeof(download_dir)); // default
+    {
+        char query[128] = {0};
+        if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK)
+        {
+            char dir_param[64] = {0};
+            if (httpd_query_key_value(query, "dir", dir_param, sizeof(dir_param)) == ESP_OK && strlen(dir_param) > 0)
+            {
+                bool ok = true;
+                for (int i = 0; dir_param[i]; i++)
+                {
+                    char c = dir_param[i];
+                    if (!isalnum((unsigned char)c) && c != '_' && c != '-')
+                    {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok)
+                    snprintf(download_dir, sizeof(download_dir), "/sdcard/%s", dir_param);
+            }
+        }
+    }
 
     char filepath[256];
-    snprintf(filepath, sizeof(filepath), "%s/%s", UPLOAD_DIR, filename);
+    snprintf(filepath, sizeof(filepath), "%s/%s", download_dir, filename);
 
     FILE *file = fopen(filepath, "r");
     if (!file)
@@ -916,10 +1076,40 @@ esp_err_t FileManagerApplication::view_handler(httpd_req_t *req)
 // HTTP Handler: Delete file
 esp_err_t FileManagerApplication::delete_handler(httpd_req_t *req)
 {
-    const char *filename = req->uri + 8; // Skip "/delete/"
+    char filename[128] = {0};
+    if (!extract_and_decode_uri_tail(req->uri, 8, filename, sizeof(filename)) || !is_safe_filename(filename))
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid file path");
+        return ESP_FAIL;
+    }
+
+    char delete_dir[64];
+    strlcpy(delete_dir, UPLOAD_DIR, sizeof(delete_dir)); // default
+    {
+        char query[128] = {0};
+        if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK)
+        {
+            char dir_param[64] = {0};
+            if (httpd_query_key_value(query, "dir", dir_param, sizeof(dir_param)) == ESP_OK && strlen(dir_param) > 0)
+            {
+                bool ok = true;
+                for (int i = 0; dir_param[i]; i++)
+                {
+                    char c = dir_param[i];
+                    if (!isalnum((unsigned char)c) && c != '_' && c != '-')
+                    {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok)
+                    snprintf(delete_dir, sizeof(delete_dir), "/sdcard/%s", dir_param);
+            }
+        }
+    }
 
     char filepath[256];
-    snprintf(filepath, sizeof(filepath), "%s/%s", UPLOAD_DIR, filename);
+    snprintf(filepath, sizeof(filepath), "%s/%s", delete_dir, filename);
 
     if (unlink(filepath) == 0)
     {

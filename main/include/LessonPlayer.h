@@ -4,6 +4,13 @@
 #include "ScreenManager.hpp"
 #include "cJSON.h"
 #include <stdint.h>
+#include <memory>
+
+class LVCanvas;
+namespace JsonRenderer
+{
+    class JsonRenderer;
+}
 
 /**
  * @brief Multi-page lesson player for LabBuddy
@@ -60,6 +67,9 @@ private:
     void buildTheoryPage(lv_obj_t *cont, cJSON *page);
     void buildCircuitPage(lv_obj_t *cont, cJSON *page);
     void buildVerifyPage(lv_obj_t *cont, cJSON *page);
+    bool tryRenderCircuitFromJson(lv_obj_t *cont, cJSON *page);
+    bool resolveCircuitPath(const char *raw_path, char *resolved_path, size_t resolved_size) const;
+    void releaseCircuitRenderer();
 
     // ── Static LVGL callbacks ─────────────────────────────────────────
     static void onNextBtn(lv_event_t *e);
@@ -95,4 +105,11 @@ private:
     cJSON *m_pagesArray = nullptr;
     int m_currentPage = 0;
     int m_pageCount = 0;
+    char m_loadedLessonPath[256] = {};
+
+    // Optional circuit JSON renderer on circuit page
+    LVCanvas *m_circuitCanvas = nullptr;
+    void *m_circuitCanvasBuffer = nullptr;
+    void *m_circuitBackBuffer = nullptr;
+    std::unique_ptr<JsonRenderer::JsonRenderer> m_circuitRenderer;
 };

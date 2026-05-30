@@ -7,6 +7,13 @@
 #include "font_thai.h"
 #include "ThaiLabel.h"
 #include "FileManagerApplication.h"
+#include <dirent.h>
+#include <sys/stat.h>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <cctype>
+#include <cstring>
 
 static const char *TAG = "HMINavigator";
 
@@ -287,19 +294,50 @@ void HMINavigator::buildLibraryScreen(LVScreen *scr)
 
     struct LessonEntry
     {
-        const char *display;   // shown in the list
-        const char *json_path; // SD card path (nullptr = coming soon)
+        std::string display;   // shown in the list
+        std::string json_path; // SD card path
         bool available;
     };
-    static const LessonEntry LESSONS[] = {
-        {"L001 - NOT Gate", "/sdcard/lessons/L001_not_gate.json", true},
-        {"L002 - AND Gate", nullptr, false},
-        {"L003 - OR Gate", nullptr, false},
-        {"L004 - NAND / NOR", nullptr, false},
-        {"L005 - Half Adder", nullptr, false},
+
+    std::vector<LessonEntry> lessons;
+
+    auto has_json_ext = [](const char *name) -> bool
+    {
+        if (!name)
+            return false;
+        const char *dot = strrchr(name, '.');
+        if (!dot)
+            return false;
+        return strcasecmp(dot, ".json") == 0;
     };
 
-    for (const auto &lesson : LESSONS)
+    DIR *dir = opendir("/sdcard/lessons");
+    if (dir)
+    {
+        struct dirent *entry;
+        while ((entry = readdir(dir)) != nullptr)
+        {
+            if (entry->d_type == DT_REG && has_json_ext(entry->d_name))
+            {
+                LessonEntry le;
+                le.display = entry->d_name;
+                le.json_path = std::string("/sdcard/lessons/") + entry->d_name;
+                le.available = true;
+                lessons.push_back(std::move(le));
+            }
+        }
+        closedir(dir);
+    }
+
+    std::sort(lessons.begin(), lessons.end(), [](const LessonEntry &a, const LessonEntry &b)
+              { return a.display < b.display; });
+
+    if (lessons.empty())
+    {
+        lessons.push_back({"No lessons found in /sdcard/lessons", "", false});
+    }
+
+    for (const auto &lesson : lessons)
     {
         lv_obj_t *item = lv_obj_create(list);
         lv_obj_set_size(item, LV_PCT(100), 64);
@@ -314,9 +352,11 @@ void HMINavigator::buildLibraryScreen(LVScreen *scr)
         if (lesson.available)
         {
             lv_obj_add_flag(item, LV_OBJ_FLAG_CLICKABLE);
-            // Store SD card path in user_data
-            lv_obj_set_user_data(item, (void *)lesson.json_path);
-            lv_obj_add_event_cb(item, onLessonClicked, LV_EVENT_CLICKED, nullptr);
+            // Persist path for callback lifetime.
+            char *path_copy = strdup(lesson.json_path.c_str());
+            lv_obj_set_user_data(item, (void *)path_copy);
+            lv_obj_add_event_cb(item, onLessonClicked, LV_EVENT_CLICKED, path_copy);
+            lv_obj_add_event_cb(item, onLessonItemDeleted, LV_EVENT_DELETE, path_copy);
             lv_obj_set_style_bg_color(item, lv_color_hex(0x1e2d4a),
                                       LV_STATE_PRESSED);
         }
@@ -331,7 +371,7 @@ void HMINavigator::buildLibraryScreen(LVScreen *scr)
         }
 
         lv_obj_t *lbl = thai_label_create(item);
-        thai_label_set_text(lbl, lesson.display);
+        thai_label_set_text(lbl, lesson.display.c_str());
         thai_label_set_font(lbl, th_niramit_select(24));
         thai_label_set_color(lbl, lesson.available ? lv_color_hex(0xffffff) : lv_color_hex(0x556677));
         thai_label_set_align(lbl, LV_TEXT_ALIGN_LEFT);
@@ -340,6 +380,23 @@ void HMINavigator::buildLibraryScreen(LVScreen *scr)
     }
 
     ESP_LOGI(TAG, "Library screen built");
+}
+
+void HMINavigator::refreshLibraryScreen()
+{
+    ScreenManager &mgr = ScreenManager::getInstance();
+
+    if (m_library)
+    {
+        delete m_library;
+        m_library = nullptr;
+    }
+
+    m_library = new LVScreen();
+    buildLibraryScreen(m_library);
+    mgr.registerScreen("library", m_library);
+
+    ESP_LOGI(TAG, "Library screen refreshed");
 }
 
 // ── Callbacks ─────────────────────────────────────────────────────────────────
@@ -420,7 +477,13 @@ void HMINavigator::onHomeBtnClicked(lv_event_t *e)
     lv_obj_t *btn = lv_event_get_target_obj(e);
     const char *target = static_cast<const char *>(lv_obj_get_user_data(btn));
     if (target)
+    {
+        if (strcmp(target, "library") == 0)
+        {
+            HMINavigator::getInstance().refreshLibraryScreen();
+        }
         ScreenManager::getInstance().push(target, LVScreen::Transition::OverLeft, 200);
+    }
 }
 
 void HMINavigator::onBackBtnClicked(lv_event_t *e)
@@ -432,7 +495,9 @@ void HMINavigator::onBackBtnClicked(lv_event_t *e)
 void HMINavigator::onLessonClicked(lv_event_t *e)
 {
     lv_obj_t *item = lv_event_get_target_obj(e);
-    const char *json_path = static_cast<const char *>(lv_obj_get_user_data(item));
+    const char *json_path = static_cast<const char *>(lv_event_get_user_data(e));
+    if (!json_path)
+        json_path = static_cast<const char *>(lv_obj_get_user_data(item));
     if (!json_path)
         return;
 
@@ -452,6 +517,15 @@ void HMINavigator::onLessonClicked(lv_event_t *e)
         lv_obj_set_style_text_color(toast, lv_color_hex(0xff4444), 0);
         lv_obj_align(toast, LV_ALIGN_BOTTOM_MID, 0, -20);
         lvgl_port_unlock();
+    }
+}
+
+void HMINavigator::onLessonItemDeleted(lv_event_t *e)
+{
+    void *ud = lv_event_get_user_data(e);
+    if (ud)
+    {
+        free(ud);
     }
 }
 

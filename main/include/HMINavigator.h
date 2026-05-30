@@ -40,12 +40,14 @@ private:
     void buildSplashScreen(LVScreen *scr);
     void buildHomeScreen(LVScreen *scr);
     void buildLibraryScreen(LVScreen *scr);
+    void refreshLibraryScreen();
     void updateHomeWiFiStatus();
 
     // Static LVGL event handlers
     static void onHomeBtnClicked(lv_event_t *e);
     static void onBackBtnClicked(lv_event_t *e);
     static void onLessonClicked(lv_event_t *e);
+    static void onLessonItemDeleted(lv_event_t *e);
 
     // Splash auto-advance timer
     static void onSplashTimerCb(lv_timer_t *timer);
