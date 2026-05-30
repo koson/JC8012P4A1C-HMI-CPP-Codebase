@@ -112,4 +112,5 @@ private:
     void *m_circuitCanvasBuffer = nullptr;
     void *m_circuitBackBuffer = nullptr;
     std::unique_ptr<JsonRenderer::JsonRenderer> m_circuitRenderer;
+    char m_circuitRenderDiag[256] = {};
 };

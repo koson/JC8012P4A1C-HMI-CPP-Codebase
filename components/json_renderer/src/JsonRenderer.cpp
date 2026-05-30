@@ -1,6 +1,8 @@
 #include "JsonRenderer.hpp"
 #include "esp_log.h"
 #include <algorithm>
+#include <cmath>
+#include <limits>
 
 static const char *TAG = "JsonRenderer";
 
@@ -245,33 +247,173 @@ namespace JsonRenderer
 
             SvgRenderer::Color strokeColor = parseColor(widget.strokeColor);
 
-            // WPF applies position twice: Canvas.SetLeft(widget.X) + TranslateTransform(widget.X,widget.Y)
-            // So effective WPF position = 2*widget.X + SVG_point*scale
-            int32_t scaledX = (int32_t)(2.0f * widget.x * m_scaleX + m_offsetX);
-            int32_t scaledY = (int32_t)(2.0f * widget.y * m_scaleY + m_offsetY);
-            int32_t finalScalePct = (int32_t)(widget.scale * m_scaleX * 1000);
+            // Base placement in the same coordinate space as wires/ports.
+            float placeX = widget.x;
+            float placeY = widget.y;
+            float logicalScale = (widget.scale > 0.0f) ? widget.scale : 1.0f;
+
+            // Draw.io converter often stores target width/height with scale=1.
+            // Fit symbol to the requested widget box using path bounds so visible gate size matches wires.
+            if (widget.width > 0.0f && widget.height > 0.0f && symbol.pathData)
+            {
+                SvgRenderer::SvgPathParser parser;
+                const auto commands = parser.parse(symbol.pathData);
+                float minX = std::numeric_limits<float>::infinity();
+                float minY = std::numeric_limits<float>::infinity();
+                float maxX = -std::numeric_limits<float>::infinity();
+                float maxY = -std::numeric_limits<float>::infinity();
+                float cx = 0.0f;
+                float cy = 0.0f;
+
+                for (const auto &cmd : commands)
+                {
+                    auto includePoint = [&](float px, float py)
+                    {
+                        if (px < minX)
+                            minX = px;
+                        if (py < minY)
+                            minY = py;
+                        if (px > maxX)
+                            maxX = px;
+                        if (py > maxY)
+                            maxY = py;
+                    };
+
+                    switch (cmd.type)
+                    {
+                    case 'M':
+                    case 'L':
+                        if (cmd.args.size() >= 2)
+                        {
+                            cx = cmd.args[0];
+                            cy = cmd.args[1];
+                            includePoint(cx, cy);
+                        }
+                        break;
+                    case 'm':
+                    case 'l':
+                        if (cmd.args.size() >= 2)
+                        {
+                            cx += cmd.args[0];
+                            cy += cmd.args[1];
+                            includePoint(cx, cy);
+                        }
+                        break;
+                    case 'H':
+                        if (cmd.args.size() >= 1)
+                        {
+                            cx = cmd.args[0];
+                            includePoint(cx, cy);
+                        }
+                        break;
+                    case 'h':
+                        if (cmd.args.size() >= 1)
+                        {
+                            cx += cmd.args[0];
+                            includePoint(cx, cy);
+                        }
+                        break;
+                    case 'V':
+                        if (cmd.args.size() >= 1)
+                        {
+                            cy = cmd.args[0];
+                            includePoint(cx, cy);
+                        }
+                        break;
+                    case 'v':
+                        if (cmd.args.size() >= 1)
+                        {
+                            cy += cmd.args[0];
+                            includePoint(cx, cy);
+                        }
+                        break;
+                    case 'C':
+                        if (cmd.args.size() >= 6)
+                        {
+                            includePoint(cmd.args[0], cmd.args[1]);
+                            includePoint(cmd.args[2], cmd.args[3]);
+                            cx = cmd.args[4];
+                            cy = cmd.args[5];
+                            includePoint(cx, cy);
+                        }
+                        break;
+                    case 'c':
+                        if (cmd.args.size() >= 6)
+                        {
+                            includePoint(cx + cmd.args[0], cy + cmd.args[1]);
+                            includePoint(cx + cmd.args[2], cy + cmd.args[3]);
+                            cx += cmd.args[4];
+                            cy += cmd.args[5];
+                            includePoint(cx, cy);
+                        }
+                        break;
+                    case 'Q':
+                        if (cmd.args.size() >= 4)
+                        {
+                            includePoint(cmd.args[0], cmd.args[1]);
+                            cx = cmd.args[2];
+                            cy = cmd.args[3];
+                            includePoint(cx, cy);
+                        }
+                        break;
+                    case 'q':
+                        if (cmd.args.size() >= 4)
+                        {
+                            includePoint(cx + cmd.args[0], cy + cmd.args[1]);
+                            cx += cmd.args[2];
+                            cy += cmd.args[3];
+                            includePoint(cx, cy);
+                        }
+                        break;
+                    default:
+                        break;
+                    }
+                }
+
+                const bool hasBounds = std::isfinite(minX) && std::isfinite(minY) && std::isfinite(maxX) && std::isfinite(maxY) &&
+                                       (maxX > minX) && (maxY > minY);
+                if (hasBounds)
+                {
+                    const float boundsW = maxX - minX;
+                    const float boundsH = maxY - minY;
+                    const float fitScale = std::min(widget.width / boundsW, widget.height / boundsH);
+                    logicalScale = fitScale;
+
+                    // Place visible symbol bounds inside widget box.
+                    const float leftPad = (widget.width - boundsW * fitScale) * 0.5f;
+                    const float topPad = (widget.height - boundsH * fitScale) * 0.5f;
+                    placeX = widget.x + leftPad - minX * fitScale;
+                    placeY = widget.y + topPad - minY * fitScale;
+                }
+            }
+
+            int32_t scaledX = (int32_t)(placeX * m_scaleX + m_offsetX);
+            int32_t scaledY = (int32_t)(placeY * m_scaleY + m_offsetY);
+            int32_t finalScalePct = (int32_t)(logicalScale * m_scaleX * 1000);
 
             // Verbose debug log (integers only - no float formatting)
-            ESP_LOGD(TAG, "WIDGET[%s]: json=(%d,%d) scale_x1000=%d -> canvas=(%d,%d) finalScale_x1000=%d",
+            ESP_LOGD(TAG, "WIDGET[%s]: json=(%d,%d) box=(%d,%d) scale_x1000=%d -> canvas=(%d,%d) finalScale_x1000=%d",
                      widget.symbolId.c_str(),
-                     (int)widget.x, (int)widget.y, (int)(widget.scale * 1000),
+                     (int)widget.x, (int)widget.y, (int)widget.width, (int)widget.height,
+                     (int)(logicalScale * 1000),
                      scaledX, scaledY, finalScalePct);
 
             // Accumulate debug JSON (integers only)
-            char wbuf[128];
+            char wbuf[160];
             snprintf(wbuf, sizeof(wbuf),
-                     "%s{\"id\":\"%s\",\"jx\":%d,\"jy\":%d,\"cx\":%d,\"cy\":%d,\"fs\":%d}",
+                     "%s{\"id\":\"%s\",\"jx\":%d,\"jy\":%d,\"jw\":%d,\"jh\":%d,\"cx\":%d,\"cy\":%d,\"fs\":%d}",
                      firstWidget ? "" : ",",
                      widget.symbolId.c_str(),
-                     (int)widget.x, (int)widget.y,
+                     (int)widget.x, (int)widget.y, (int)widget.width, (int)widget.height,
                      scaledX, scaledY, finalScalePct);
             m_debugInfo += wbuf;
             firstWidget = false;
 
+            const float symbolScale = m_scaleX * logicalScale;
             m_svgRenderer->renderSymbol(
                 symbol, scaledX, scaledY,
                 strokeColor, (int32_t)widget.strokeWidth,
-                m_scaleX, widget.rotation);
+                symbolScale, widget.rotation);
 
             if (m_debugMode)
             {

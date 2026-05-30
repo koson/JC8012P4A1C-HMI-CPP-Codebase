@@ -691,13 +691,18 @@ bool LessonPlayer::tryRenderCircuitFromJson(lv_obj_t *cont, cJSON *page)
 {
     const char *raw_path = jstr(page, "circuit_file", "");
     if (!raw_path || !raw_path[0])
+    {
+        snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag), "circuit_file is empty");
         return false;
+    }
 
     char resolved_path[256] = {0};
     const bool found = resolveCircuitPath(raw_path, resolved_path, sizeof(resolved_path));
     if (!found)
     {
         ESP_LOGW(TAG, "Circuit file not found: raw='%s' first_try='%s'", raw_path, resolved_path);
+        snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag),
+                 "Circuit file not found: raw='%s'", raw_path);
         return false;
     }
 
@@ -710,6 +715,8 @@ bool LessonPlayer::tryRenderCircuitFromJson(lv_obj_t *cont, cJSON *page)
     if (!m_circuitCanvasBuffer || !m_circuitBackBuffer)
     {
         ESP_LOGE(TAG, "OOM allocating circuit render buffers");
+        snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag),
+                 "OOM allocating circuit canvas buffers");
         releaseCircuitRenderer();
         return false;
     }
@@ -733,9 +740,14 @@ bool LessonPlayer::tryRenderCircuitFromJson(lv_obj_t *cont, cJSON *page)
     if (!ok)
     {
         ESP_LOGW(TAG, "Circuit render failed (%s): %s", resolved_path, m_circuitRenderer->getLastError());
+        snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag),
+                 "Render failed: %s", m_circuitRenderer->getLastError());
         releaseCircuitRenderer();
         return false;
     }
+
+    snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag),
+             "Rendered from %s", resolved_path);
 
     lv_obj_t *path_info = lv_label_create(cont);
     lv_label_set_text_fmt(path_info, "Circuit: %s", resolved_path);
@@ -1010,6 +1022,7 @@ void LessonPlayer::buildCircuitPage(lv_obj_t *cont, cJSON *page)
 {
     m_circuitPage = page;
     const char *gate_type = jstr(page, "gate_type", "NOT");
+    m_circuitRenderDiag[0] = '\0';
 
     // Count inputs
     cJSON *inputs_arr = cJSON_GetObjectItem(page, "inputs");
@@ -1183,19 +1196,12 @@ void LessonPlayer::buildCircuitPage(lv_obj_t *cont, cJSON *page)
     lv_obj_set_size(hint, SCR_W - 80, 40);
     lv_obj_align(hint, LV_ALIGN_BOTTOM_MID, 0, -20);
 
-    const char *circuit_file = jstr(page, "circuit_file", "");
-    if (circuit_file && circuit_file[0])
+    if (m_circuitRenderDiag[0])
     {
-        char resolved_path[256] = {0};
-        const bool found = resolveCircuitPath(circuit_file, resolved_path, sizeof(resolved_path));
-
         lv_obj_t *diag = lv_label_create(cont);
-        if (found)
-            lv_label_set_text_fmt(diag, "JSON circuit found: %s (fallback to simulated gate view)", resolved_path);
-        else
-            lv_label_set_text_fmt(diag, "JSON circuit not found: %s", resolved_path[0] ? resolved_path : circuit_file);
+        lv_label_set_text_fmt(diag, "Circuit diagnostics: %s", m_circuitRenderDiag);
         lv_obj_set_style_text_font(diag, th_niramit_select(18), 0);
-        lv_obj_set_style_text_color(diag, found ? lv_color_hex(0x66ccff) : lv_color_hex(0xff8888), 0);
+        lv_obj_set_style_text_color(diag, lv_color_hex(0xff8888), 0);
         lv_obj_set_width(diag, SCR_W - 80);
         lv_obj_align(diag, LV_ALIGN_BOTTOM_MID, 0, -60);
     }

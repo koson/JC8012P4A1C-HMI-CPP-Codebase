@@ -1,5 +1,6 @@
 #include "JsonParser.hpp"
 #include "esp_log.h"
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 
@@ -326,6 +327,15 @@ namespace JsonRenderer
         {
             return item->valueint;
         }
+        if (item && cJSON_IsString(item) && item->valuestring)
+        {
+            char *endPtr = nullptr;
+            long parsed = std::strtol(item->valuestring, &endPtr, 10);
+            if (endPtr != item->valuestring)
+            {
+                return (int)parsed;
+            }
+        }
         return defaultValue;
     }
 
@@ -335,6 +345,15 @@ namespace JsonRenderer
         if (item && cJSON_IsNumber(item))
         {
             return (float)item->valuedouble;
+        }
+        if (item && cJSON_IsString(item) && item->valuestring)
+        {
+            char *endPtr = nullptr;
+            float parsed = std::strtof(item->valuestring, &endPtr);
+            if (endPtr != item->valuestring)
+            {
+                return parsed;
+            }
         }
         return defaultValue;
     }
