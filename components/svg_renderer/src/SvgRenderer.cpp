@@ -22,7 +22,8 @@ namespace SvgRenderer
         int32_t y,
         const Color &strokeColor,
         int32_t strokeWidth,
-        float scale,
+        float scaleX,
+        float scaleY,
         float rotation)
     {
         if (!m_canvas)
@@ -46,15 +47,16 @@ namespace SvgRenderer
             return;
         }
 
-        // Calculate final scale (symbol scale * additional scale)
-        float finalScale = symbol.scale * scale;
+        // Calculate final scale per axis (symbol scale * additional scale)
+        float finalScaleX = symbol.scale * scaleX;
+        float finalScaleY = symbol.scale * scaleY;
 
         // Adjust position for viewBox offset
-        int32_t offsetX = x - static_cast<int32_t>(symbol.viewBox.x * finalScale);
-        int32_t offsetY = y - static_cast<int32_t>(symbol.viewBox.y * finalScale);
+        int32_t offsetX = x - static_cast<int32_t>(symbol.viewBox.x * finalScaleX);
+        int32_t offsetY = y - static_cast<int32_t>(symbol.viewBox.y * finalScaleY);
 
         // Render path
-        renderPath(commands, offsetX, offsetY, finalScale, strokeColor, strokeWidth);
+        renderPath(commands, offsetX, offsetY, finalScaleX, finalScaleY, strokeColor, strokeWidth);
     }
 
     void SvgRenderer::setBezierQuality(int cubicSegments, int quadraticSegments)
@@ -67,7 +69,8 @@ namespace SvgRenderer
         const std::vector<PathCommand> &commands,
         int32_t offsetX,
         int32_t offsetY,
-        float scale,
+        float scaleX,
+        float scaleY,
         const Color &strokeColor,
         int32_t strokeWidth)
     {
@@ -100,7 +103,7 @@ namespace SvgRenderer
                 if (cmd.args.size() >= 2)
                 {
                     Point target(cmd.args[0], cmd.args[1]);
-                    drawLine(m_currentPos, target, offsetX, offsetY, scale, strokeColor, strokeWidth);
+                    drawLine(m_currentPos, target, offsetX, offsetY, scaleX, scaleY, strokeColor, strokeWidth);
                     m_currentPos = target;
                 }
                 break;
@@ -109,7 +112,7 @@ namespace SvgRenderer
                 if (cmd.args.size() >= 2)
                 {
                     Point target(m_currentPos.x + cmd.args[0], m_currentPos.y + cmd.args[1]);
-                    drawLine(m_currentPos, target, offsetX, offsetY, scale, strokeColor, strokeWidth);
+                    drawLine(m_currentPos, target, offsetX, offsetY, scaleX, scaleY, strokeColor, strokeWidth);
                     m_currentPos = target;
                 }
                 break;
@@ -118,7 +121,7 @@ namespace SvgRenderer
                 if (cmd.args.size() >= 1)
                 {
                     Point target(cmd.args[0], m_currentPos.y);
-                    drawLine(m_currentPos, target, offsetX, offsetY, scale, strokeColor, strokeWidth);
+                    drawLine(m_currentPos, target, offsetX, offsetY, scaleX, scaleY, strokeColor, strokeWidth);
                     m_currentPos = target;
                 }
                 break;
@@ -127,7 +130,7 @@ namespace SvgRenderer
                 if (cmd.args.size() >= 1)
                 {
                     Point target(m_currentPos.x + cmd.args[0], m_currentPos.y);
-                    drawLine(m_currentPos, target, offsetX, offsetY, scale, strokeColor, strokeWidth);
+                    drawLine(m_currentPos, target, offsetX, offsetY, scaleX, scaleY, strokeColor, strokeWidth);
                     m_currentPos = target;
                 }
                 break;
@@ -136,7 +139,7 @@ namespace SvgRenderer
                 if (cmd.args.size() >= 1)
                 {
                     Point target(m_currentPos.x, cmd.args[0]);
-                    drawLine(m_currentPos, target, offsetX, offsetY, scale, strokeColor, strokeWidth);
+                    drawLine(m_currentPos, target, offsetX, offsetY, scaleX, scaleY, strokeColor, strokeWidth);
                     m_currentPos = target;
                 }
                 break;
@@ -145,7 +148,7 @@ namespace SvgRenderer
                 if (cmd.args.size() >= 1)
                 {
                     Point target(m_currentPos.x, m_currentPos.y + cmd.args[0]);
-                    drawLine(m_currentPos, target, offsetX, offsetY, scale, strokeColor, strokeWidth);
+                    drawLine(m_currentPos, target, offsetX, offsetY, scaleX, scaleY, strokeColor, strokeWidth);
                     m_currentPos = target;
                 }
                 break;
@@ -156,7 +159,7 @@ namespace SvgRenderer
                     Point p1(cmd.args[0], cmd.args[1]);
                     Point p2(cmd.args[2], cmd.args[3]);
                     Point p3(cmd.args[4], cmd.args[5]);
-                    drawCubicBezier(m_currentPos, p1, p2, p3, offsetX, offsetY, scale, strokeColor, strokeWidth);
+                    drawCubicBezier(m_currentPos, p1, p2, p3, offsetX, offsetY, scaleX, scaleY, strokeColor, strokeWidth);
                     m_currentPos = p3;
                 }
                 break;
@@ -167,7 +170,7 @@ namespace SvgRenderer
                     Point p1(m_currentPos.x + cmd.args[0], m_currentPos.y + cmd.args[1]);
                     Point p2(m_currentPos.x + cmd.args[2], m_currentPos.y + cmd.args[3]);
                     Point p3(m_currentPos.x + cmd.args[4], m_currentPos.y + cmd.args[5]);
-                    drawCubicBezier(m_currentPos, p1, p2, p3, offsetX, offsetY, scale, strokeColor, strokeWidth);
+                    drawCubicBezier(m_currentPos, p1, p2, p3, offsetX, offsetY, scaleX, scaleY, strokeColor, strokeWidth);
                     m_currentPos = p3;
                 }
                 break;
@@ -177,7 +180,7 @@ namespace SvgRenderer
                 {
                     Point p1(cmd.args[0], cmd.args[1]);
                     Point p2(cmd.args[2], cmd.args[3]);
-                    drawQuadraticBezier(m_currentPos, p1, p2, offsetX, offsetY, scale, strokeColor, strokeWidth);
+                    drawQuadraticBezier(m_currentPos, p1, p2, offsetX, offsetY, scaleX, scaleY, strokeColor, strokeWidth);
                     m_currentPos = p2;
                 }
                 break;
@@ -187,14 +190,14 @@ namespace SvgRenderer
                 {
                     Point p1(m_currentPos.x + cmd.args[0], m_currentPos.y + cmd.args[1]);
                     Point p2(m_currentPos.x + cmd.args[2], m_currentPos.y + cmd.args[3]);
-                    drawQuadraticBezier(m_currentPos, p1, p2, offsetX, offsetY, scale, strokeColor, strokeWidth);
+                    drawQuadraticBezier(m_currentPos, p1, p2, offsetX, offsetY, scaleX, scaleY, strokeColor, strokeWidth);
                     m_currentPos = p2;
                 }
                 break;
 
             case 'Z': // Close path (absolute)
             case 'z': // Close path (relative)
-                drawLine(m_currentPos, m_startPos, offsetX, offsetY, scale, strokeColor, strokeWidth);
+                drawLine(m_currentPos, m_startPos, offsetX, offsetY, scaleX, scaleY, strokeColor, strokeWidth);
                 m_currentPos = m_startPos;
                 break;
             }
@@ -206,14 +209,15 @@ namespace SvgRenderer
         const Point &to,
         int32_t offsetX,
         int32_t offsetY,
-        float scale,
+        float scaleX,
+        float scaleY,
         const Color &strokeColor,
         int32_t strokeWidth)
     {
-        int32_t x1 = offsetX + static_cast<int32_t>(from.x * scale);
-        int32_t y1 = offsetY + static_cast<int32_t>(from.y * scale);
-        int32_t x2 = offsetX + static_cast<int32_t>(to.x * scale);
-        int32_t y2 = offsetY + static_cast<int32_t>(to.y * scale);
+        int32_t x1 = offsetX + static_cast<int32_t>(from.x * scaleX);
+        int32_t y1 = offsetY + static_cast<int32_t>(from.y * scaleY);
+        int32_t x2 = offsetX + static_cast<int32_t>(to.x * scaleX);
+        int32_t y2 = offsetY + static_cast<int32_t>(to.y * scaleY);
 
         m_canvas->drawLine(x1, y1, x2, y2, toLVColor(strokeColor), strokeWidth);
     }
@@ -225,7 +229,8 @@ namespace SvgRenderer
         const Point &p3,
         int32_t offsetX,
         int32_t offsetY,
-        float scale,
+        float scaleX,
+        float scaleY,
         const Color &strokeColor,
         int32_t strokeWidth)
     {
@@ -233,7 +238,7 @@ namespace SvgRenderer
 
         for (size_t i = 1; i < points.size(); i++)
         {
-            drawLine(points[i - 1], points[i], offsetX, offsetY, scale, strokeColor, strokeWidth);
+            drawLine(points[i - 1], points[i], offsetX, offsetY, scaleX, scaleY, strokeColor, strokeWidth);
         }
     }
 
@@ -243,7 +248,8 @@ namespace SvgRenderer
         const Point &p2,
         int32_t offsetX,
         int32_t offsetY,
-        float scale,
+        float scaleX,
+        float scaleY,
         const Color &strokeColor,
         int32_t strokeWidth)
     {
@@ -251,7 +257,7 @@ namespace SvgRenderer
 
         for (size_t i = 1; i < points.size(); i++)
         {
-            drawLine(points[i - 1], points[i], offsetX, offsetY, scale, strokeColor, strokeWidth);
+            drawLine(points[i - 1], points[i], offsetX, offsetY, scaleX, scaleY, strokeColor, strokeWidth);
         }
     }
 
@@ -265,7 +271,8 @@ namespace SvgRenderer
         int32_t x,
         int32_t y,
         const Color &fillColor,
-        float scale)
+        float scaleX,
+        float scaleY)
     {
         if (!m_canvas || !symbol.pathData)
             return;
@@ -274,18 +281,20 @@ namespace SvgRenderer
         if (commands.empty())
             return;
 
-        float finalScale = symbol.scale * scale;
-        int32_t offsetX = x - static_cast<int32_t>(symbol.viewBox.x * finalScale);
-        int32_t offsetY = y - static_cast<int32_t>(symbol.viewBox.y * finalScale);
+        float finalScaleX = symbol.scale * scaleX;
+        float finalScaleY = symbol.scale * scaleY;
+        int32_t offsetX = x - static_cast<int32_t>(symbol.viewBox.x * finalScaleX);
+        int32_t offsetY = y - static_cast<int32_t>(symbol.viewBox.y * finalScaleY);
 
-        renderPathFilled(commands, offsetX, offsetY, finalScale, fillColor);
+        renderPathFilled(commands, offsetX, offsetY, finalScaleX, finalScaleY, fillColor);
     }
 
     void SvgRenderer::renderPathFilled(
         const std::vector<PathCommand> &commands,
         int32_t offsetX,
         int32_t offsetY,
-        float scale,
+        float scaleX,
+        float scaleY,
         const Color &fillColor)
     {
         // Decompose path into closed subpath polygons (M...L...Z groups)
@@ -388,8 +397,8 @@ namespace SvgRenderer
             }
         }
 
-        int screenMinY = static_cast<int>(minY * scale) + offsetY;
-        int screenMaxY = static_cast<int>(maxY * scale) + offsetY;
+        int screenMinY = static_cast<int>(minY * scaleY) + offsetY;
+        int screenMaxY = static_cast<int>(maxY * scaleY) + offsetY;
 
         // Pre-allocate xs once outside all loops — avoids heap alloc per scanline
         std::vector<float> xs;
@@ -401,7 +410,7 @@ namespace SvgRenderer
         //   even-odd fills segments [0,1] and [2,3] — leaving the counter hole empty.
         for (int sy = screenMinY; sy <= screenMaxY; sy++)
         {
-            float fy = (sy - offsetY) / scale;
+            float fy = (sy - offsetY) / scaleY;
 
             xs.clear(); // reuse allocation, no malloc
 
@@ -428,8 +437,8 @@ namespace SvgRenderer
             std::sort(xs.begin(), xs.end());
             for (size_t i = 0; i + 1 < xs.size(); i += 2)
             {
-                int sx1 = static_cast<int>(xs[i] * scale) + offsetX;
-                int sx2 = static_cast<int>(xs[i + 1] * scale) + offsetX;
+                int sx1 = static_cast<int>(xs[i] * scaleX) + offsetX;
+                int sx2 = static_cast<int>(xs[i + 1] * scaleX) + offsetX;
                 m_canvas->fillHLine(sx1, sx2, sy, lv);
             }
         }

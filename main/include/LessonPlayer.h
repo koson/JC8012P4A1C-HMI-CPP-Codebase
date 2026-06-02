@@ -35,6 +35,18 @@ public:
     static LessonPlayer &getInstance();
 
     /**
+     * @brief Enable/disable circuit debug overlay globally.
+     *        Default is true for active renderer debugging sessions.
+     */
+    void setCircuitDebugOverlay(bool enable) { m_circuitDebugOverlay = enable; }
+
+    /**
+     * @brief Show/hide debug toggle button in footer navigator.
+     *        Keep false in production while preserving debug code paths.
+     */
+    void setDebugToggleButtonVisible(bool enable) { m_showDebugToggleButton = enable; }
+
+    /**
      * @brief Load a lesson JSON file from SD card.
      * @param json_path  Full path, e.g. "/sdcard/lessons/L001_not_gate.json"
      * @return true on success
@@ -75,6 +87,7 @@ private:
     static void onNextBtn(lv_event_t *e);
     static void onBackBtn(lv_event_t *e);
     static void onCloseBtn(lv_event_t *e);
+    static void onDebugOverlayBtn(lv_event_t *e);
     static void onInputToggle(lv_event_t *e);
     static void onVerifyBtn(lv_event_t *e);
 
@@ -89,6 +102,7 @@ private:
     lv_obj_t *m_contentArea = nullptr;
     lv_obj_t *m_btnBack = nullptr;
     lv_obj_t *m_btnNext = nullptr;
+    lv_obj_t *m_btnDebugOverlay = nullptr;
 
     // Circuit page: input toggle states + output indicator
     static constexpr int MAX_INPUTS = 4;
@@ -113,4 +127,6 @@ private:
     void *m_circuitBackBuffer = nullptr;
     std::unique_ptr<JsonRenderer::JsonRenderer> m_circuitRenderer;
     char m_circuitRenderDiag[256] = {};
+    bool m_circuitDebugOverlay = true;
+    bool m_showDebugToggleButton = true;
 };

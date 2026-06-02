@@ -46,7 +46,8 @@ namespace SvgRenderer
             int32_t y,
             const Color &strokeColor,
             int32_t strokeWidth = 2,
-            float scale = 1.0f,
+            float scaleX = 1.0f,
+            float scaleY = 1.0f,
             float rotation = 0.0f);
 
         /**
@@ -60,7 +61,8 @@ namespace SvgRenderer
             int32_t x,
             int32_t y,
             const Color &fillColor,
-            float scale = 1.0f);
+            float scaleX = 1.0f,
+            float scaleY = 1.0f);
 
         /**
          * @brief Set Bezier curve quality (segments per curve)
@@ -82,7 +84,8 @@ namespace SvgRenderer
             const std::vector<PathCommand> &commands,
             int32_t offsetX,
             int32_t offsetY,
-            float scale,
+            float scaleX,
+            float scaleY,
             const Color &strokeColor,
             int32_t strokeWidth);
 
@@ -93,7 +96,8 @@ namespace SvgRenderer
             const std::vector<PathCommand> &commands,
             int32_t offsetX,
             int32_t offsetY,
-            float scale,
+            float scaleX,
+            float scaleY,
             const Color &fillColor);
 
         /**
@@ -104,7 +108,8 @@ namespace SvgRenderer
             const Point &to,
             int32_t offsetX,
             int32_t offsetY,
-            float scale,
+            float scaleX,
+            float scaleY,
             const Color &strokeColor,
             int32_t strokeWidth);
 
@@ -118,7 +123,8 @@ namespace SvgRenderer
             const Point &p3,
             int32_t offsetX,
             int32_t offsetY,
-            float scale,
+            float scaleX,
+            float scaleY,
             const Color &strokeColor,
             int32_t strokeWidth);
 
@@ -131,7 +137,8 @@ namespace SvgRenderer
             const Point &p2,
             int32_t offsetX,
             int32_t offsetY,
-            float scale,
+            float scaleX,
+            float scaleY,
             const Color &strokeColor,
             int32_t strokeWidth);
 

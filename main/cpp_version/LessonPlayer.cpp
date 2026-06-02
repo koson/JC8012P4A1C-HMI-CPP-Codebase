@@ -334,6 +334,16 @@ bool LessonPlayer::loadLesson(const char *json_path)
     }
 
     m_pageCount = cJSON_GetArraySize(m_pagesArray);
+
+    // Optional runtime debug UI/config toggles from lesson root JSON.
+    cJSON *show_toggle = cJSON_GetObjectItemCaseSensitive(m_lessonRoot, "show_debug_toggle_button");
+    if (cJSON_IsBool(show_toggle))
+        m_showDebugToggleButton = cJSON_IsTrue(show_toggle);
+
+    cJSON *default_overlay = cJSON_GetObjectItemCaseSensitive(m_lessonRoot, "circuit_debug_overlay_default");
+    if (cJSON_IsBool(default_overlay))
+        m_circuitDebugOverlay = cJSON_IsTrue(default_overlay);
+
     ESP_LOGI(TAG, "Lesson loaded: %s, %d pages", jstr(m_lessonRoot, "title"), m_pageCount);
     return true;
 }
@@ -441,6 +451,30 @@ void LessonPlayer::show()
     thai_label_set_color(lbl_next, lv_color_hex(0xffffff));
     lv_obj_set_size(lbl_next, 170, 48);
     lv_obj_center(lbl_next);
+
+    // Debug overlay toggle button (small footer control for renderer diagnostics)
+    if (m_showDebugToggleButton)
+    {
+        m_btnDebugOverlay = lv_btn_create(footer);
+        lv_obj_set_size(m_btnDebugOverlay, 120, 40);
+        lv_obj_align(m_btnDebugOverlay, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_set_style_radius(m_btnDebugOverlay, 8, 0);
+        lv_obj_set_style_bg_color(m_btnDebugOverlay,
+                                  m_circuitDebugOverlay ? lv_color_hex(0x1a6f3a) : lv_color_hex(0x3a3a5a),
+                                  0);
+        lv_obj_add_event_cb(m_btnDebugOverlay, onDebugOverlayBtn, LV_EVENT_CLICKED, this);
+
+        lv_obj_t *lbl_dbg = thai_label_create(m_btnDebugOverlay);
+        thai_label_set_text(lbl_dbg, m_circuitDebugOverlay ? "DBG: ON" : "DBG: OFF");
+        thai_label_set_font(lbl_dbg, th_niramit_select(18));
+        thai_label_set_color(lbl_dbg, lv_color_hex(0xffffff));
+        lv_obj_set_size(lbl_dbg, 110, 34);
+        lv_obj_center(lbl_dbg);
+    }
+    else
+    {
+        m_btnDebugOverlay = nullptr;
+    }
 
     // Show first page
     m_currentPage = 0;
@@ -727,6 +761,14 @@ bool LessonPlayer::tryRenderCircuitFromJson(lv_obj_t *cont, cJSON *page)
     m_circuitCanvas->fill(LVColor::White);
 
     m_circuitRenderer = std::make_unique<JsonRenderer::JsonRenderer>(m_circuitCanvas);
+    bool overlayEnabled = m_circuitDebugOverlay;
+    cJSON *overlay_flag = cJSON_GetObjectItemCaseSensitive(page, "circuit_debug_overlay");
+    if (cJSON_IsBool(overlay_flag))
+    {
+        overlayEnabled = cJSON_IsTrue(overlay_flag);
+    }
+    m_circuitRenderer->setDebugMode(overlayEnabled);
+    ESP_LOGI(TAG, "Circuit debug overlay: %s", overlayEnabled ? "ON" : "OFF");
 
     m_circuitCanvas->setBuffer(m_circuitBackBuffer, CANVAS_WIDTH, CANVAS_HEIGHT, LV_COLOR_FORMAT_RGB565);
     m_circuitCanvas->fill(LVColor::White);
@@ -776,6 +818,18 @@ void LessonPlayer::updateNavButtons()
             thai_label_set_text(lbl, LV_SYMBOL_OK "  เสร็จสิ้น");
         else
             thai_label_set_text(lbl, "ต่อไป  " LV_SYMBOL_RIGHT);
+    }
+
+    // Debug overlay footer toggle: keep label and color in sync.
+    if (m_btnDebugOverlay)
+    {
+        lv_obj_t *dbg_lbl = lv_obj_get_child(m_btnDebugOverlay, 0);
+        if (dbg_lbl)
+            thai_label_set_text(dbg_lbl, m_circuitDebugOverlay ? "DBG: ON" : "DBG: OFF");
+
+        lv_obj_set_style_bg_color(m_btnDebugOverlay,
+                                  m_circuitDebugOverlay ? lv_color_hex(0x1a6f3a) : lv_color_hex(0x3a3a5a),
+                                  0);
     }
 }
 
@@ -1319,6 +1373,31 @@ void LessonPlayer::onCloseBtn(lv_event_t *e)
 {
     LessonPlayer *self = static_cast<LessonPlayer *>(lv_event_get_user_data(e));
     self->close();
+}
+
+void LessonPlayer::onDebugOverlayBtn(lv_event_t *e)
+{
+    LessonPlayer *self = static_cast<LessonPlayer *>(lv_event_get_user_data(e));
+    self->m_circuitDebugOverlay = !self->m_circuitDebugOverlay;
+
+    ESP_LOGI(TAG, "Circuit debug overlay toggled: %s", self->m_circuitDebugOverlay ? "ON" : "OFF");
+
+    if (self->m_circuitRenderer)
+        self->m_circuitRenderer->setDebugMode(self->m_circuitDebugOverlay);
+
+    cJSON *page = self->m_pagesArray ? cJSON_GetArrayItem(self->m_pagesArray, self->m_currentPage) : nullptr;
+    const bool is_circuit_page = page && strcmp(jstr(page, "page_type"), "circuit") == 0;
+
+    if (is_circuit_page)
+    {
+        // Rebuild current circuit page so overlay state applies immediately.
+        self->showPage(self->m_currentPage);
+    }
+    else
+    {
+        // Keep footer button state coherent even outside circuit pages.
+        self->updateNavButtons();
+    }
 }
 
 void LessonPlayer::onInputToggle(lv_event_t *e)

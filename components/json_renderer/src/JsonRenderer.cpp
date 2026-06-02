@@ -8,6 +8,24 @@ static const char *TAG = "JsonRenderer";
 
 namespace JsonRenderer
 {
+    namespace
+    {
+        // Visual policy: geometry scales with viewport, stroke width does not.
+        // Keep these limits aligned with CircuitCanvas (WASM) for parity.
+        constexpr int32_t kMinStrokePx = 1;
+        constexpr int32_t kMaxStrokePx = 3;     // cap at 3px so wires stay thin at all scales
+        constexpr int32_t kMaxPortRadiusPx = 8; // port circles never exceed 8px regardless of scale
+        // Gate size policy: a single svgSymbol widget must not render taller than this.
+        // Ensures single-gate lessons look similar in size to multi-gate lessons.
+        constexpr float kMaxGateScreenPx = 280.0f;
+
+        inline int32_t clampStrokePx(float stroke)
+        {
+            float safe = (stroke > 0.0f) ? stroke : 1.0f;
+            int32_t px = static_cast<int32_t>(safe + 0.5f);
+            return std::clamp(px, kMinStrokePx, kMaxStrokePx);
+        }
+    }
 
     JsonRenderer::JsonRenderer(LVCanvas *canvas)
         : m_canvas(canvas), m_svgRenderer(nullptr), m_parser(nullptr), m_screen(nullptr),
@@ -126,25 +144,26 @@ namespace JsonRenderer
                     m_svgRenderer->renderSymbolFilled(
                         pathSymbol, 0, 0,
                         fillColor,
-                        m_scaleX);
+                        m_scaleX,
+                        m_scaleY);
                 }
 
                 // Pass 2: stroke (always render when strokeColor is set, independent of fill)
                 if (hasStroke)
                 {
                     SvgRenderer::Color strokeColor = parseColor(widget.strokeColor);
-                    int32_t sw = std::max((int32_t)1, (int32_t)(widget.strokeWidth > 0 ? widget.strokeWidth : 2.0f));
+                    int32_t sw = clampStrokePx(widget.strokeWidth > 0 ? widget.strokeWidth : 2.0f);
                     m_svgRenderer->renderSymbol(
                         pathSymbol, 0, 0,
                         strokeColor, sw,
-                        m_scaleX, 0.0f);
+                        m_scaleX, m_scaleY, 0.0f);
                 }
 
                 // Fallback: if neither fill nor stroke, use stroke with default color
                 if (isFillNone && !hasStroke)
                 {
                     SvgRenderer::Color strokeColor = parseColor("#000000");
-                    m_svgRenderer->renderSymbol(pathSymbol, 0, 0, strokeColor, 1, m_scaleX, 0.0f);
+                    m_svgRenderer->renderSymbol(pathSymbol, 0, 0, strokeColor, 1, m_scaleX, m_scaleY, 0.0f);
                 }
 
                 ESP_LOGD(TAG, "Path widget rendered (d len=%d)", (int)widget.d.size());
@@ -190,7 +209,7 @@ namespace JsonRenderer
                 {
                     SvgRenderer::Color strokeCol = parseColor(widget.strokeColor);
                     LVColor lvStroke(strokeCol.r, strokeCol.g, strokeCol.b);
-                    int32_t sw = std::max((int32_t)1, (int32_t)(widget.strokeWidth * m_scaleX));
+                    int32_t sw = clampStrokePx(widget.strokeWidth);
                     m_canvas->drawLine(scaledX, scaledY, scaledX + scaledW, scaledY, lvStroke, sw);
                     m_canvas->drawLine(scaledX + scaledW, scaledY, scaledX + scaledW, scaledY + scaledH, lvStroke, sw);
                     m_canvas->drawLine(scaledX + scaledW, scaledY + scaledH, scaledX, scaledY + scaledH, lvStroke, sw);
@@ -216,7 +235,7 @@ namespace JsonRenderer
                 LVColor lvFill(fillCol.r, fillCol.g, fillCol.b);
                 LVColor lvStroke(strokeCol.r, strokeCol.g, strokeCol.b);
 
-                int32_t sw = (widget.strokeWidth > 0.0f) ? (int32_t)(widget.strokeWidth * m_scaleX + 0.5f) : 0;
+                int32_t sw = (widget.strokeWidth > 0.0f) ? clampStrokePx(widget.strokeWidth) : 0;
                 m_canvas->drawEllipse(scaledX, scaledY, scaledRx, scaledRy, lvFill, lvStroke, sw);
 
                 ESP_LOGD(TAG, "Ellipse widget rendered at (%d,%d) rx=%d ry=%d sw=%d", scaledX, scaledY, scaledRx, scaledRy, sw);
@@ -238,6 +257,16 @@ namespace JsonRenderer
 
             const SymbolDef &symbolDef = it->second;
 
+            // Coordinate mode marker from converter:
+            // - coord_mode=raw: widget x/y are already in canvas space
+            // - legacy exports: keep historical x2 compensation
+            const bool rawCoords =
+                (screen.description.find("coord_mode=raw") != std::string::npos);
+            const bool drawioHalfCoords = !rawCoords &&
+                                          (screen.description.find("DrawioToCircuitConverter") != std::string::npos);
+            const float widgetBaseX = drawioHalfCoords ? (widget.x * 2.0f) : widget.x;
+            const float widgetBaseY = drawioHalfCoords ? (widget.y * 2.0f) : widget.y;
+
             SvgRenderer::SvgSymbol symbol;
             symbol.id = symbolDef.id.c_str();
             symbol.pathData = symbolDef.pathData.c_str();
@@ -245,179 +274,407 @@ namespace JsonRenderer
             symbol.scale = widget.scale;
             symbol.rotation = widget.rotation;
 
+            SvgRenderer::Color fillColor = parseColor(widget.fillColor.empty() ? "#ECF0F1" : widget.fillColor);
             SvgRenderer::Color strokeColor = parseColor(widget.strokeColor);
 
             // Base placement in the same coordinate space as wires/ports.
-            float placeX = widget.x;
-            float placeY = widget.y;
-            float logicalScale = (widget.scale > 0.0f) ? widget.scale : 1.0f;
+            float placeX = widgetBaseX;
+            float placeY = widgetBaseY;
+            float logicalScaleX = (widget.scale > 0.0f) ? widget.scale : 1.0f;
+            float logicalScaleY = (widget.scale > 0.0f) ? widget.scale : 1.0f;
 
-            // Draw.io converter often stores target width/height with scale=1.
-            // Fit symbol to the requested widget box using path bounds so visible gate size matches wires.
-            if (widget.width > 0.0f && widget.height > 0.0f && symbol.pathData)
+            // Draw.io exporter usually provides width/height + viewBox + scale=1.
+            // Use viewBox fitting first for stable cross-symbol sizing.
+            if (widget.width > 0.0f && widget.height > 0.0f)
             {
-                SvgRenderer::SvgPathParser parser;
-                const auto commands = parser.parse(symbol.pathData);
-                float minX = std::numeric_limits<float>::infinity();
-                float minY = std::numeric_limits<float>::infinity();
-                float maxX = -std::numeric_limits<float>::infinity();
-                float maxY = -std::numeric_limits<float>::infinity();
-                float cx = 0.0f;
-                float cy = 0.0f;
+                const float vbW = symbol.viewBox.width;
+                const float vbH = symbol.viewBox.height;
 
-                for (const auto &cmd : commands)
+                if (vbW > 0.0f && vbH > 0.0f)
                 {
-                    auto includePoint = [&](float px, float py)
+                    if (vbW > 0.0f && vbH > 0.0f)
                     {
-                        if (px < minX)
-                            minX = px;
-                        if (py < minY)
-                            minY = py;
-                        if (px > maxX)
-                            maxX = px;
-                        if (py > maxY)
-                            maxY = py;
-                    };
-
-                    switch (cmd.type)
-                    {
-                    case 'M':
-                    case 'L':
-                        if (cmd.args.size() >= 2)
-                        {
-                            cx = cmd.args[0];
-                            cy = cmd.args[1];
-                            includePoint(cx, cy);
-                        }
-                        break;
-                    case 'm':
-                    case 'l':
-                        if (cmd.args.size() >= 2)
-                        {
-                            cx += cmd.args[0];
-                            cy += cmd.args[1];
-                            includePoint(cx, cy);
-                        }
-                        break;
-                    case 'H':
-                        if (cmd.args.size() >= 1)
-                        {
-                            cx = cmd.args[0];
-                            includePoint(cx, cy);
-                        }
-                        break;
-                    case 'h':
-                        if (cmd.args.size() >= 1)
-                        {
-                            cx += cmd.args[0];
-                            includePoint(cx, cy);
-                        }
-                        break;
-                    case 'V':
-                        if (cmd.args.size() >= 1)
-                        {
-                            cy = cmd.args[0];
-                            includePoint(cx, cy);
-                        }
-                        break;
-                    case 'v':
-                        if (cmd.args.size() >= 1)
-                        {
-                            cy += cmd.args[0];
-                            includePoint(cx, cy);
-                        }
-                        break;
-                    case 'C':
-                        if (cmd.args.size() >= 6)
-                        {
-                            includePoint(cmd.args[0], cmd.args[1]);
-                            includePoint(cmd.args[2], cmd.args[3]);
-                            cx = cmd.args[4];
-                            cy = cmd.args[5];
-                            includePoint(cx, cy);
-                        }
-                        break;
-                    case 'c':
-                        if (cmd.args.size() >= 6)
-                        {
-                            includePoint(cx + cmd.args[0], cy + cmd.args[1]);
-                            includePoint(cx + cmd.args[2], cy + cmd.args[3]);
-                            cx += cmd.args[4];
-                            cy += cmd.args[5];
-                            includePoint(cx, cy);
-                        }
-                        break;
-                    case 'Q':
-                        if (cmd.args.size() >= 4)
-                        {
-                            includePoint(cmd.args[0], cmd.args[1]);
-                            cx = cmd.args[2];
-                            cy = cmd.args[3];
-                            includePoint(cx, cy);
-                        }
-                        break;
-                    case 'q':
-                        if (cmd.args.size() >= 4)
-                        {
-                            includePoint(cx + cmd.args[0], cy + cmd.args[1]);
-                            cx += cmd.args[2];
-                            cy += cmd.args[3];
-                            includePoint(cx, cy);
-                        }
-                        break;
-                    default:
-                        break;
+                        logicalScaleX = widget.width / vbW;
+                        logicalScaleY = widget.height / vbH;
+                        placeX = widgetBaseX;
+                        placeY = widgetBaseY;
                     }
                 }
-
-                const bool hasBounds = std::isfinite(minX) && std::isfinite(minY) && std::isfinite(maxX) && std::isfinite(maxY) &&
-                                       (maxX > minX) && (maxY > minY);
-                if (hasBounds)
+                else if (symbol.pathData)
                 {
-                    const float boundsW = maxX - minX;
-                    const float boundsH = maxY - minY;
-                    const float fitScale = std::min(widget.width / boundsW, widget.height / boundsH);
-                    logicalScale = fitScale;
+                    // Fallback for legacy symbols without a valid viewBox.
+                    SvgRenderer::SvgPathParser parser;
+                    const auto commands = parser.parse(symbol.pathData);
+                    float minX = std::numeric_limits<float>::infinity();
+                    float minY = std::numeric_limits<float>::infinity();
+                    float maxX = -std::numeric_limits<float>::infinity();
+                    float maxY = -std::numeric_limits<float>::infinity();
+                    float cx = 0.0f;
+                    float cy = 0.0f;
 
-                    // Place visible symbol bounds inside widget box.
-                    const float leftPad = (widget.width - boundsW * fitScale) * 0.5f;
-                    const float topPad = (widget.height - boundsH * fitScale) * 0.5f;
-                    placeX = widget.x + leftPad - minX * fitScale;
-                    placeY = widget.y + topPad - minY * fitScale;
+                    for (const auto &cmd : commands)
+                    {
+                        auto includePoint = [&](float px, float py)
+                        {
+                            if (px < minX)
+                                minX = px;
+                            if (py < minY)
+                                minY = py;
+                            if (px > maxX)
+                                maxX = px;
+                            if (py > maxY)
+                                maxY = py;
+                        };
+
+                        switch (cmd.type)
+                        {
+                        case 'M':
+                        case 'L':
+                            if (cmd.args.size() >= 2)
+                            {
+                                cx = cmd.args[0];
+                                cy = cmd.args[1];
+                                includePoint(cx, cy);
+                            }
+                            break;
+                        case 'm':
+                        case 'l':
+                            if (cmd.args.size() >= 2)
+                            {
+                                cx += cmd.args[0];
+                                cy += cmd.args[1];
+                                includePoint(cx, cy);
+                            }
+                            break;
+                        case 'H':
+                            if (cmd.args.size() >= 1)
+                            {
+                                cx = cmd.args[0];
+                                includePoint(cx, cy);
+                            }
+                            break;
+                        case 'h':
+                            if (cmd.args.size() >= 1)
+                            {
+                                cx += cmd.args[0];
+                                includePoint(cx, cy);
+                            }
+                            break;
+                        case 'V':
+                            if (cmd.args.size() >= 1)
+                            {
+                                cy = cmd.args[0];
+                                includePoint(cx, cy);
+                            }
+                            break;
+                        case 'v':
+                            if (cmd.args.size() >= 1)
+                            {
+                                cy += cmd.args[0];
+                                includePoint(cx, cy);
+                            }
+                            break;
+                        case 'C':
+                            if (cmd.args.size() >= 6)
+                            {
+                                includePoint(cmd.args[0], cmd.args[1]);
+                                includePoint(cmd.args[2], cmd.args[3]);
+                                cx = cmd.args[4];
+                                cy = cmd.args[5];
+                                includePoint(cx, cy);
+                            }
+                            break;
+                        case 'c':
+                            if (cmd.args.size() >= 6)
+                            {
+                                includePoint(cx + cmd.args[0], cy + cmd.args[1]);
+                                includePoint(cx + cmd.args[2], cy + cmd.args[3]);
+                                cx += cmd.args[4];
+                                cy += cmd.args[5];
+                                includePoint(cx, cy);
+                            }
+                            break;
+                        case 'Q':
+                            if (cmd.args.size() >= 4)
+                            {
+                                includePoint(cmd.args[0], cmd.args[1]);
+                                cx = cmd.args[2];
+                                cy = cmd.args[3];
+                                includePoint(cx, cy);
+                            }
+                            break;
+                        case 'q':
+                            if (cmd.args.size() >= 4)
+                            {
+                                includePoint(cx + cmd.args[0], cy + cmd.args[1]);
+                                cx += cmd.args[2];
+                                cy += cmd.args[3];
+                                includePoint(cx, cy);
+                            }
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+
+                    const bool hasBounds = std::isfinite(minX) && std::isfinite(minY) && std::isfinite(maxX) && std::isfinite(maxY) &&
+                                           (maxX > minX) && (maxY > minY);
+                    if (hasBounds)
+                    {
+                        const float boundsW = maxX - minX;
+                        const float boundsH = maxY - minY;
+                        const float fitScaleX = widget.width / boundsW;
+                        const float fitScaleY = widget.height / boundsH;
+                        logicalScaleX = fitScaleX;
+                        logicalScaleY = fitScaleY;
+                        placeX = widgetBaseX - minX * fitScaleX;
+                        placeY = widgetBaseY - minY * fitScaleY;
+                    }
                 }
             }
 
             int32_t scaledX = (int32_t)(placeX * m_scaleX + m_offsetX);
             int32_t scaledY = (int32_t)(placeY * m_scaleY + m_offsetY);
-            int32_t finalScalePct = (int32_t)(logicalScale * m_scaleX * 1000);
+            int32_t finalScaleXPct = (int32_t)(logicalScaleX * m_scaleX * 1000);
+            int32_t finalScaleYPct = (int32_t)(logicalScaleY * m_scaleY * 1000);
 
             // Verbose debug log (integers only - no float formatting)
-            ESP_LOGD(TAG, "WIDGET[%s]: json=(%d,%d) box=(%d,%d) scale_x1000=%d -> canvas=(%d,%d) finalScale_x1000=%d",
+            ESP_LOGD(TAG, "WIDGET[%s]: json=(%d,%d) box=(%d,%d) scale_x1000=(%d,%d) -> canvas=(%d,%d)",
                      widget.symbolId.c_str(),
                      (int)widget.x, (int)widget.y, (int)widget.width, (int)widget.height,
-                     (int)(logicalScale * 1000),
-                     scaledX, scaledY, finalScalePct);
+                     (int)(logicalScaleX * 1000), (int)(logicalScaleY * 1000),
+                     scaledX, scaledY);
 
             // Accumulate debug JSON (integers only)
             char wbuf[160];
             snprintf(wbuf, sizeof(wbuf),
-                     "%s{\"id\":\"%s\",\"jx\":%d,\"jy\":%d,\"jw\":%d,\"jh\":%d,\"cx\":%d,\"cy\":%d,\"fs\":%d}",
+                     "%s{\"id\":\"%s\",\"jx\":%d,\"jy\":%d,\"jw\":%d,\"jh\":%d,\"cx\":%d,\"cy\":%d,\"fsx\":%d,\"fsy\":%d}",
                      firstWidget ? "" : ",",
                      widget.symbolId.c_str(),
                      (int)widget.x, (int)widget.y, (int)widget.width, (int)widget.height,
-                     scaledX, scaledY, finalScalePct);
+                     scaledX, scaledY, finalScaleXPct, finalScaleYPct);
             m_debugInfo += wbuf;
             firstWidget = false;
 
-            const float symbolScale = m_scaleX * logicalScale;
+            const float symbolScaleX = m_scaleX * logicalScaleX;
+            const float symbolScaleY = m_scaleY * logicalScaleY;
+            int32_t symbolStroke = clampStrokePx(widget.strokeWidth);
+            m_svgRenderer->renderSymbolFilled(
+                symbol, scaledX, scaledY,
+                fillColor,
+                symbolScaleX, symbolScaleY);
             m_svgRenderer->renderSymbol(
                 symbol, scaledX, scaledY,
-                strokeColor, (int32_t)widget.strokeWidth,
-                symbolScale, widget.rotation);
+                strokeColor, symbolStroke,
+                symbolScaleX, symbolScaleY, widget.rotation);
 
             if (m_debugMode)
             {
                 drawDebugMarker(scaledX, scaledY, widget.symbolId.c_str());
+
+                // --- Green box: widget bounding box as-placed in JSON coords ---
+                int32_t wbx = (int32_t)(widget.x * m_scaleX + m_offsetX);
+                int32_t wby = (int32_t)(widget.y * m_scaleY + m_offsetY);
+                int32_t wbw = (int32_t)(widget.width * m_scaleX);
+                int32_t wbh = (int32_t)(widget.height * m_scaleY);
+                LVColor green(0, 220, 0);
+                m_canvas->drawLine(wbx, wby, wbx + wbw, wby, green, 1);
+                m_canvas->drawLine(wbx + wbw, wby, wbx + wbw, wby + wbh, green, 1);
+                m_canvas->drawLine(wbx + wbw, wby + wbh, wbx, wby + wbh, green, 1);
+                m_canvas->drawLine(wbx, wby + wbh, wbx, wby, green, 1);
+
+                // --- Blue box: viewBox boundary at rendered origin/scale ---
+                int32_t vbx = scaledX;
+                int32_t vby = scaledY;
+                int32_t vbw = (int32_t)(symbol.viewBox.width * symbolScaleX);
+                int32_t vbh = (int32_t)(symbol.viewBox.height * symbolScaleY);
+                LVColor blue(0, 100, 255);
+                m_canvas->drawLine(vbx, vby, vbx + vbw, vby, blue, 1);
+                m_canvas->drawLine(vbx + vbw, vby, vbx + vbw, vby + vbh, blue, 1);
+                m_canvas->drawLine(vbx + vbw, vby + vbh, vbx, vby + vbh, blue, 1);
+                m_canvas->drawLine(vbx, vby + vbh, vbx, vby, blue, 1);
+
+                // --- Cyan centerline: viewBox center Y ---
+                int32_t centerY = vby + vbh / 2;
+                m_canvas->drawLine(vbx, centerY, vbx + vbw, centerY, LVColor(0, 220, 220), 1);
+
+                // --- Magenta box: actual path bounds inside viewBox (shows intrinsic symbol padding) ---
+                if (symbol.pathData)
+                {
+                    SvgRenderer::SvgPathParser debugParser;
+                    const auto debugCommands = debugParser.parse(symbol.pathData);
+                    float pMinX = std::numeric_limits<float>::infinity();
+                    float pMinY = std::numeric_limits<float>::infinity();
+                    float pMaxX = -std::numeric_limits<float>::infinity();
+                    float pMaxY = -std::numeric_limits<float>::infinity();
+                    float pCx = 0.0f;
+                    float pCy = 0.0f;
+
+                    auto includePoint = [&](float px, float py)
+                    {
+                        if (px < pMinX)
+                            pMinX = px;
+                        if (py < pMinY)
+                            pMinY = py;
+                        if (px > pMaxX)
+                            pMaxX = px;
+                        if (py > pMaxY)
+                            pMaxY = py;
+                    };
+
+                    for (const auto &cmd : debugCommands)
+                    {
+                        switch (cmd.type)
+                        {
+                        case 'M':
+                        case 'L':
+                            if (cmd.args.size() >= 2)
+                            {
+                                pCx = cmd.args[0];
+                                pCy = cmd.args[1];
+                                includePoint(pCx, pCy);
+                            }
+                            break;
+                        case 'm':
+                        case 'l':
+                            if (cmd.args.size() >= 2)
+                            {
+                                pCx += cmd.args[0];
+                                pCy += cmd.args[1];
+                                includePoint(pCx, pCy);
+                            }
+                            break;
+                        case 'H':
+                            if (cmd.args.size() >= 1)
+                            {
+                                pCx = cmd.args[0];
+                                includePoint(pCx, pCy);
+                            }
+                            break;
+                        case 'h':
+                            if (cmd.args.size() >= 1)
+                            {
+                                pCx += cmd.args[0];
+                                includePoint(pCx, pCy);
+                            }
+                            break;
+                        case 'V':
+                            if (cmd.args.size() >= 1)
+                            {
+                                pCy = cmd.args[0];
+                                includePoint(pCx, pCy);
+                            }
+                            break;
+                        case 'v':
+                            if (cmd.args.size() >= 1)
+                            {
+                                pCy += cmd.args[0];
+                                includePoint(pCx, pCy);
+                            }
+                            break;
+                        case 'C':
+                            if (cmd.args.size() >= 6)
+                            {
+                                includePoint(cmd.args[0], cmd.args[1]);
+                                includePoint(cmd.args[2], cmd.args[3]);
+                                pCx = cmd.args[4];
+                                pCy = cmd.args[5];
+                                includePoint(pCx, pCy);
+                            }
+                            break;
+                        case 'c':
+                            if (cmd.args.size() >= 6)
+                            {
+                                includePoint(pCx + cmd.args[0], pCy + cmd.args[1]);
+                                includePoint(pCx + cmd.args[2], pCy + cmd.args[3]);
+                                pCx += cmd.args[4];
+                                pCy += cmd.args[5];
+                                includePoint(pCx, pCy);
+                            }
+                            break;
+                        case 'Q':
+                            if (cmd.args.size() >= 4)
+                            {
+                                includePoint(cmd.args[0], cmd.args[1]);
+                                pCx = cmd.args[2];
+                                pCy = cmd.args[3];
+                                includePoint(pCx, pCy);
+                            }
+                            break;
+                        case 'q':
+                            if (cmd.args.size() >= 4)
+                            {
+                                includePoint(pCx + cmd.args[0], pCy + cmd.args[1]);
+                                pCx += cmd.args[2];
+                                pCy += cmd.args[3];
+                                includePoint(pCx, pCy);
+                            }
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+
+                    if (std::isfinite(pMinX) && std::isfinite(pMinY) && std::isfinite(pMaxX) && std::isfinite(pMaxY) &&
+                        (pMaxX > pMinX) && (pMaxY > pMinY))
+                    {
+                        int32_t pbx1 = (int32_t)((placeX + pMinX * logicalScaleX) * m_scaleX + m_offsetX);
+                        int32_t pby1 = (int32_t)((placeY + pMinY * logicalScaleY) * m_scaleY + m_offsetY);
+                        int32_t pbx2 = (int32_t)((placeX + pMaxX * logicalScaleX) * m_scaleX + m_offsetX);
+                        int32_t pby2 = (int32_t)((placeY + pMaxY * logicalScaleY) * m_scaleY + m_offsetY);
+                        LVColor magenta(255, 0, 255);
+                        m_canvas->drawLine(pbx1, pby1, pbx2, pby1, magenta, 1);
+                        m_canvas->drawLine(pbx2, pby1, pbx2, pby2, magenta, 1);
+                        m_canvas->drawLine(pbx2, pby2, pbx1, pby2, magenta, 1);
+                        m_canvas->drawLine(pbx1, pby2, pbx1, pby1, magenta, 1);
+
+                        // Output reference point of symbol path (right-most point at path vertical center)
+                        const float outRefXJson = placeX + pMaxX * logicalScaleX;
+                        const float outRefYJson = placeY + ((pMinY + pMaxY) * 0.5f) * logicalScaleY;
+                        int32_t outRefX = (int32_t)(outRefXJson * m_scaleX + m_offsetX);
+                        int32_t outRefY = (int32_t)(outRefYJson * m_scaleY + m_offsetY);
+                        m_canvas->drawCircle(outRefX, outRefY, 4, LVColor(50, 230, 50));
+                        m_canvas->drawText(outRefX + 6, outRefY - 10, "GOUT", LVColor(20, 160, 20), 12);
+
+                        // Nearest output port alignment check against symbol output reference
+                        bool foundOutputPort = false;
+                        float bestDist2 = std::numeric_limits<float>::infinity();
+                        float portX = 0.0f;
+                        float portY = 0.0f;
+                        std::string portId;
+                        for (const auto &port : screen.ports)
+                        {
+                            if (port.type != "output")
+                                continue;
+                            const float dx = port.x - outRefXJson;
+                            const float dy = port.y - outRefYJson;
+                            const float d2 = dx * dx + dy * dy;
+                            if (d2 < bestDist2)
+                            {
+                                bestDist2 = d2;
+                                foundOutputPort = true;
+                                portX = port.x;
+                                portY = port.y;
+                                portId = port.id;
+                            }
+                        }
+
+                        if (foundOutputPort)
+                        {
+                            int32_t portCx = (int32_t)(portX * m_scaleX + m_offsetX);
+                            int32_t portCy = (int32_t)(portY * m_scaleY + m_offsetY);
+                            m_canvas->drawLine(outRefX, outRefY, portCx, portCy, LVColor(255, 210, 0), 1);
+
+                            char abuf[64];
+                            snprintf(abuf, sizeof(abuf), "->P%s dx=%d dy=%d",
+                                     portId.c_str(),
+                                     (int)(portX - outRefXJson),
+                                     (int)(portY - outRefYJson));
+                            m_canvas->drawText((outRefX + portCx) / 2 + 6, (outRefY + portCy) / 2 - 12,
+                                               abuf, LVColor(180, 130, 0), 12);
+                        }
+                    }
+                }
             }
         }
         m_debugInfo += "]}";
@@ -450,14 +707,20 @@ namespace JsonRenderer
                 continue;
             }
 
-            SvgRenderer::Color color = parseColor(wire.color.empty() ? "#2C3E50" : wire.color);
+            // In debug mode draw wires in red so they are visually distinct from gate outlines.
+            SvgRenderer::Color color = m_debugMode
+                                           ? SvgRenderer::Color{220, 0, 0}
+                                           : parseColor(wire.color.empty() ? "#2C3E50" : wire.color);
             LVColor lvColor(color.r, color.g, color.b);
-            int32_t sw = std::max((int32_t)1, (int32_t)(wire.strokeWidth * m_scaleX));
+            int32_t sw = clampStrokePx(wire.strokeWidth);
 
             auto commands = parser.parse(wire.path.c_str());
 
             float cx = 0, cy = 0; // current pen position (JSON coords)
             float sx = 0, sy = 0; // subpath start (for Z close)
+            bool hasStart = false;
+            float startX = 0.0f, startY = 0.0f;
+            float endX = 0.0f, endY = 0.0f;
 
             for (const auto &cmd : commands)
             {
@@ -468,12 +731,28 @@ namespace JsonRenderer
                     cy = cmd.args[1];
                     sx = cx;
                     sy = cy;
+                    if (!hasStart)
+                    {
+                        hasStart = true;
+                        startX = cx;
+                        startY = cy;
+                    }
+                    endX = cx;
+                    endY = cy;
                     break;
                 case 'm':
                     cx += cmd.args[0];
                     cy += cmd.args[1];
                     sx = cx;
                     sy = cy;
+                    if (!hasStart)
+                    {
+                        hasStart = true;
+                        startX = cx;
+                        startY = cy;
+                    }
+                    endX = cx;
+                    endY = cy;
                     break;
                 case 'L':
                 {
@@ -484,6 +763,8 @@ namespace JsonRenderer
                         lvColor, sw);
                     cx = tx;
                     cy = ty;
+                    endX = cx;
+                    endY = cy;
                     break;
                 }
                 case 'l':
@@ -495,6 +776,8 @@ namespace JsonRenderer
                         lvColor, sw);
                     cx = tx;
                     cy = ty;
+                    endX = cx;
+                    endY = cy;
                     break;
                 }
                 case 'H':
@@ -505,6 +788,8 @@ namespace JsonRenderer
                         (int32_t)(tx * m_scaleX + m_offsetX), (int32_t)(cy * m_scaleY + m_offsetY),
                         lvColor, sw);
                     cx = tx;
+                    endX = cx;
+                    endY = cy;
                     break;
                 }
                 case 'h':
@@ -515,6 +800,8 @@ namespace JsonRenderer
                         (int32_t)(tx * m_scaleX + m_offsetX), (int32_t)(cy * m_scaleY + m_offsetY),
                         lvColor, sw);
                     cx = tx;
+                    endX = cx;
+                    endY = cy;
                     break;
                 }
                 case 'V':
@@ -525,6 +812,8 @@ namespace JsonRenderer
                         (int32_t)(cx * m_scaleX + m_offsetX), (int32_t)(ty * m_scaleY + m_offsetY),
                         lvColor, sw);
                     cy = ty;
+                    endX = cx;
+                    endY = cy;
                     break;
                 }
                 case 'v':
@@ -535,6 +824,8 @@ namespace JsonRenderer
                         (int32_t)(cx * m_scaleX + m_offsetX), (int32_t)(ty * m_scaleY + m_offsetY),
                         lvColor, sw);
                     cy = ty;
+                    endX = cx;
+                    endY = cy;
                     break;
                 }
                 case 'Z':
@@ -545,10 +836,52 @@ namespace JsonRenderer
                         lvColor, sw);
                     cx = sx;
                     cy = sy;
+                    endX = cx;
+                    endY = cy;
                     break;
                 default:
                     ESP_LOGD(TAG, "  Wire %s: unhandled cmd '%c', skipping segment", wire.id.c_str(), cmd.type);
                     break;
+                }
+            }
+
+            if (m_debugMode && hasStart)
+            {
+                int32_t sxp = (int32_t)(startX * m_scaleX + m_offsetX);
+                int32_t syp = (int32_t)(startY * m_scaleY + m_offsetY);
+                int32_t exp = (int32_t)(endX * m_scaleX + m_offsetX);
+                int32_t eyp = (int32_t)(endY * m_scaleY + m_offsetY);
+
+                // Cyan = wire start, Orange = wire end
+                m_canvas->drawCircle(sxp, syp, 4, LVColor(0, 255, 255));
+                m_canvas->drawCircle(exp, eyp, 4, LVColor(255, 140, 0));
+
+                char sbuf[32];
+                snprintf(sbuf, sizeof(sbuf), "W%s:S", wire.id.c_str());
+                m_canvas->drawText(sxp + 6, syp - 10, sbuf, LVColor(0, 160, 160), 12);
+
+                char ebuf[32];
+                snprintf(ebuf, sizeof(ebuf), "W%s:E", wire.id.c_str());
+                m_canvas->drawText(exp + 6, eyp - 10, ebuf, LVColor(180, 90, 0), 12);
+
+                // Flag malformed exports: wire endpoints outside JSON screen bounds.
+                const bool startOffscreen = (startX < 0.0f || startY < 0.0f || startX > screen.width || startY > screen.height);
+                const bool endOffscreen = (endX < 0.0f || endY < 0.0f || endX > screen.width || endY > screen.height);
+                if (startOffscreen || endOffscreen)
+                {
+                    ESP_LOGW(TAG, "Wire %s endpoint off-screen: S(%.1f,%.1f) E(%.1f,%.1f)",
+                             wire.id.c_str(), startX, startY, endX, endY);
+
+                    if (startOffscreen)
+                    {
+                        m_canvas->drawLine(sxp - 6, syp - 6, sxp + 6, syp + 6, LVColor(255, 0, 0), 2);
+                        m_canvas->drawLine(sxp - 6, syp + 6, sxp + 6, syp - 6, LVColor(255, 0, 0), 2);
+                    }
+                    if (endOffscreen)
+                    {
+                        m_canvas->drawLine(exp - 6, eyp - 6, exp + 6, eyp + 6, LVColor(255, 0, 0), 2);
+                        m_canvas->drawLine(exp - 6, eyp + 6, exp + 6, eyp - 6, LVColor(255, 0, 0), 2);
+                    }
                 }
             }
 
@@ -569,10 +902,10 @@ namespace JsonRenderer
             SvgRenderer::Color color = parseColor(port.color);
             LVColor lvColor(color.r, color.g, color.b);
 
-            // Apply auto-scaling
+            // Apply auto-scaling; cap radius so port dots stay small regardless of zoom
             int32_t scaledX = (int32_t)(port.x * m_scaleX + m_offsetX);
             int32_t scaledY = (int32_t)(port.y * m_scaleY + m_offsetY);
-            int32_t scaledRadius = (int32_t)(port.radius * m_scaleX);
+            int32_t scaledRadius = std::min((int32_t)(port.radius * m_scaleX), kMaxPortRadiusPx);
 
             // Draw circle for port
             m_canvas->drawCircle(
@@ -580,6 +913,17 @@ namespace JsonRenderer
                 scaledY,
                 scaledRadius,
                 lvColor);
+
+            if (m_debugMode)
+            {
+                // Port cross + ID label (quick visual map between JSON and render)
+                m_canvas->drawLine(scaledX - 6, scaledY, scaledX + 6, scaledY, LVColor(255, 255, 0), 1);
+                m_canvas->drawLine(scaledX, scaledY - 6, scaledX, scaledY + 6, LVColor(255, 255, 0), 1);
+
+                char pbuf[32];
+                snprintf(pbuf, sizeof(pbuf), "P%s", port.id.c_str());
+                m_canvas->drawText(scaledX + 8, scaledY - 8, pbuf, LVColor(120, 120, 255), 12);
+            }
 
             ESP_LOGD(TAG, "  Port: %s at (%.0f, %.0f)", port.id.c_str(), port.x, port.y);
         }
@@ -643,32 +987,79 @@ namespace JsonRenderer
 
     void JsonRenderer::calculateScale(const Screen &screen)
     {
-        // Get canvas dimensions from stored values
-        int32_t canvasWidth = m_canvas->width();
-        int32_t canvasHeight = m_canvas->height();
+        int32_t canvasW = m_canvas->width();
+        int32_t canvasH = m_canvas->height();
 
-        // Get screen dimensions from JSON
-        float screenWidth = screen.width;
-        float screenHeight = screen.height;
+        // --- Step 1: content bounding box (widgets + ports + junctions) ---
+        float bbMinX = std::numeric_limits<float>::max();
+        float bbMinY = std::numeric_limits<float>::max();
+        float bbMaxX = std::numeric_limits<float>::lowest();
+        float bbMaxY = std::numeric_limits<float>::lowest();
+        float maxGateDim = 0.0f; // largest svgSymbol dimension for gate size cap
 
-        // Calculate scale to fit canvas (maintain aspect ratio)
-        float scaleX = canvasWidth / screenWidth;
-        float scaleY = canvasHeight / screenHeight;
+        for (const auto &w : screen.widgets)
+        {
+            if (w.width > 0 && w.height > 0)
+            {
+                bbMinX = std::min(bbMinX, w.x);
+                bbMinY = std::min(bbMinY, w.y);
+                bbMaxX = std::max(bbMaxX, w.x + w.width);
+                bbMaxY = std::max(bbMaxY, w.y + w.height);
+                if (w.type == "svgSymbol")
+                    maxGateDim = std::max(maxGateDim, std::max(w.width, w.height));
+            }
+        }
+        for (const auto &p : screen.ports)
+        {
+            bbMinX = std::min(bbMinX, p.x - p.radius);
+            bbMinY = std::min(bbMinY, p.y - p.radius);
+            bbMaxX = std::max(bbMaxX, p.x + p.radius);
+            bbMaxY = std::max(bbMaxY, p.y + p.radius);
+        }
+        for (const auto &j : screen.junctions)
+        {
+            bbMinX = std::min(bbMinX, j.x - j.radius);
+            bbMinY = std::min(bbMinY, j.y - j.radius);
+            bbMaxX = std::max(bbMaxX, j.x + j.radius);
+            bbMaxY = std::max(bbMaxY, j.y + j.radius);
+        }
 
-        // Use uniform scale (smallest to fit everything)
-        float scale = std::min(scaleX, scaleY);
+        // Fallback to full canvas if no content found
+        if (bbMinX >= bbMaxX || bbMinY >= bbMaxY)
+        {
+            bbMinX = 0;
+            bbMinY = 0;
+            bbMaxX = (float)screen.width;
+            bbMaxY = (float)screen.height;
+        }
+
+        // --- Step 2: scale to fit content bbox inside canvas with fixed pixel padding ---
+        const float kPadPx = 24.0f; // padding in screen pixels on each side
+        float availW = (float)canvasW - 2.0f * kPadPx;
+        float availH = (float)canvasH - 2.0f * kPadPx;
+        float bbW = bbMaxX - bbMinX;
+        float bbH = bbMaxY - bbMinY;
+        float scale = std::min(availW / bbW, availH / bbH);
+
+        // --- Step 3: gate size cap — single gate must not dominate the screen ---
+        // Ensures single-gate circuits look similar in size to multi-gate circuits.
+        if (maxGateDim > 0.0f)
+        {
+            float scaleCap = kMaxGateScreenPx / maxGateDim;
+            scale = std::min(scale, scaleCap);
+        }
+
         m_scaleX = scale;
         m_scaleY = scale;
 
-        // Calculate centering offset
-        float scaledWidth = screenWidth * scale;
-        float scaledHeight = screenHeight * scale;
-        m_offsetX = (canvasWidth - scaledWidth) / 2.0f;
-        m_offsetY = (canvasHeight - scaledHeight) / 2.0f;
+        // --- Step 4: center the content bounding box in the canvas ---
+        float bbCenterX = (bbMinX + bbMaxX) / 2.0f;
+        float bbCenterY = (bbMinY + bbMaxY) / 2.0f;
+        m_offsetX = canvasW / 2.0f - bbCenterX * scale;
+        m_offsetY = canvasH / 2.0f - bbCenterY * scale;
 
-        ESP_LOGI(TAG, "Auto-scaling: screen=%dx%d, canvas=%dx%d, scale=%.3f, offset=(%.1f, %.1f)",
-                 (int)screenWidth, (int)screenHeight, canvasWidth, canvasHeight,
-                 scale, m_offsetX, m_offsetY);
+        ESP_LOGI(TAG, "ContentFit: bb=(%.0f,%.0f)-(%.0f,%.0f) gateDim=%.0f scale=%.3f offset=(%.1f,%.1f)",
+                 bbMinX, bbMinY, bbMaxX, bbMaxY, maxGateDim, scale, m_offsetX, m_offsetY);
     }
 
 } // namespace JsonRenderer
