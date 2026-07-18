@@ -1,0 +1,22 @@
+# Test configuration for json_renderer
+CONFIG_FREERTOS_HZ=1000
+
+# Disable unused components to speed up compilation
+CONFIG_ESP_WIFI_ENABLED=n
+CONFIG_BT_ENABLED=n
+
+# Unity test configuration
+CONFIG_UNITY_ENABLE_FLOAT=y
+CONFIG_UNITY_ENABLE_DOUBLE=y
+
+# Memory configuration
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=4096
+
+# PSRAM configuration (ESP32-P4 has 32MB)
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_HEX=y
+CONFIG_SPIRAM_SPEED_80M=y
+
+# Log level for debugging
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
