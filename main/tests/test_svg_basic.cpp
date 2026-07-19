@@ -292,3 +292,41 @@ void test_svg_parse_relative_commands(void) {
     
     tearDown_svg();
 }
+
+void test_svg_parse_implicit_lines_after_move(void) {
+    setUp_svg();
+
+    // Migrated from WASM geometry-path tests: SVG allows implicit L after M.
+    auto commands = parser->parse("M 0,0 10,10 20,5");
+
+    TEST_ASSERT_EQUAL_UINT32(3, commands.size());
+    TEST_ASSERT_EQUAL_CHAR('M', commands[0].type);
+    TEST_ASSERT_EQUAL_CHAR('L', commands[1].type);
+    TEST_ASSERT_EQUAL_CHAR('L', commands[2].type);
+    assertFloatEqual(10.0f, commands[1].args[0]);
+    assertFloatEqual(10.0f, commands[1].args[1]);
+    assertFloatEqual(20.0f, commands[2].args[0]);
+    assertFloatEqual(5.0f, commands[2].args[1]);
+
+    tearDown_svg();
+}
+
+void test_svg_parse_repeated_relative_commands_without_retyping_letter(void) {
+    setUp_svg();
+
+    // Regression guard: command repetition should work when command letter is omitted.
+    auto commands = parser->parse("M 10,10 h 5 7 v 3 2");
+
+    TEST_ASSERT_EQUAL_UINT32(5, commands.size());
+    TEST_ASSERT_EQUAL_CHAR('M', commands[0].type);
+    TEST_ASSERT_EQUAL_CHAR('h', commands[1].type);
+    TEST_ASSERT_EQUAL_CHAR('h', commands[2].type);
+    TEST_ASSERT_EQUAL_CHAR('v', commands[3].type);
+    TEST_ASSERT_EQUAL_CHAR('v', commands[4].type);
+    assertFloatEqual(5.0f, commands[1].args[0]);
+    assertFloatEqual(7.0f, commands[2].args[0]);
+    assertFloatEqual(3.0f, commands[3].args[0]);
+    assertFloatEqual(2.0f, commands[4].args[0]);
+
+    tearDown_svg();
+}

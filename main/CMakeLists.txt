@@ -36,7 +36,9 @@ idf_component_register(
     SRCS 
         # Main entry point (C++ - Refactored with clean OOP architecture)
         main.cpp
-        
+        tests/test_json_basic.cpp    
+        tests/test_svg_basic.cpp     
+
         # System Manager (OOP base for any ESP32-P4 HMI project)
         cpp_version/SystemManager.cpp
         
@@ -92,10 +94,12 @@ idf_component_register(
         ../components/lvgl_cpp_v9/include
         .
         include
+        tests
         examples
         ${LV_DEMO_DIR}
         
     REQUIRES
+        unity
         esp32_p4_function_ev_board  # BSP with SD card support
         fatfs  # For LVStorage component
         svg_renderer  # LabHappy SVG Path Renderer

@@ -23,7 +23,14 @@
 #include "FileManagerApplication.h"
 #include "font_thai.h"
 
+#define RUN_TESTS 1  // Set to 0 for normal mode
+
+#if RUN_TESTS
+#include "tests/test_all.hpp"
+#endif
+
 static const char *TAG = "main";
+
 
 /**
  * @brief Main application entry point
@@ -34,6 +41,13 @@ static const char *TAG = "main";
  */
 extern "C" void app_main(void)
 {
+#if RUN_TESTS
+    run_all_tests();
+    while (1) vTaskDelay(pdMS_TO_TICKS(10000));
+#else
+
+
+
     ESP_LOGI(TAG, "===========================================");
     ESP_LOGI(TAG, "  LabBuddy HMI");
     ESP_LOGI(TAG, "  Splash -> Home -> Library");
@@ -102,4 +116,5 @@ extern "C" void app_main(void)
     {
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
+    #endif
 }

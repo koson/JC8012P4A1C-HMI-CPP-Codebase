@@ -20,6 +20,7 @@ extern void test_json_parse_multiple_symbols(void);
 extern void test_json_parse_widget_basic(void);
 extern void test_json_parse_wires(void);
 extern void test_json_parse_and_gate_circuit(void);
+extern void test_json_parse_snake_case_embedded_symbol_and_widget_link(void);
 
 // ============================================================================
 // Test Declarations - SVG Path Parser
@@ -38,6 +39,8 @@ extern void test_svg_parse_or_gate_path(void);
 extern void test_svg_parse_empty_string(void);
 extern void test_svg_parse_whitespace_handling(void);
 extern void test_svg_parse_relative_commands(void);
+extern void test_svg_parse_implicit_lines_after_move(void);
+extern void test_svg_parse_repeated_relative_commands_without_retyping_letter(void);
 
 // ============================================================================
 // Main Test Runner
@@ -54,7 +57,7 @@ inline void run_all_tests(void) {
     UNITY_BEGIN();
     
     // ========================================================================
-    // JSON Parser Tests (8 tests)
+    // JSON Parser Tests (9 tests)
     // ========================================================================
     ESP_LOGI(TAG, "--- JSON Parser Tests ---");
     
@@ -66,9 +69,10 @@ inline void run_all_tests(void) {
     RUN_TEST(test_json_parse_widget_basic);
     RUN_TEST(test_json_parse_wires);
     RUN_TEST(test_json_parse_and_gate_circuit);
+    RUN_TEST(test_json_parse_snake_case_embedded_symbol_and_widget_link);
     
     // ========================================================================
-    // SVG Path Parser Tests (14 tests)
+    // SVG Path Parser Tests (16 tests)
     // ========================================================================
     ESP_LOGI(TAG, "");
     ESP_LOGI(TAG, "--- SVG Path Parser Tests ---");
@@ -87,6 +91,8 @@ inline void run_all_tests(void) {
     RUN_TEST(test_svg_parse_empty_string);
     RUN_TEST(test_svg_parse_whitespace_handling);
     RUN_TEST(test_svg_parse_relative_commands);
+    RUN_TEST(test_svg_parse_implicit_lines_after_move);
+    RUN_TEST(test_svg_parse_repeated_relative_commands_without_retyping_letter);
     
     // ========================================================================
     // Finish
@@ -97,7 +103,7 @@ inline void run_all_tests(void) {
     int failures = UNITY_END();
     
     if (failures == 0) {
-        ESP_LOGI(TAG, "✅ ALL TESTS PASSED! (22 tests)");
+        ESP_LOGI(TAG, "✅ ALL TESTS PASSED! (25 tests)");
     } else {
         ESP_LOGE(TAG, "❌ %d TEST(S) FAILED!", failures);
     }

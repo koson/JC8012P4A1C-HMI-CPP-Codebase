@@ -3,8 +3,70 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <cctype>
 
 static const char *TAG = "JsonParser";
+
+namespace
+{
+    static std::string camelToSnake(const char *key)
+    {
+        if (!key)
+        {
+            return "";
+        }
+
+        std::string snake;
+        snake.reserve(strlen(key) + 8);
+
+        for (size_t i = 0; key[i] != '\0'; ++i)
+        {
+            const unsigned char ch = static_cast<unsigned char>(key[i]);
+            if (std::isupper(ch))
+            {
+                if (i > 0)
+                {
+                    snake.push_back('_');
+                }
+                snake.push_back(static_cast<char>(std::tolower(ch)));
+            }
+            else
+            {
+                snake.push_back(static_cast<char>(ch));
+            }
+        }
+
+        return snake;
+    }
+
+    static cJSON *getObjectItemFlexible(cJSON *obj, const char *key)
+    {
+        if (!obj || !key)
+        {
+            return nullptr;
+        }
+
+        // cJSON_GetObjectItem is case-insensitive; first try the original key.
+        cJSON *item = cJSON_GetObjectItem(obj, key);
+        if (item)
+        {
+            return item;
+        }
+
+        // Fallback for snake_case JSON from WASM pipeline.
+        std::string snakeKey = camelToSnake(key);
+        if (!snakeKey.empty() && snakeKey != key)
+        {
+            item = cJSON_GetObjectItem(obj, snakeKey.c_str());
+            if (item)
+            {
+                return item;
+            }
+        }
+
+        return nullptr;
+    }
+}
 
 namespace JsonRenderer
 {
@@ -104,7 +166,7 @@ namespace JsonRenderer
         screen.symbolLibrary = getString(root, "symbolLibrary", "");
 
         // Parse embedded symbols (v1.1)
-        cJSON *embeddedSymbols = cJSON_GetObjectItem(root, "embeddedSymbols");
+        cJSON *embeddedSymbols = getObjectItemFlexible(root, "embeddedSymbols");
         if (embeddedSymbols && cJSON_IsObject(embeddedSymbols))
         {
             if (!parseEmbeddedSymbols(embeddedSymbols, screen))
@@ -114,7 +176,7 @@ namespace JsonRenderer
         }
 
         // Parse widgets
-        cJSON *widgets = cJSON_GetObjectItem(root, "widgets");
+        cJSON *widgets = getObjectItemFlexible(root, "widgets");
         if (widgets && cJSON_IsArray(widgets))
         {
             if (!parseWidgets(widgets, screen))
@@ -124,7 +186,7 @@ namespace JsonRenderer
         }
 
         // Parse wires
-        cJSON *wires = cJSON_GetObjectItem(root, "wires");
+        cJSON *wires = getObjectItemFlexible(root, "wires");
         if (wires && cJSON_IsArray(wires))
         {
             if (!parseWires(wires, screen))
@@ -134,7 +196,7 @@ namespace JsonRenderer
         }
 
         // Parse ports
-        cJSON *ports = cJSON_GetObjectItem(root, "ports");
+        cJSON *ports = getObjectItemFlexible(root, "ports");
         if (ports && cJSON_IsArray(ports))
         {
             if (!parsePorts(ports, screen))
@@ -144,7 +206,7 @@ namespace JsonRenderer
         }
 
         // Parse junctions
-        cJSON *junctions = cJSON_GetObjectItem(root, "junctions");
+        cJSON *junctions = getObjectItemFlexible(root, "junctions");
         if (junctions && cJSON_IsArray(junctions))
         {
             if (!parseJunctions(junctions, screen))
@@ -172,7 +234,7 @@ namespace JsonRenderer
             symbol.pathData = getString(obj, "pathData", "");
 
             // Parse viewBox
-            cJSON *viewBox = cJSON_GetObjectItem(obj, "viewBox");
+            cJSON *viewBox = getObjectItemFlexible(obj, "viewBox");
             if (viewBox && cJSON_IsObject(viewBox))
             {
                 symbol.viewBox.x = getFloat(viewBox, "X", 0.0f);
@@ -312,7 +374,7 @@ namespace JsonRenderer
     // Helper methods
     std::string JsonParser::getString(cJSON *obj, const char *key, const char *defaultValue)
     {
-        cJSON *item = cJSON_GetObjectItem(obj, key);
+        cJSON *item = getObjectItemFlexible(obj, key);
         if (item && cJSON_IsString(item))
         {
             return std::string(item->valuestring);
@@ -322,7 +384,7 @@ namespace JsonRenderer
 
     int JsonParser::getInt(cJSON *obj, const char *key, int defaultValue)
     {
-        cJSON *item = cJSON_GetObjectItem(obj, key);
+        cJSON *item = getObjectItemFlexible(obj, key);
         if (item && cJSON_IsNumber(item))
         {
             return item->valueint;
@@ -341,7 +403,7 @@ namespace JsonRenderer
 
     float JsonParser::getFloat(cJSON *obj, const char *key, float defaultValue)
     {
-        cJSON *item = cJSON_GetObjectItem(obj, key);
+        cJSON *item = getObjectItemFlexible(obj, key);
         if (item && cJSON_IsNumber(item))
         {
             return (float)item->valuedouble;
@@ -360,7 +422,7 @@ namespace JsonRenderer
 
     bool JsonParser::getBool(cJSON *obj, const char *key, bool defaultValue)
     {
-        cJSON *item = cJSON_GetObjectItem(obj, key);
+        cJSON *item = getObjectItemFlexible(obj, key);
         if (item && cJSON_IsBool(item))
         {
             return cJSON_IsTrue(item);

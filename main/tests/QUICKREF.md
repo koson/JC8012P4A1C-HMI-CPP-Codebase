@@ -116,11 +116,11 @@ test_svg_basic.cpp:234:test_svg_parse_whitespace_handling:PASS
 test_svg_basic.cpp:254:test_svg_parse_relative_commands:PASS
 
 I (800) TEST: ==============================================
-I (801) TEST: ✅ ALL TESTS PASSED! (22 tests)
+I (801) TEST: ✅ ALL TESTS PASSED! (25 tests)
 I (802) TEST: ==============================================
 
 -----------------------
-22 Tests 0 Failures 0 Ignored
+25 Tests 0 Failures 0 Ignored
 OK
 ```
 
@@ -195,7 +195,7 @@ main/tests/
          │
          ▼
 ┌─────────────────┐
-│  Check Results  │  22 Tests 0 Failures?
+│  Check Results  │  25 Tests 0 Failures?
 └────────┬────────┘
          │
     ┌────┴────┐
@@ -254,5 +254,5 @@ main/tests/
 ---
 
 **Last Updated:** 2026-07-19  
-**Test Count:** 22 tests  
+**Test Count:** 25 tests
 **Status:** ✅ Ready to use

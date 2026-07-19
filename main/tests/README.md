@@ -2,8 +2,8 @@
 
 ## Test Files
 
-- `test_json_basic.cpp` - JSON parser tests (8 tests)
-- `test_svg_basic.cpp` - SVG path parser tests (14 tests)
+- `test_json_basic.cpp` - JSON parser tests (9 tests)
+- `test_svg_basic.cpp` - SVG path parser tests (16 tests)
 - `test_all.hpp` - Test suite runner
 - **Total: 22 test cases**
 
@@ -130,11 +130,11 @@ test_svg_basic.cpp:234:test_svg_parse_whitespace_handling:PASS
 test_svg_basic.cpp:254:test_svg_parse_relative_commands:PASS
 
 I (800) TEST: ==============================================
-I (801) TEST: ✅ ALL TESTS PASSED! (22 tests)
+I (801) TEST: ✅ ALL TESTS PASSED! (25 tests)
 I (802) TEST: ==============================================
 
 -----------------------
-22 Tests 0 Failures 0 Ignored
+25 Tests 0 Failures 0 Ignored
 OK
 ```
 

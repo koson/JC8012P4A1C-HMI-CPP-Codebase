@@ -7,6 +7,7 @@
 #include "unity.h"
 #include "JsonParser.hpp"
 #include "JsonTypes.hpp"
+#include "esp_log.h"
 #include <string.h>
 
 using namespace JsonRenderer;
@@ -31,9 +32,14 @@ void tearDown_json(void) {
 
 void test_json_parse_empty_should_fail(void) {
     setUp_json();
+
+    // Expected-failure case: temporarily mute JsonParser error logs to keep
+    // test output focused on assertion results.
+    esp_log_level_set("JsonParser", ESP_LOG_NONE);
     
     const char* emptyJson = "";
     bool result = parser->parseString(emptyJson, screen);
+    esp_log_level_set("JsonParser", ESP_LOG_INFO);
     
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_NOT_NULL(parser->getLastError());
@@ -65,9 +71,14 @@ void test_json_parse_minimal_valid(void) {
 
 void test_json_parse_invalid_syntax_should_fail(void) {
     setUp_json();
+
+    // Expected-failure case: temporarily mute JsonParser error logs to keep
+    // test output focused on assertion results.
+    esp_log_level_set("JsonParser", ESP_LOG_NONE);
     
     const char* invalidJson = "{ this is not valid JSON }";
     bool result = parser->parseString(invalidJson, screen);
+    esp_log_level_set("JsonParser", ESP_LOG_INFO);
     
     TEST_ASSERT_FALSE(result);
     
@@ -302,5 +313,72 @@ void test_json_parse_and_gate_circuit(void) {
     TEST_ASSERT_TRUE(symbolIt != screen.embeddedSymbols.end());
     TEST_ASSERT_GREATER_THAN(0, strlen(symbolIt->second.pathData.c_str()));
     
+    tearDown_json();
+}
+
+void test_json_parse_snake_case_embedded_symbol_and_widget_link(void) {
+    setUp_json();
+
+    // Migrated from WASM tests: ensure snake_case JSON maps correctly.
+    const char* json = R"({
+        "version": "1.0",
+        "title": "embedded-nand",
+        "description": "coord_mode=raw",
+        "width": 1000,
+        "height": 1000,
+        "background_color": "#FFFFFF",
+        "embedded_symbols": {
+            "Dynamic_Symbol_1": {
+                "id": "Dynamic_Symbol_1",
+                "title": "NAND",
+                "category": "Dynamic",
+                "path_data": "M 130 30 L 150 30 M 50 15 L 70 15",
+                "view_box": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 150,
+                    "height": 150
+                }
+            }
+        },
+        "widgets": [
+            {
+                "type": "svgSymbol",
+                "x": 50,
+                "y": 0,
+                "width": 100,
+                "height": 60,
+                "rotation": 0,
+                "symbol_id": "Dynamic_Symbol_1",
+                "stroke_width": 2,
+                "scale": 1
+            }
+        ],
+        "wires": [
+            {
+                "id": "wire-1",
+                "path": "M 15 15 L 50 15",
+                "stroke_width": 2
+            }
+        ]
+    })";
+
+    bool result = parser->parseString(json, screen);
+
+    TEST_ASSERT_TRUE_MESSAGE(result, parser->getLastError());
+    TEST_ASSERT_EQUAL_STRING("#FFFFFF", screen.backgroundColor.c_str());
+    TEST_ASSERT_EQUAL_UINT32(1, screen.embeddedSymbols.size());
+    TEST_ASSERT_TRUE(screen.embeddedSymbols.find("Dynamic_Symbol_1") != screen.embeddedSymbols.end());
+    TEST_ASSERT_EQUAL_STRING(
+        "M 130 30 L 150 30 M 50 15 L 70 15",
+        screen.embeddedSymbols["Dynamic_Symbol_1"].pathData.c_str());
+
+    TEST_ASSERT_EQUAL_UINT32(1, screen.widgets.size());
+    TEST_ASSERT_EQUAL_STRING("Dynamic_Symbol_1", screen.widgets[0].symbolId.c_str());
+    TEST_ASSERT_EQUAL_FLOAT(2.0f, screen.widgets[0].strokeWidth);
+
+    TEST_ASSERT_EQUAL_UINT32(1, screen.wires.size());
+    TEST_ASSERT_EQUAL_FLOAT(2.0f, screen.wires[0].strokeWidth);
+
     tearDown_json();
 }

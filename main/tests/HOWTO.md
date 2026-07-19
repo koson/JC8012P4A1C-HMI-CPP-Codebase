@@ -112,7 +112,7 @@ idf.py -p COM3 flash monitor
 # I (124) TEST:   Starting Unit Tests
 # I (125) TEST: ==============================================
 # ...
-# I (800) TEST: ✅ ALL TESTS PASSED! (22 tests)
+# I (800) TEST: ✅ ALL TESTS PASSED! (25 tests)
 ```
 
 ## Switching Back to Normal Mode
