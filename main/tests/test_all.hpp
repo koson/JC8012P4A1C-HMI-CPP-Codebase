@@ -43,6 +43,18 @@ extern void test_svg_parse_implicit_lines_after_move(void);
 extern void test_svg_parse_repeated_relative_commands_without_retyping_letter(void);
 
 // ============================================================================
+// Test Declarations - JsonRenderer Contract
+// ============================================================================
+extern void test_renderer_path_widget_generates_fill_and_stroke_commands(void);
+extern void test_renderer_label_widget_generates_text_command(void);
+extern void test_renderer_rect_widget_generates_rect_and_border_lines(void);
+extern void test_renderer_circle_widget_uses_ellipse_and_clamps_stroke_width(void);
+extern void test_renderer_draw_order_wires_then_widgets_then_ports(void);
+extern void test_renderer_missing_symbol_is_skipped(void);
+extern void test_renderer_wire_stroke_width_is_clamped(void);
+extern void test_renderer_port_radius_is_capped(void);
+
+// ============================================================================
 // Main Test Runner
 // ============================================================================
 inline void run_all_tests(void) {
@@ -93,6 +105,21 @@ inline void run_all_tests(void) {
     RUN_TEST(test_svg_parse_relative_commands);
     RUN_TEST(test_svg_parse_implicit_lines_after_move);
     RUN_TEST(test_svg_parse_repeated_relative_commands_without_retyping_letter);
+
+    // ========================================================================
+    // JsonRenderer Contract Tests (8 tests)
+    // ========================================================================
+    ESP_LOGI(TAG, "");
+    ESP_LOGI(TAG, "--- JsonRenderer Contract Tests ---");
+
+    RUN_TEST(test_renderer_path_widget_generates_fill_and_stroke_commands);
+    RUN_TEST(test_renderer_label_widget_generates_text_command);
+    RUN_TEST(test_renderer_rect_widget_generates_rect_and_border_lines);
+    RUN_TEST(test_renderer_circle_widget_uses_ellipse_and_clamps_stroke_width);
+    RUN_TEST(test_renderer_draw_order_wires_then_widgets_then_ports);
+    RUN_TEST(test_renderer_missing_symbol_is_skipped);
+    RUN_TEST(test_renderer_wire_stroke_width_is_clamped);
+    RUN_TEST(test_renderer_port_radius_is_capped);
     
     // ========================================================================
     // Finish
@@ -103,7 +130,7 @@ inline void run_all_tests(void) {
     int failures = UNITY_END();
     
     if (failures == 0) {
-        ESP_LOGI(TAG, "✅ ALL TESTS PASSED! (25 tests)");
+        ESP_LOGI(TAG, "✅ ALL TESTS PASSED! (33 tests)");
     } else {
         ESP_LOGE(TAG, "❌ %d TEST(S) FAILED!", failures);
     }

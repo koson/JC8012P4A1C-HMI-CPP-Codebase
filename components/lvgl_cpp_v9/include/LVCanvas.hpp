@@ -2,6 +2,7 @@
 
 #include "lvgl.h"
 #include "LVColor.hpp"
+#include "DrawTarget.hpp"
 #include <cstdint>
 #include <deque>
 #include <string>
@@ -13,36 +14,36 @@
  * Use beginBatch()/endBatch() to group all draw calls into a single
  * lv_canvas_finish_layer flush instead of one flush per primitive.
  */
-class LVCanvas
+class LVCanvas : public DrawTarget
 {
 public:
     LVCanvas(lv_obj_t *parent, uint16_t width, uint16_t height, lv_color_format_t fmt, void *buffer);
 
     lv_obj_t *obj() const { return m_canvas; }
 
-    uint16_t width() const { return m_width; }
-    uint16_t height() const { return m_height; }
+    uint16_t width() const override { return m_width; }
+    uint16_t height() const override { return m_height; }
 
     void setBuffer(void *buffer, uint16_t width, uint16_t height, lv_color_format_t fmt);
 
-    void fill(LVColor color, lv_opa_t opa = LV_OPA_COVER);
+    void fill(LVColor color, lv_opa_t opa = LV_OPA_COVER) override;
     void clear(LVColor color = LVColor::Black);
 
     /** Open a shared layer – all draw calls until endBatch() reuse it. */
-    void beginBatch();
+    void beginBatch() override;
     /** Flush the shared layer to the display once. */
-    void endBatch();
+    void endBatch() override;
 
-    void drawRect(int32_t x, int32_t y, int32_t w, int32_t h, LVColor color, lv_opa_t opa = LV_OPA_COVER, int32_t radius = 0);
-    void drawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, LVColor color, int32_t width = 2, lv_opa_t opa = LV_OPA_COVER);
-    void drawCircle(int32_t cx, int32_t cy, int32_t radius, LVColor color, bool filled = true, lv_opa_t opa = LV_OPA_COVER);
-    void drawEllipse(int32_t cx, int32_t cy, int32_t rx, int32_t ry, LVColor fillColor, LVColor strokeColor, int32_t strokeWidth = 0, lv_opa_t opa = LV_OPA_COVER);
-    void drawText(int32_t x, int32_t y, const char *text, LVColor color, int32_t fontSize = 14, int32_t max_width = 0);
+    void drawRect(int32_t x, int32_t y, int32_t w, int32_t h, LVColor color, lv_opa_t opa = LV_OPA_COVER, int32_t radius = 0) override;
+    void drawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, LVColor color, int32_t width = 2, lv_opa_t opa = LV_OPA_COVER) override;
+    void drawCircle(int32_t cx, int32_t cy, int32_t radius, LVColor color, bool filled = true, lv_opa_t opa = LV_OPA_COVER) override;
+    void drawEllipse(int32_t cx, int32_t cy, int32_t rx, int32_t ry, LVColor fillColor, LVColor strokeColor, int32_t strokeWidth = 0, lv_opa_t opa = LV_OPA_COVER) override;
+    void drawText(int32_t x, int32_t y, const char *text, LVColor color, int32_t fontSize = 14, int32_t max_width = 0) override;
 
     /** Direct RGB565 pixel write — bypasses LVGL draw tasks, much faster for fills. */
-    void fillHLine(int32_t x1, int32_t x2, int32_t y, LVColor color);
+    void fillHLine(int32_t x1, int32_t x2, int32_t y, LVColor color) override;
     /** Tell LVGL the canvas buffer has changed and needs redisplay. */
-    void invalidate();
+    void invalidate() override;
 
     void setPalette(uint8_t idx, LVColor color); // for indexed formats
 

@@ -3,7 +3,7 @@
 #include "SvgTypes.hpp"
 #include "SvgPathParser.hpp"
 #include "BezierConverter.hpp"
-#include "LVCanvas.hpp"
+#include "DrawTarget.hpp"
 #include <vector>
 
 namespace SvgRenderer
@@ -26,7 +26,7 @@ namespace SvgRenderer
          * @brief Constructor
          * @param canvas LVGL canvas to render to
          */
-        SvgRenderer(LVCanvas *canvas);
+        SvgRenderer(DrawTarget *canvas);
         ~SvgRenderer();
 
         /**
@@ -147,7 +147,7 @@ namespace SvgRenderer
          */
         LVColor toLVColor(const Color &color);
 
-        LVCanvas *m_canvas;
+        DrawTarget *m_canvas;
         SvgPathParser m_parser;
         std::string m_lastError;
 

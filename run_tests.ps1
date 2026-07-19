@@ -18,11 +18,29 @@ Write-Info "========================================"
 Write-Info "ESP32 Unit Test Runner"
 Write-Info "========================================"
 
-# Check ESP-IDF environment
-if (-not $env:IDF_PATH) {
-    Write-Error "ESP-IDF environment not set. Run setup_esp_idf_env.ps1 first"
-    exit 1
+# Team baseline: keep firmware builds/tests on ESP-IDF 5.5.1.
+$RequiredIdfPath = "C:\Users\koson\esp\v5.5.1\esp-idf"
+
+function Ensure-IdfEnvironment {
+    if ($env:IDF_PATH -eq $RequiredIdfPath) {
+        return
+    }
+
+    if (-not (Test-Path (Join-Path $RequiredIdfPath "export.ps1"))) {
+        Write-Error "Required ESP-IDF export script not found at $RequiredIdfPath"
+        exit 1
+    }
+
+    Write-Info "Loading ESP-IDF environment: $RequiredIdfPath"
+    & (Join-Path $RequiredIdfPath "export.ps1") | Out-Null
+
+    if ($env:IDF_PATH -ne $RequiredIdfPath) {
+        Write-Error "Failed to activate required ESP-IDF environment ($RequiredIdfPath)"
+        exit 1
+    }
 }
+
+Ensure-IdfEnvironment
 
 Write-Info "ESP-IDF Path: $env:IDF_PATH"
 
