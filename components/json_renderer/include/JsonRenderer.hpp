@@ -3,7 +3,7 @@
 #include "JsonTypes.hpp"
 #include "JsonParser.hpp"
 #include "SvgRenderer.hpp"
-#include "LVCanvas.hpp"
+#include "DrawTarget.hpp"
 #include <memory>
 
 namespace JsonRenderer
@@ -32,7 +32,7 @@ namespace JsonRenderer
          * @brief Constructor
          * @param canvas LVGL canvas to render to
          */
-        JsonRenderer(LVCanvas *canvas);
+        JsonRenderer(DrawTarget *canvas);
         ~JsonRenderer();
 
         /**
@@ -86,7 +86,7 @@ namespace JsonRenderer
         SvgRenderer::Color parseColor(const std::string &hexColor);
         void calculateScale(const Screen &screen);
 
-        LVCanvas *m_canvas;
+        DrawTarget *m_canvas;
         std::unique_ptr<SvgRenderer::SvgRenderer> m_svgRenderer;
         std::unique_ptr<JsonParser> m_parser;
         std::unique_ptr<Screen> m_screen;

@@ -38,6 +38,7 @@ idf_component_register(
         main.cpp
         tests/test_json_basic.cpp    
         tests/test_svg_basic.cpp     
+        tests/test_json_renderer_contract.cpp
 
         # System Manager (OOP base for any ESP32-P4 HMI project)
         cpp_version/SystemManager.cpp

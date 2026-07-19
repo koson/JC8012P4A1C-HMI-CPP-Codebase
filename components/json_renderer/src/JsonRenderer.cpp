@@ -27,7 +27,7 @@ namespace JsonRenderer
         }
     }
 
-    JsonRenderer::JsonRenderer(LVCanvas *canvas)
+        JsonRenderer::JsonRenderer(DrawTarget *canvas)
         : m_canvas(canvas), m_svgRenderer(nullptr), m_parser(nullptr), m_screen(nullptr),
           m_scaleX(1.0f), m_scaleY(1.0f), m_offsetX(0.0f), m_offsetY(0.0f)
     {

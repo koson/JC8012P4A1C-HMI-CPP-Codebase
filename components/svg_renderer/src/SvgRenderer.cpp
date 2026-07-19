@@ -7,7 +7,7 @@
 namespace SvgRenderer
 {
 
-    SvgRenderer::SvgRenderer(LVCanvas *canvas)
+    SvgRenderer::SvgRenderer(DrawTarget *canvas)
         : m_canvas(canvas), m_cubicBezierSegments(20), m_quadraticBezierSegments(15), m_currentPos(0, 0), m_startPos(0, 0)
     {
     }
