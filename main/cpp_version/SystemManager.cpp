@@ -2,8 +2,9 @@
 #include "esp_log.h"
 #include "bsp/display.h"
 #include "bsp/touch.h"
-#include "bsp_board_extra.h"
+#include "esp_vfs_fat.h"
 #include "sdmmc_cmd.h"
+#include "sd_pwr_ctrl_by_on_chip_ldo.h"
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -12,6 +13,18 @@
 #include <string.h>
 
 static const char *TAG = "SystemManager";
+
+#if CONFIG_ESP_HOSTED_SDIO_HOST_INTERFACE
+static esp_err_t sdmmc_host_init_dummy(void)
+{
+    return ESP_OK;
+}
+
+static esp_err_t sdmmc_host_deinit_dummy(void)
+{
+    return ESP_OK;
+}
+#endif
 
 // External SD card handle from BSP
 extern "C"
@@ -124,7 +137,44 @@ esp_err_t SystemManager::mountSDCard()
     }
 
     ESP_LOGI(TAG, "Mounting SD card...");
-    esp_err_t ret = bsp_sdcard_mount();
+    const esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+#ifdef CONFIG_BSP_SD_FORMAT_ON_MOUNT_FAIL
+        .format_if_mount_failed = true,
+#else
+        .format_if_mount_failed = false,
+#endif
+        .max_files = 5,
+        .allocation_unit_size = 64 * 1024,
+    };
+
+    sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+    host.slot = SDMMC_HOST_SLOT_0;
+#if CONFIG_ESP_HOSTED_SDIO_HOST_INTERFACE
+    host.init = &sdmmc_host_init_dummy;
+    host.deinit = &sdmmc_host_deinit_dummy;
+#endif
+    host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
+
+    sd_pwr_ctrl_ldo_config_t ldo_config = {
+        .ldo_chan_id = 4,
+    };
+    sd_pwr_ctrl_handle_t pwr_ctrl_handle = NULL;
+    esp_err_t ret = sd_pwr_ctrl_new_on_chip_ldo(&ldo_config, &pwr_ctrl_handle);
+    if (ret != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to create a new on-chip LDO power control driver");
+        return ret;
+    }
+    host.pwr_ctrl_handle = pwr_ctrl_handle;
+
+    const sdmmc_slot_config_t slot_config = {
+        .cd = SDMMC_SLOT_NO_CD,
+        .wp = SDMMC_SLOT_NO_WP,
+        .width = 4,
+        .flags = 0,
+    };
+
+    ret = esp_vfs_fat_sdmmc_mount(BSP_SD_MOUNT_POINT, &host, &slot_config, &mount_config, &bsp_sdcard);
     if (ret != ESP_OK)
     {
         ESP_LOGE(TAG, "Failed to mount SD card: %s", esp_err_to_name(ret));

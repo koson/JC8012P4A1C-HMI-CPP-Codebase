@@ -23,7 +23,7 @@
 #include "FileManagerApplication.h"
 #include "font_thai.h"
 
-#define RUN_TESTS 1  // Set to 0 for normal mode
+#define RUN_TESTS 0  // Set to 1 for unit-test mode
 
 #if RUN_TESTS
 #include "tests/test_all.hpp"
@@ -55,34 +55,47 @@ extern "C" void app_main(void)
 #else
 
 
-
     ESP_LOGI(TAG, "===========================================");
-    ESP_LOGI(TAG, "  LabBuddy HMI");
+    ESP_LOGI(TAG, "  LabBuddy HMI 260720");
     ESP_LOGI(TAG, "  Splash -> Home -> Library");
     ESP_LOGI(TAG, "===========================================");
 
-    // Step 1: Initialize display
+//   while (1)  {vTaskDelay(pdMS_TO_TICKS(10000));}
+  
+
+    // Step 1: Initialize system services needed for the web server.
+    // WiFi must come up before SD card mounting when ESP-Hosted uses SDIO.
     SystemManager &sysMgr = SystemManager::getInstance();
 
-    ESP_LOGI(TAG, "Initializing display system...");
-    if (sysMgr.initDisplay() != ESP_OK)
+    // Step 2: Start WiFi + Web File Manager (background task — non-fatal)
+    ESP_LOGI(TAG, "Starting WiFi and Web File Manager...");
+    FileManagerApplication &fileMgr = FileManagerApplication::getInstance();
+    bool fileMgr_started = false;
+    int wifi_retry_tick = 0;
+    if (fileMgr.init(sysMgr) == ESP_OK)
     {
-        ESP_LOGE(TAG, "Failed to initialize display");
-        return;
-    }
-
-    // Init Thai font symbol fallback (Montserrat for LV_SYMBOL_*)
-    th_niramit_init_symbols();
-
-    // Step 2: Mount SD card (non-fatal — library may still show without it)
-    ESP_LOGI(TAG, "Mounting SD card...");
-    if (sysMgr.mountSDCard() != ESP_OK)
-    {
-        ESP_LOGW(TAG, "SD card not available — Library will show placeholder items");
+        if (fileMgr.start(false) == ESP_OK)
+        {
+            ESP_LOGI(TAG, "Web File Manager started — IP: %s", fileMgr.getIPAddress());
+            fileMgr_started = true;
+        }
+        else
+            ESP_LOGW(TAG, "Web File Manager failed to start (WiFi unavailable?)");
     }
     else
     {
-        // Ensure required directories exist so web upload can place files directly
+        ESP_LOGW(TAG, "FileManagerApplication init failed");
+    }
+
+    // Step 3: Mount SD card after ESP-Hosted WiFi is already active.
+    // This matches the hosted SDIO + SD card combined workaround.
+    ESP_LOGI(TAG, "Mounting SD card...");
+    if (sysMgr.mountSDCard() != ESP_OK)
+    {
+        ESP_LOGW(TAG, "SD card not available — File uploads and lesson fetch will be limited");
+    }
+    else
+    {
         const char *dirs[] = {"/sdcard/lessons", "/sdcard/WORKSHOP"};
         for (const char *d : dirs)
         {
@@ -97,31 +110,23 @@ extern "C" void app_main(void)
         }
     }
 
-    // Step 3: Start HMI — shows Splash then auto-navigates to Home
-    ESP_LOGI(TAG, "Starting HMI Navigator...");
-    HMINavigator::getInstance().start();
-
-    ESP_LOGI(TAG, "HMI running");
-
-    // Step 4: Start WiFi + Web File Manager (background task — non-fatal)
-    ESP_LOGI(TAG, "Starting WiFi and Web File Manager...");
-    FileManagerApplication &fileMgr = FileManagerApplication::getInstance();
-    if (fileMgr.init(sysMgr) == ESP_OK)
-    {
-        // Pass false — HMINavigator owns the display, no FileViewerUI overlay
-        if (fileMgr.start(false) == ESP_OK)
-            ESP_LOGI(TAG, "Web File Manager started — IP: %s", fileMgr.getIPAddress());
-        else
-            ESP_LOGW(TAG, "Web File Manager failed to start (WiFi unavailable?)");
-    }
-    else
-    {
-        ESP_LOGW(TAG, "FileManagerApplication init failed");
-    }
-
     // Keep main task alive — LVGL runs in its own task (lvgl_port)
     while (true)
     {
+        if (!fileMgr_started)
+        {
+            wifi_retry_tick += 10;
+            if (wifi_retry_tick >= 15)
+            {
+                ESP_LOGI(TAG, "Retrying WiFi/Web File Manager startup...");
+                if (fileMgr.start(false) == ESP_OK)
+                {
+                    fileMgr_started = true;
+                    ESP_LOGI(TAG, "Web File Manager recovery succeeded — IP: %s", fileMgr.getIPAddress());
+                }
+                wifi_retry_tick = 0;
+            }
+        }
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
     #endif

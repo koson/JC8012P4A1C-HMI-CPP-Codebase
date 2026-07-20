@@ -8,6 +8,7 @@
 #include "JsonRenderer.hpp"
 #include "JsonTypes.hpp"
 #include "FakeDrawTarget.hpp"
+#include "esp_log.h"
 
 using namespace JsonRenderer;
 
@@ -174,7 +175,12 @@ void test_renderer_missing_symbol_is_skipped(void)
     w.y = 20.0f;
     screen.widgets.push_back(w);
 
+    // Expected negative case: mute the warning emitted when the symbol is
+    // intentionally absent.
+    esp_log_level_set("JsonRenderer", ESP_LOG_NONE);
+
     TEST_ASSERT_TRUE(renderer.render(screen));
+    esp_log_level_set("JsonRenderer", ESP_LOG_INFO);
 
     TEST_ASSERT_EQUAL_INT(0, target.count(DrawCommand::Type::Line));
     TEST_ASSERT_EQUAL_INT(0, target.count(DrawCommand::Type::FillHLine));

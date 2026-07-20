@@ -3,9 +3,12 @@
 #include "esp_event.h"
 #include "esp_wifi.h"
 #include "esp_wifi_remote.h"
+#include "esp_netif.h"
+#include "LessonFetchService.hpp"
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "cJSON.h"
 #include <cstring>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -111,6 +114,29 @@ static bool is_safe_filename(const char *name)
     }
 
     return true;
+}
+
+static bool is_json_content_type(const char *content_type)
+{
+    if (!content_type)
+        return false;
+
+    const char *expected = "application/json";
+    for (size_t i = 0; expected[i]; ++i)
+    {
+        char actual = content_type[i];
+        if (actual == '\0')
+            return false;
+        if (tolower((unsigned char)actual) != expected[i])
+            return false;
+    }
+
+    return content_type[strlen(expected)] == '\0' || content_type[strlen(expected)] == ';' || isspace((unsigned char)content_type[strlen(expected)]);
+}
+
+extern "C" esp_netif_t *esp_wifi_remote_create_default_sta(void)
+{
+    return esp_netif_create_default_wifi_sta();
 }
 
 // Default upload directory
@@ -264,6 +290,26 @@ static const char *index_html = R"HTML(
         </div>
 
         <div class="section">
+            <h2>🌐 Fetch Lesson JSON</h2>
+            <div style="margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <input id="lessonUrl" type="text" placeholder="https://example.com/L001_NOT_GATE.json"
+                       style="flex:1; min-width:320px; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:14px;" />
+                <input id="lessonFilename" type="text" placeholder="Optional filename (e.g. L001_NOT_GATE.JSON)"
+                       style="flex:1; min-width:240px; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:14px;" />
+              <input id="lessonUsername" type="text" placeholder="Optional username"
+                  style="flex:1; min-width:180px; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:14px;" />
+              <input id="lessonPassword" type="password" placeholder="Optional password"
+                  style="flex:1; min-width:180px; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:14px;" />
+                <select id="fetchDir" style="padding:10px 12px;border-radius:8px;border:1px solid #ccc;font-size:14px;">
+                    <option value="lessons">lessons</option>
+                    <option value="WORKSHOP">WORKSHOP</option>
+                </select>
+                <button class="btn" onclick="fetchLessonJson()">Fetch</button>
+            </div>
+            <div class="status" id="fetchStatus"></div>
+        </div>
+
+        <div class="section">
             <h2>💾 SD Card Files</h2>
             <div style="margin-bottom:12px;">
                 <label style="font-size:14px;color:#555;">📂 Browse folder: </label>
@@ -283,6 +329,7 @@ static const char *index_html = R"HTML(
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const uploadStatus = document.getElementById('uploadStatus');
+        const fetchStatus = document.getElementById('fetchStatus');
         const fileList = document.getElementById('fileList');
         const fileCount = document.getElementById('fileCount');
 
@@ -362,6 +409,42 @@ static const char *index_html = R"HTML(
             }
         }
 
+        async function fetchLessonJson() {
+            const url = document.getElementById('lessonUrl').value.trim();
+            const dir = document.getElementById('fetchDir').value;
+            const filename = document.getElementById('lessonFilename').value.trim();
+            const username = document.getElementById('lessonUsername').value.trim();
+            const password = document.getElementById('lessonPassword').value;
+
+            if (!url) {
+                fetchStatus.className = 'status error';
+                fetchStatus.textContent = '❌ Please enter lesson URL';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/fetch-lesson', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, dir, filename, username, password })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    fetchStatus.className = 'status success';
+                    fetchStatus.textContent = '✅ ' + (result.message || 'Fetched successfully');
+                    document.getElementById('browseDir').value = dir;
+                    loadFiles();
+                } else {
+                    fetchStatus.className = 'status error';
+                    fetchStatus.textContent = '❌ ' + (result.message || 'Fetch failed');
+                }
+            } catch (error) {
+                fetchStatus.className = 'status error';
+                fetchStatus.textContent = '❌ Fetch failed: ' + error.message;
+            }
+        }
+
         async function launchLesson(filename) {
             const dir = document.getElementById('browseDir').value;
             try {
@@ -433,7 +516,9 @@ FileManagerApplication &FileManagerApplication::getInstance()
 
 // Constructor
 FileManagerApplication::FileManagerApplication()
-    : m_sysMgr(nullptr), m_server(nullptr), m_viewer(nullptr), m_initialized(false), m_wifi_connected(false), m_retry_count(0)
+    : m_sysMgr(nullptr), m_server(nullptr), m_viewer(nullptr), m_initialized(false), m_wifi_connected(false),
+      m_sta_netif(nullptr), m_wifi_handlers_registered(false), m_instance_wifi(nullptr), m_instance_ip(nullptr),
+      m_retry_count(0)
 {
     memset(m_ip_address, 0, sizeof(m_ip_address));
 }
@@ -497,36 +582,6 @@ esp_err_t FileManagerApplication::init(SystemManager &sysMgr, const WiFiConfig *
         m_wifi_config = getDefaultWiFiConfig();
     }
 
-    // Ensure SD card is mounted
-    if (!m_sysMgr->isSDCardMounted())
-    {
-        ESP_LOGE(TAG, "SD card not mounted");
-        return ESP_FAIL;
-    }
-
-    // Ensure required directories exist
-    auto ensure_dir = [](const char *path) -> bool
-    {
-        struct stat st;
-        if (stat(path, &st) == 0)
-        {
-            return true;
-        }
-
-        ESP_LOGI(TAG, "Creating directory: %s", path);
-        if (mkdir(path, 0755) != 0)
-        {
-            ESP_LOGE(TAG, "Failed to create directory: %s (errno: %d)", path, errno);
-            return false;
-        }
-        return true;
-    };
-
-    if (!ensure_dir(UPLOAD_DIR) || !ensure_dir(LESSONS_DIR))
-    {
-        return ESP_FAIL;
-    }
-
     // Initialize NVS (required for WiFi)
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
@@ -558,12 +613,16 @@ void FileManagerApplication::wifi_event_handler(void *arg, esp_event_base_t even
 {
     FileManagerApplication *app = static_cast<FileManagerApplication *>(arg);
 
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
+    if (event_base == WIFI_REMOTE_EVENT && event_id == WIFI_EVENT_STA_START)
     {
         ESP_LOGI(TAG, "WiFi station started, connecting...");
-        esp_wifi_connect();
+        esp_err_t ret = esp_wifi_remote_connect();
+        if (ret != ESP_OK)
+        {
+            ESP_LOGW(TAG, "esp_wifi_remote_connect() on STA_START failed: %s", esp_err_to_name(ret));
+        }
     }
-    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
+    else if (event_base == WIFI_REMOTE_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
         wifi_event_sta_disconnected_t *disconn = (wifi_event_sta_disconnected_t *)event_data;
         ESP_LOGW(TAG, "WiFi disconnected (reason: %d, %s)", disconn->reason, wifi_disc_reason_to_str(disconn->reason));
@@ -575,7 +634,11 @@ void FileManagerApplication::wifi_event_handler(void *arg, esp_event_base_t even
 
         if (app->m_retry_count < app->m_wifi_config.max_retry)
         {
-            esp_wifi_connect();
+            esp_err_t ret = esp_wifi_remote_connect();
+            if (ret != ESP_OK)
+            {
+                ESP_LOGW(TAG, "esp_wifi_remote_connect() retry failed: %s", esp_err_to_name(ret));
+            }
             app->m_retry_count++;
             ESP_LOGI(TAG, "Retry connecting (%d/%d)", app->m_retry_count, app->m_wifi_config.max_retry);
         }
@@ -621,24 +684,79 @@ esp_err_t FileManagerApplication::initWiFi()
 {
     ESP_LOGI(TAG, "Initializing WiFi (ESP-HOSTED)...");
 
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    esp_netif_create_default_wifi_sta();
+    esp_err_t ret = esp_netif_init();
+    if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE)
+    {
+        ESP_LOGE(TAG, "esp_netif_init failed: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    ret = esp_event_loop_create_default();
+    if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE)
+    {
+        ESP_LOGE(TAG, "esp_event_loop_create_default failed: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    if (m_sta_netif == nullptr)
+    {
+        m_sta_netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+        if (m_sta_netif == nullptr)
+        {
+            m_sta_netif = esp_wifi_remote_create_default_sta();
+        }
+    }
+
+    if (m_sta_netif == nullptr)
+    {
+        ESP_LOGE(TAG, "Failed to create/reuse remote STA netif");
+        return ESP_FAIL;
+    }
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+    esp_err_t init_ret = ESP_FAIL;
+    for (int attempt = 1; attempt <= 5; ++attempt)
+    {
+        init_ret = esp_wifi_remote_init(&cfg);
+        if (init_ret == ESP_OK || init_ret == ESP_ERR_INVALID_STATE)
+        {
+            break;
+        }
+
+        ESP_LOGW(TAG, "esp_wifi_remote_init attempt %d/5 failed: %s", attempt, esp_err_to_name(init_ret));
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+    if (init_ret != ESP_OK)
+    {
+        ESP_LOGE(TAG, "ESP-HOSTED init failed after retries; check C6 boot state, SDIO wiring, and reset order");
+        return init_ret;
+    }
 
     // Register event handlers with 'this' as argument
-    esp_event_handler_instance_t instance_wifi, instance_ip;
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(
-        WIFI_EVENT, ESP_EVENT_ANY_ID,
-        &FileManagerApplication::wifi_event_handler,
-        this, &instance_wifi));
+    if (!m_wifi_handlers_registered)
+    {
+        ret = esp_event_handler_instance_register(
+            WIFI_REMOTE_EVENT, ESP_EVENT_ANY_ID,
+            &FileManagerApplication::wifi_event_handler,
+            this, &m_instance_wifi);
+        if (ret != ESP_OK)
+        {
+            ESP_LOGE(TAG, "Failed to register WIFI_REMOTE event handler: %s", esp_err_to_name(ret));
+            return ret;
+        }
 
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(
-        IP_EVENT, IP_EVENT_STA_GOT_IP,
-        &FileManagerApplication::ip_event_handler,
-        this, &instance_ip));
+        ret = esp_event_handler_instance_register(
+            IP_EVENT, IP_EVENT_STA_GOT_IP,
+            &FileManagerApplication::ip_event_handler,
+            this, &m_instance_ip);
+        if (ret != ESP_OK)
+        {
+            ESP_LOGE(TAG, "Failed to register IP event handler: %s", esp_err_to_name(ret));
+            return ret;
+        }
+
+        m_wifi_handlers_registered = true;
+    }
 
     wifi_config_t wifi_config = {};
 
@@ -658,18 +776,35 @@ esp_err_t FileManagerApplication::initWiFi()
     strncpy((char *)wifi_config.sta.password, m_wifi_config.password, sizeof(wifi_config.sta.password) - 1);
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
+    ret = esp_wifi_remote_set_mode(WIFI_MODE_STA);
+    if (ret != ESP_OK)
+    {
+        ESP_LOGE(TAG, "esp_wifi_remote_set_mode failed: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    ret = esp_wifi_remote_set_config(WIFI_IF_STA, &wifi_config);
+    if (ret != ESP_OK)
+    {
+        ESP_LOGE(TAG, "esp_wifi_remote_set_config failed: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    ret = esp_wifi_remote_start();
+    if (ret != ESP_OK)
+    {
+        ESP_LOGE(TAG, "esp_wifi_remote_start failed: %s", esp_err_to_name(ret));
+        return ret;
+    }
 
     ESP_LOGI(TAG, "Connecting to WiFi: %s...", m_wifi_config.ssid);
 
     // Manual connect attempt
     vTaskDelay(pdMS_TO_TICKS(1000));
-    esp_err_t ret = esp_wifi_connect();
+    ret = esp_wifi_remote_connect();
     if (ret != ESP_OK)
     {
-        ESP_LOGW(TAG, "esp_wifi_connect() returned: %s", esp_err_to_name(ret));
+        ESP_LOGW(TAG, "esp_wifi_remote_connect() returned: %s", esp_err_to_name(ret));
     }
 
     return ESP_OK;
@@ -1194,6 +1329,106 @@ esp_err_t FileManagerApplication::launch_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+// HTTP Handler: Fetch lesson JSON from remote URL and save to SD card
+esp_err_t FileManagerApplication::fetch_lesson_handler(httpd_req_t *req)
+{
+    char content_type[64] = {0};
+    if (httpd_req_get_hdr_value_str(req, "Content-Type", content_type, sizeof(content_type)) != ESP_OK || !is_json_content_type(content_type))
+    {
+        httpd_resp_set_status(req, "415 Unsupported Media Type");
+        httpd_resp_sendstr(req, "{\"success\":false,\"message\":\"Content-Type must be application/json\"}");
+        return ESP_FAIL;
+    }
+
+    if (req->content_len <= 0 || req->content_len > 2048)
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid request body size");
+        return ESP_FAIL;
+    }
+
+    char *body = (char *)malloc(req->content_len + 1);
+    if (!body)
+    {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Out of memory");
+        return ESP_FAIL;
+    }
+
+    int receivedTotal = 0;
+    while (receivedTotal < req->content_len)
+    {
+        const int received = httpd_req_recv(req, body + receivedTotal, req->content_len - receivedTotal);
+        if (received <= 0)
+        {
+            free(body);
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to receive request body");
+            return ESP_FAIL;
+        }
+        receivedTotal += received;
+    }
+    body[receivedTotal] = '\0';
+
+    cJSON *root = cJSON_Parse(body);
+    free(body);
+    if (!root)
+    {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid JSON body");
+        return ESP_FAIL;
+    }
+
+    cJSON *urlItem = cJSON_GetObjectItem(root, "url");
+    cJSON *dirItem = cJSON_GetObjectItem(root, "dir");
+    cJSON *filenameItem = cJSON_GetObjectItem(root, "filename");
+    cJSON *usernameItem = cJSON_GetObjectItem(root, "username");
+    cJSON *passwordItem = cJSON_GetObjectItem(root, "password");
+
+    if (!urlItem || !cJSON_IsString(urlItem) || !urlItem->valuestring || !urlItem->valuestring[0])
+    {
+        cJSON_Delete(root);
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Field 'url' is required");
+        return ESP_FAIL;
+    }
+
+    const char *dir = (dirItem && cJSON_IsString(dirItem) && dirItem->valuestring[0]) ? dirItem->valuestring : "lessons";
+    const char *filename = (filenameItem && cJSON_IsString(filenameItem) && filenameItem->valuestring[0]) ? filenameItem->valuestring : nullptr;
+    const char *username = (usernameItem && cJSON_IsString(usernameItem) && usernameItem->valuestring[0]) ? usernameItem->valuestring : nullptr;
+    const char *password = (passwordItem && cJSON_IsString(passwordItem) && passwordItem->valuestring[0]) ? passwordItem->valuestring : nullptr;
+
+    char savedPath[256] = {0};
+    char errMsg[128] = {0};
+    esp_err_t ret = LessonFetch::fetchJsonToSd(urlItem->valuestring, dir, filename, username, password,
+                                               savedPath, sizeof(savedPath), errMsg, sizeof(errMsg));
+    cJSON_Delete(root);
+
+    httpd_resp_set_type(req, "application/json");
+
+    if (ret == ESP_OK)
+    {
+        char response[512];
+        snprintf(response, sizeof(response),
+                 "{\"success\":true,\"message\":\"Fetched lesson to SD card\",\"path\":\"%s\"}",
+                 savedPath);
+        httpd_resp_sendstr(req, response);
+        return ESP_OK;
+    }
+
+    char response[512];
+    snprintf(response, sizeof(response),
+             "{\"success\":false,\"message\":\"%s\"}",
+             errMsg[0] ? errMsg : "Fetch failed");
+
+    if (ret == ESP_ERR_INVALID_ARG || ret == ESP_ERR_INVALID_SIZE)
+    {
+        httpd_resp_set_status(req, "400 Bad Request");
+    }
+    else
+    {
+        httpd_resp_set_status(req, "500 Internal Server Error");
+    }
+
+    httpd_resp_sendstr(req, response);
+    return ESP_FAIL;
+}
+
 // Register HTTP handlers
 void FileManagerApplication::registerHTTPHandlers()
 {
@@ -1245,6 +1480,13 @@ void FileManagerApplication::registerHTTPHandlers()
         .handler = launch_handler,
         .user_ctx = NULL};
     httpd_register_uri_handler(m_server, &launch_uri);
+
+    httpd_uri_t fetch_lesson_uri = {
+        .uri = "/api/fetch-lesson",
+        .method = HTTP_POST,
+        .handler = fetch_lesson_handler,
+        .user_ctx = NULL};
+    httpd_register_uri_handler(m_server, &fetch_lesson_uri);
 }
 
 // Start HTTP server
@@ -1252,7 +1494,7 @@ esp_err_t FileManagerApplication::startHTTPServer()
 {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.lru_purge_enable = true;
-    config.max_uri_handlers = 9;
+    config.max_uri_handlers = 10;
     config.stack_size = 16384;                      // Increased from default 4096 to handle large debug responses
     config.uri_match_fn = httpd_uri_match_wildcard; // Required for /delete/* and /file/* patterns
 
@@ -1344,7 +1586,7 @@ void FileManagerApplication::stop()
 
     if (m_wifi_connected)
     {
-        esp_wifi_stop();
+        esp_wifi_remote_stop();
         m_wifi_connected = false;
     }
 

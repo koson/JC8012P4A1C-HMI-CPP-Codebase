@@ -55,6 +55,20 @@ extern void test_renderer_wire_stroke_width_is_clamped(void);
 extern void test_renderer_port_radius_is_capped(void);
 
 // ============================================================================
+// Test Declarations - LessonFetchService
+// ============================================================================
+extern void test_fetch_url_accepts_http(void);
+extern void test_fetch_url_accepts_https(void);
+extern void test_fetch_url_rejects_non_http_scheme(void);
+extern void test_fetch_auth_accepts_pair_or_empty(void);
+extern void test_fetch_auth_rejects_half_pair(void);
+extern void test_fetch_sanitize_dir_accepts_valid_token(void);
+extern void test_fetch_sanitize_dir_rejects_path_traversal_chars(void);
+extern void test_fetch_derive_filename_from_url_strips_query(void);
+extern void test_fetch_ensure_json_extension_appends_when_missing(void);
+extern void test_fetch_build_sd_path_formats_correctly(void);
+
+// ============================================================================
 // Main Test Runner
 // ============================================================================
 inline void run_all_tests(void) {
@@ -120,6 +134,23 @@ inline void run_all_tests(void) {
     RUN_TEST(test_renderer_missing_symbol_is_skipped);
     RUN_TEST(test_renderer_wire_stroke_width_is_clamped);
     RUN_TEST(test_renderer_port_radius_is_capped);
+
+    // ========================================================================
+    // LessonFetchService Tests (10 tests)
+    // ========================================================================
+    ESP_LOGI(TAG, "");
+    ESP_LOGI(TAG, "--- LessonFetchService Tests ---");
+
+    RUN_TEST(test_fetch_url_accepts_http);
+    RUN_TEST(test_fetch_url_accepts_https);
+    RUN_TEST(test_fetch_url_rejects_non_http_scheme);
+    RUN_TEST(test_fetch_auth_accepts_pair_or_empty);
+    RUN_TEST(test_fetch_auth_rejects_half_pair);
+    RUN_TEST(test_fetch_sanitize_dir_accepts_valid_token);
+    RUN_TEST(test_fetch_sanitize_dir_rejects_path_traversal_chars);
+    RUN_TEST(test_fetch_derive_filename_from_url_strips_query);
+    RUN_TEST(test_fetch_ensure_json_extension_appends_when_missing);
+    RUN_TEST(test_fetch_build_sd_path_formats_correctly);
     
     // ========================================================================
     // Finish
@@ -130,7 +161,7 @@ inline void run_all_tests(void) {
     int failures = UNITY_END();
     
     if (failures == 0) {
-        ESP_LOGI(TAG, "✅ ALL TESTS PASSED! (33 tests)");
+        ESP_LOGI(TAG, "✅ ALL TESTS PASSED! (43 tests)");
     } else {
         ESP_LOGE(TAG, "❌ %d TEST(S) FAILED!", failures);
     }

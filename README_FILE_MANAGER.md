@@ -97,6 +97,38 @@ CONFIG_ESP_HOSTED_SDIO_4_BIT=y
 CONFIG_ESP_HOSTED_SDIO_FREQ=40000000
 ```
 
+## ESP32-C6 Slave Firmware
+
+The ESP32-C6 firmware is a separate project. It is **not** stored in this repo's `managed_components/` folder.
+
+This project currently resolves `espressif/esp_hosted` from the component registry via `dependencies.lock`. That means the host-side dependency version and the slave firmware version should be kept in sync.
+
+For a repeatable workflow, keep a separate checkout next to this project, for example:
+
+```bash
+cd ..
+git clone --recurse-submodules https://github.com/espressif/esp-hosted-mcu.git
+cd esp-hosted-mcu\slave
+idf.py set-target esp32c6
+idf.py menuconfig
+idf.py -p <ESP_PROG_PORT> flash monitor
+```
+
+Recommended reminders for this board:
+- Do not rely on `idf.py create-project-from-example "espressif/esp_hosted:slave"` here; that example name is not available for the `esp_hosted` component version currently resolved by this project.
+- Match the slave firmware release to the host-side `esp_hosted` release used by this project.
+- Older notes mentioning `2.12.6+` refer to the older `esp-hosted-mcu` workflow and may be stale for newer host dependencies.
+- Use the same SDIO transport config as the host.
+- If you do this often, keep the `slave/` checkout in a fixed sibling folder next to this project so you do not have to search for it again.
+
+If the serial log still prints `ESP-Hosted-MCU Slave FW version :: 2.1.10`, the C6 is still running the old image. Flash the `slave/` project again from `esp-hosted-mcu` and verify the ESP-Prog wiring on `PROG_C6`:
+- `ESP_EN` -> `EN`
+- `ESP_TXD` -> `TXD`
+- `ESP_RXD` -> `RXD`
+- `GND` -> `GND`
+- `ESP_IO0` -> `IO0`
+- Do not connect `VDD`
+
 ## API Usage
 
 ### Initialize and Start

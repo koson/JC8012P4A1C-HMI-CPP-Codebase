@@ -39,6 +39,7 @@ idf_component_register(
         tests/test_json_basic.cpp    
         tests/test_svg_basic.cpp     
         tests/test_json_renderer_contract.cpp
+        tests/test_lesson_fetch_service.cpp
 
         # System Manager (OOP base for any ESP32-P4 HMI project)
         cpp_version/SystemManager.cpp
@@ -51,6 +52,7 @@ idf_component_register(
         
         # File Manager Application (Web-based file upload/download)
         cpp_version/FileManagerApplication.cpp
+        cpp_version/LessonFetchService.cpp
         
         # File Viewer UI (LVGL UI for FileManager - Option 1.5)
         cpp_version/FileViewerUI.cpp
@@ -110,10 +112,11 @@ idf_component_register(
         usb_cdc_host  # USB CDC-ACM Host transport to STM32H7 (replaces UART bridge)
         
     PRIV_REQUIRES
-        bsp_extra  # BSP extra functions
         esp_wifi_remote  # WiFi Remote Library
         esp_wifi  # WiFi component
         esp_http_server  # HTTP server
+        esp_http_client  # HTTP(S) client for lesson fetch
+        mbedtls  # esp_crt_bundle.h for HTTPS root certificates
         nvs_flash  # NVS storage for WiFi
         json  # cJSON parsing for LessonPlayer
         driver  # GPIO/peripheral driver (still needed by BSP and other components)

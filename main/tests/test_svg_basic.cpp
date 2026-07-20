@@ -7,6 +7,7 @@
 #include "unity.h"
 #include "SvgPathParser.hpp"
 #include "SvgTypes.hpp"
+#include "esp_log.h"
 #include <string.h>
 #include <cmath>
 
@@ -250,8 +251,13 @@ void test_svg_parse_or_gate_path(void) {
 
 void test_svg_parse_empty_string(void) {
     setUp_svg();
+
+    // Expected negative case: mute the parser warning so the test run stays
+    // visually distinct from a real failure.
+    esp_log_level_set("SvgPathParser", ESP_LOG_NONE);
     
     auto commands = parser->parse("");
+    esp_log_level_set("SvgPathParser", ESP_LOG_INFO);
     
     // Empty path should return empty vector
     TEST_ASSERT_EQUAL_UINT32(0, commands.size());

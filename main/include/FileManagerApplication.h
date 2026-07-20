@@ -2,6 +2,8 @@
 
 #include "esp_err.h"
 #include "esp_http_server.h"
+#include "esp_event.h"
+#include "esp_netif.h"
 #include "SystemManager.h"
 #include "FileViewerUI.h"
 #include "LessonPlayer.h"
@@ -108,6 +110,7 @@ private:
     static esp_err_t delete_handler(httpd_req_t *req);
     static esp_err_t view_handler(httpd_req_t *req);
     static esp_err_t launch_handler(httpd_req_t *req);
+    static esp_err_t fetch_lesson_handler(httpd_req_t *req);
 
     SystemManager *m_sysMgr;
     WiFiConfig m_wifi_config;
@@ -117,6 +120,10 @@ private:
     bool m_initialized;
     bool m_wifi_connected;
     char m_ip_address[16];
+    esp_netif_t *m_sta_netif;
+    bool m_wifi_handlers_registered;
+    esp_event_handler_instance_t m_instance_wifi;
+    esp_event_handler_instance_t m_instance_ip;
 
     int m_retry_count;
 };
