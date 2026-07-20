@@ -42,6 +42,14 @@ static const char *TAG = "main";
 extern "C" void app_main(void)
 {
 #if RUN_TESTS
+    // In test mode we don't use WiFi/ESP-HOSTED, but some hosted components
+    // can auto-init before app_main and retry SDIO in background.
+    // Mute those tags so test output stays focused on Unity results.
+    esp_log_level_set("sdmmc_common", ESP_LOG_NONE);
+    esp_log_level_set("eh_host_port_sdio", ESP_LOG_NONE);
+    esp_log_level_set("eh_sdio", ESP_LOG_NONE);
+    esp_log_level_set("eh_reconfigure", ESP_LOG_NONE);
+
     run_all_tests();
     while (1) vTaskDelay(pdMS_TO_TICKS(10000));
 #else
