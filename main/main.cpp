@@ -113,34 +113,19 @@ extern "C" void app_main(void)
     }
 
     // Step 4: Directly load and launch the NOT gate or OR gate lesson
-    LessonPlayer &lp = LessonPlayer::getInstance();
+    // Initialize HMINavigator screens (home & lesson library menu)
+    HMINavigator::getInstance().start();
+
+    // Load initial lesson into LessonPlayer
     const char *lesson_path = "/sdcard/lessons/L004_NOT_GATE_EMBEDDED.JSON";
-    ESP_LOGI(TAG, "Directly loading lesson: %s", lesson_path);
+    LessonPlayer &lp = LessonPlayer::getInstance();
     if (lp.loadLesson(lesson_path))
     {
         lp.show();
     }
     else
     {
-        ESP_LOGE(TAG, "Failed to load lesson: %s. Trying legacy NOT gate...", lesson_path);
-        if (lp.loadLesson("/sdcard/lessons/L004_NOT_GATE_ESP32.JSON"))
-        {
-            lp.show();
-        }
-        else if (lp.loadLesson("/sdcard/lessons/L005_OR_GATE.json"))
-        {
-            lp.show();
-        }
-        else if (lp.loadLesson("/sdcard/lessons/L001_not_gate.json"))
-        {
-            lp.show();
-        }
-
-        else
-        {
-            ESP_LOGW(TAG, "No lesson JSON found on SD card. Starting HMINavigator as fallback.");
-            HMINavigator::getInstance().start();
-        }
+        ESP_LOGW(TAG, "Default lesson not loaded directly, showing HMINavigator Library screen.");
     }
 
     // Keep main task alive — LVGL runs in its own task (lvgl_port)
