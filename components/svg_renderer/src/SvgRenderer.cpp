@@ -74,6 +74,12 @@ namespace SvgRenderer
         const Color &strokeColor,
         int32_t strokeWidth)
     {
+        if (m_canvas->hasVectorSupport())
+        {
+            m_canvas->drawVectorPath(commands, offsetX, offsetY, scaleX, scaleY, LVColor::Black, toLVColor(strokeColor), strokeWidth, 0);
+            return;
+        }
+
         m_currentPos = Point(0, 0);
         m_startPos = Point(0, 0);
 
@@ -297,6 +303,12 @@ namespace SvgRenderer
         float scaleY,
         const Color &fillColor)
     {
+        if (m_canvas->hasVectorSupport())
+        {
+            m_canvas->drawVectorPath(commands, offsetX, offsetY, scaleX, scaleY, toLVColor(fillColor), LVColor::Black, 0, LV_OPA_COVER);
+            return;
+        }
+
         // Decompose path into closed subpath polygons (M...L...Z groups)
         std::vector<std::vector<Point>> subpaths;
         std::vector<Point> current;

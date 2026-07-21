@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DrawTarget.hpp"
 #include <vector>
 #include <cstdint>
 
@@ -31,15 +32,9 @@ struct ViewBox {
 };
 
 /**
- * @brief SVG Path Command
+ * @brief SVG Path Command (alias to global VectorPathCommand)
  */
-struct PathCommand {
-    char type;                  // M, L, H, V, C, Q, A, Z
-    std::vector<float> args;    // Command arguments
-    
-    PathCommand() : type('Z') {}
-    PathCommand(char _type) : type(_type) {}
-};
+using PathCommand = VectorPathCommand;
 
 /**
  * @brief SVG Symbol Definition

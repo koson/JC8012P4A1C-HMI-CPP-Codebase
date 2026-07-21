@@ -441,3 +441,148 @@ void LVCanvas::invalidate()
     if (m_canvas)
         lv_obj_invalidate(m_canvas);
 }
+
+#if LV_USE_VECTOR_GRAPHIC
+void LVCanvas::drawVectorPath(const std::vector<VectorPathCommand> &commands,
+                              int32_t offsetX, int32_t offsetY,
+                              float scaleX, float scaleY,
+                              LVColor fillColor, LVColor strokeColor,
+                              int32_t strokeWidth, lv_opa_t fillOpa)
+{
+    if (!m_canvas)
+        return;
+    lv_layer_t tmp;
+    lv_layer_t *layer = acquireLayer(&tmp);
+
+    lv_draw_vector_dsc_t * dsc = lv_draw_vector_dsc_create(layer);
+    lv_vector_path_t * path = lv_vector_path_create(LV_VECTOR_PATH_QUALITY_MEDIUM);
+
+    lv_fpoint_t pos = {0.0f, 0.0f};
+    lv_fpoint_t start = {0.0f, 0.0f};
+
+    for (const auto& cmd : commands)
+    {
+        switch (cmd.type)
+        {
+        case 'M':
+            if (cmd.args.size() >= 2)
+            {
+                pos.x = cmd.args[0]; pos.y = cmd.args[1];
+                start = pos;
+                lv_fpoint_t pt = { pos.x * scaleX + offsetX, pos.y * scaleY + offsetY };
+                lv_vector_path_move_to(path, &pt);
+            }
+            break;
+        case 'L':
+            if (cmd.args.size() >= 2)
+            {
+                pos.x = cmd.args[0]; pos.y = cmd.args[1];
+                lv_fpoint_t pt = { pos.x * scaleX + offsetX, pos.y * scaleY + offsetY };
+                lv_vector_path_line_to(path, &pt);
+            }
+            break;
+        case 'l':
+            if (cmd.args.size() >= 2)
+            {
+                pos.x += cmd.args[0]; pos.y += cmd.args[1];
+                lv_fpoint_t pt = { pos.x * scaleX + offsetX, pos.y * scaleY + offsetY };
+                lv_vector_path_line_to(path, &pt);
+            }
+            break;
+        case 'H':
+            if (cmd.args.size() >= 1)
+            {
+                pos.x = cmd.args[0];
+                lv_fpoint_t pt = { pos.x * scaleX + offsetX, pos.y * scaleY + offsetY };
+                lv_vector_path_line_to(path, &pt);
+            }
+            break;
+        case 'h':
+            if (cmd.args.size() >= 1)
+            {
+                pos.x += cmd.args[0];
+                lv_fpoint_t pt = { pos.x * scaleX + offsetX, pos.y * scaleY + offsetY };
+                lv_vector_path_line_to(path, &pt);
+            }
+            break;
+        case 'V':
+            if (cmd.args.size() >= 1)
+            {
+                pos.y = cmd.args[0];
+                lv_fpoint_t pt = { pos.x * scaleX + offsetX, pos.y * scaleY + offsetY };
+                lv_vector_path_line_to(path, &pt);
+            }
+            break;
+        case 'v':
+            if (cmd.args.size() >= 1)
+            {
+                pos.y += cmd.args[0];
+                lv_fpoint_t pt = { pos.x * scaleX + offsetX, pos.y * scaleY + offsetY };
+                lv_vector_path_line_to(path, &pt);
+            }
+            break;
+        case 'C':
+            if (cmd.args.size() >= 6)
+            {
+                lv_fpoint_t cp1 = { cmd.args[0] * scaleX + offsetX, cmd.args[1] * scaleY + offsetY };
+                lv_fpoint_t cp2 = { cmd.args[2] * scaleX + offsetX, cmd.args[3] * scaleY + offsetY };
+                lv_fpoint_t ep = { cmd.args[4] * scaleX + offsetX, cmd.args[5] * scaleY + offsetY };
+                lv_vector_path_cubic_to(path, &cp1, &cp2, &ep);
+                pos.x = cmd.args[4]; pos.y = cmd.args[5];
+            }
+            break;
+        case 'c':
+            if (cmd.args.size() >= 6)
+            {
+                lv_fpoint_t cp1 = { (pos.x + cmd.args[0]) * scaleX + offsetX, (pos.y + cmd.args[1]) * scaleY + offsetY };
+                lv_fpoint_t cp2 = { (pos.x + cmd.args[2]) * scaleX + offsetX, (pos.y + cmd.args[3]) * scaleY + offsetY };
+                lv_fpoint_t ep = { (pos.x + cmd.args[4]) * scaleX + offsetX, (pos.y + cmd.args[5]) * scaleY + offsetY };
+                lv_vector_path_cubic_to(path, &cp1, &cp2, &ep);
+                pos.x += cmd.args[4]; pos.y += cmd.args[5];
+            }
+            break;
+        case 'Z':
+        case 'z':
+            lv_vector_path_close(path);
+            pos = start;
+            break;
+        default:
+            break;
+        }
+    }
+
+    if (fillOpa > 0)
+    {
+        lv_draw_vector_dsc_set_fill_color(dsc, fillColor.raw());
+        lv_draw_vector_dsc_set_fill_opa(dsc, fillOpa);
+    }
+    else
+    {
+        lv_draw_vector_dsc_set_fill_opa(dsc, LV_OPA_TRANSP);
+    }
+
+    if (strokeWidth > 0)
+    {
+        lv_draw_vector_dsc_set_stroke_color(dsc, strokeColor.raw());
+        lv_draw_vector_dsc_set_stroke_width(dsc, (float)strokeWidth);
+    }
+
+    lv_draw_vector_dsc_add_path(dsc, path);
+    lv_draw_vector(dsc);
+
+    lv_vector_path_delete(path);
+    lv_draw_vector_dsc_delete(dsc);
+
+    releaseLayer(&tmp);
+}
+#else
+void LVCanvas::drawVectorPath(const std::vector<VectorPathCommand> &commands,
+                              int32_t offsetX, int32_t offsetY,
+                              float scaleX, float scaleY,
+                              LVColor fillColor, LVColor strokeColor,
+                              int32_t strokeWidth, lv_opa_t fillOpa)
+{
+    (void)commands; (void)offsetX; (void)offsetY; (void)scaleX; (void)scaleY;
+    (void)fillColor; (void)strokeColor; (void)strokeWidth; (void)fillOpa;
+}
+#endif

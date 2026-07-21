@@ -2,9 +2,19 @@
 
 #include "lvgl.h"
 #include "LVColor.hpp"
-#include "SvgTypes.hpp"
 #include <cstdint>
 #include <vector>
+
+/**
+ * @brief Simple vector graphics command (independent of svg_renderer component)
+ */
+struct VectorPathCommand {
+    char type;                  // M, L, H, V, C, Q, A, Z
+    std::vector<float> args;    // Command arguments
+    
+    VectorPathCommand() : type('Z') {}
+    VectorPathCommand(char _type) : type(_type) {}
+};
 
 /**
  * @brief Abstract drawing target used by renderers.
@@ -35,7 +45,7 @@ public:
 
     virtual bool hasVectorSupport() const { return false; }
 
-    virtual void drawVectorPath(const std::vector<SvgRenderer::PathCommand> &commands,
+    virtual void drawVectorPath(const std::vector<VectorPathCommand> &commands,
                                 int32_t offsetX, int32_t offsetY,
                                 float scaleX, float scaleY,
                                 LVColor fillColor, LVColor strokeColor,

@@ -45,7 +45,7 @@ public:
     /** Tell LVGL the canvas buffer has changed and needs redisplay. */
     void invalidate() override;
 
-    void drawVectorPath(const std::vector<SvgRenderer::PathCommand> &commands,
+    void drawVectorPath(const std::vector<VectorPathCommand> &commands,
                         int32_t offsetX, int32_t offsetY,
                         float scaleX, float scaleY,
                         LVColor fillColor, LVColor strokeColor,
