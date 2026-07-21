@@ -10,5 +10,7 @@
 			"path": "../../../Obsidian-vault/Projects/LVGL9_CPP_DEV"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"powershell.cwd": "LabBuddy-JC8012P4-HMI"
+	}
 }
