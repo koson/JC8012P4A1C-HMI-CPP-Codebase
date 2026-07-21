@@ -66,6 +66,51 @@ namespace JsonRenderer
         return render(*m_screen);
     }
 
+    bool JsonRenderer::renderJsonObj(cJSON *root)
+    {
+        ESP_LOGI(TAG, "Rendering pre-parsed cJSON object");
+
+        // Clear previous screen
+        m_screen = std::make_unique<Screen>();
+
+        // Parse JSON object
+        if (!m_parser->parseJsonObj(root, *m_screen))
+        {
+            m_lastError = "Parse error: ";
+            m_lastError += m_parser->getLastError();
+            ESP_LOGE(TAG, "%s", m_lastError.c_str());
+            return false;
+        }
+
+        // Render to canvas
+        return render(*m_screen);
+    }
+
+    bool JsonRenderer::renderJsonString(const char *jsonStr)
+    {
+        ESP_LOGI(TAG, "Rendering JSON string");
+
+        if (!jsonStr || !jsonStr[0])
+        {
+            m_lastError = "JSON string is empty";
+            return false;
+        }
+
+        m_screen = std::make_unique<Screen>();
+
+        if (!m_parser->parseString(jsonStr, *m_screen))
+        {
+            m_lastError = "Parse error: ";
+            m_lastError += m_parser->getLastError();
+            ESP_LOGE(TAG, "%s", m_lastError.c_str());
+            return false;
+        }
+
+        return render(*m_screen);
+    }
+
+
+
     bool JsonRenderer::render(const Screen &screen)
     {
         ESP_LOGI(TAG, "Rendering screen: %s", screen.title.c_str());
@@ -292,13 +337,30 @@ namespace JsonRenderer
 
                 if (vbW > 0.0f && vbH > 0.0f)
                 {
-                    if (vbW > 0.0f && vbH > 0.0f)
-                    {
-                        logicalScaleX = widget.width / vbW;
-                        logicalScaleY = widget.height / vbH;
-                        placeX = widgetBaseX;
-                        placeY = widgetBaseY;
-                    }
+                    const float boundsW = vbW;
+                    const float boundsH = vbH;
+                    const float minX = symbol.viewBox.x;
+                    const float minY = symbol.viewBox.y;
+
+                    // Scale uniformly based on width to align pins with wires
+                    const float uniformScale = widget.width / boundsW;
+                    logicalScaleX = uniformScale;
+                    logicalScaleY = uniformScale;
+
+                    // Center the symbol vertically within the widget's bounding box
+                    const float extraW = widget.width - boundsW * uniformScale;
+                    const float extraH = widget.height - boundsH * uniformScale;
+
+                    placeX = widgetBaseX - minX * uniformScale + extraW / 2.0f;
+                    placeY = widgetBaseY - minY * uniformScale + extraH / 2.0f;
+
+                    // Detailed log showing SVG coordinates vs logical HMI coordinates
+                    ESP_LOGI(TAG, "=== SVG COORD DIAGNOSTIC [%s] ===", widget.symbolId.c_str());
+                    ESP_LOGI(TAG, "  [RAW JSON] path_data: \"%s\"", symbol.pathData ? symbol.pathData : "");
+                    ESP_LOGI(TAG, "  [RAW JSON] viewBox: (minX=%.1f, minY=%.1f, w=%.1f, h=%.1f)", minX, minY, boundsW, boundsH);
+                    ESP_LOGI(TAG, "  [RAW JSON] widget: pos=(%.1f, %.1f), size=(%.1f, %.1f)", widget.x, widget.y, widget.width, widget.height);
+                    ESP_LOGI(TAG, "  [CANVAS COMPUTE] placeX=%.1f (baseX=%.1f - minX=%.1f * scale=%.3f)", placeX, widgetBaseX, minX, uniformScale);
+                    ESP_LOGI(TAG, "  [CANVAS COMPUTE] placeY=%.1f (baseY=%.1f - minY=%.1f * scale=%.3f)", placeY, widgetBaseY, minY, uniformScale);
                 }
                 else if (symbol.pathData)
                 {
@@ -423,12 +485,29 @@ namespace JsonRenderer
                     {
                         const float boundsW = maxX - minX;
                         const float boundsH = maxY - minY;
-                        const float fitScaleX = widget.width / boundsW;
-                        const float fitScaleY = widget.height / boundsH;
-                        logicalScaleX = fitScaleX;
-                        logicalScaleY = fitScaleY;
-                        placeX = widgetBaseX - minX * fitScaleX;
-                        placeY = widgetBaseY - minY * fitScaleY;
+                        
+                        // Scale uniformly based on width to align pins with wires
+                        const float uniformScale = widget.width / boundsW;
+                        logicalScaleX = uniformScale;
+                        logicalScaleY = uniformScale;
+                        
+                        // Center the symbol vertically within the widget's bounding box
+                        const float extraW = widget.width - boundsW * uniformScale;
+                        const float extraH = widget.height - boundsH * uniformScale;
+                        
+                        placeX = widgetBaseX - minX * uniformScale + extraW / 2.0f;
+                        placeY = widgetBaseY - minY * uniformScale + extraH / 2.0f;
+
+                        // Detailed log showing SVG coordinates vs logical HMI coordinates
+                        ESP_LOGI(TAG, "SVG Layout scaling for [%s]:", widget.symbolId.c_str());
+                        ESP_LOGI(TAG, "  - SVG symbol path bounds: min=(%.1f, %.1f), max=(%.1f, %.1f), size=(%.1f, %.1f)", 
+                                 minX, minY, maxX, maxY, boundsW, boundsH);
+                        ESP_LOGI(TAG, "  - HMI JSON widget box: pos=(%.1f, %.1f), size=(%.1f, %.1f)", 
+                                 widget.x, widget.y, widget.width, widget.height);
+                        ESP_LOGI(TAG, "  - Scaling: UniformScale (width-based) = %.3f", 
+                                 uniformScale);
+                        ESP_LOGI(TAG, "  - Centering padding: padX=%.1f, padY=%.1f", 
+                                 extraW / 2.0f, extraH / 2.0f);
                     }
                 }
             }
@@ -437,6 +516,11 @@ namespace JsonRenderer
             int32_t scaledY = (int32_t)(placeY * m_scaleY + m_offsetY);
             int32_t finalScaleXPct = (int32_t)(logicalScaleX * m_scaleX * 1000);
             int32_t finalScaleYPct = (int32_t)(logicalScaleY * m_scaleY * 1000);
+
+            // Log final screen pixel coordinates (LVGL space)
+            ESP_LOGI(TAG, "  - Final LVGL screen placement: canvas_origin=(%d, %d), final_scale=(%.3f, %.3f)",
+                     (int)scaledX, (int)scaledY,
+                     logicalScaleX * m_scaleX, logicalScaleY * m_scaleY);
 
             // Verbose debug log (integers only - no float formatting)
             ESP_LOGD(TAG, "WIDGET[%s]: json=(%d,%d) box=(%d,%d) scale_x1000=(%d,%d) -> canvas=(%d,%d)",

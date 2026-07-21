@@ -68,8 +68,12 @@ CONFIG_EXAMPLE_LVGL_PORT_ROTATION_90=y
 # Root cause: esp_lvgl_port 2.7.2 PPA flush_cb passes invalid addr when buffer is in PSRAM
 # Fix: disable PPA, use CPU for SW rotation. Revisit when esp_lvgl_port fixes PSRAM support.
 
+# Task Watchdog Timeout (Increase to 30s to allow ESP32-C6 Coprocessor OTA update without WDT reset)
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=30
+
 # Enable experimental features for XIP
 CONFIG_IDF_EXPERIMENTAL_FEATURES=y
+
 
 # ============================================================================
 # ESP-HOSTED: SDIO transport (JC8012P4A1C with ESP32-C6)
@@ -148,6 +152,11 @@ CONFIG_FATFS_API_ENCODING_UTF_8=y
 CONFIG_LV_USE_VECTOR_GRAPHIC=y
 CONFIG_LV_USE_THORVG=y
 CONFIG_LV_DRAW_THREAD_STACK_SIZE=32768
+
+# Increase pthread stack sizes for ThorVG worker threads
+CONFIG_PTHREAD_TASK_STACK_SIZE_DEFAULT=32768
+CONFIG_ESP32_PTHREAD_TASK_STACK_SIZE_DEFAULT=32768
+
 
 
 

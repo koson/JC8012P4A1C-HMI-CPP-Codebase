@@ -516,6 +516,7 @@ void LessonPlayer::showPage(int index)
         return;
 
     const char *page_type = jstr(page, "page_type");
+    ESP_LOGI(TAG, "Showing page %d/%d (type: %s)", index + 1, m_pageCount, page_type);
 
     if (strcmp(page_type, "cover") == 0)
         buildCoverPage(m_contentArea, page);
@@ -723,21 +724,50 @@ bool LessonPlayer::resolveCircuitPath(const char *raw_path, char *resolved_path,
 
 bool LessonPlayer::tryRenderCircuitFromJson(lv_obj_t *cont, cJSON *page)
 {
-    const char *raw_path = jstr(page, "circuit_file", "");
-    if (!raw_path || !raw_path[0])
-    {
-        snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag), "circuit_file is empty");
-        return false;
-    }
+    cJSON *circuitObj = cJSON_GetObjectItem(page, "circuit");
+    if (!circuitObj) circuitObj = cJSON_GetObjectItem(page, "circuit_screen");
+    if (!circuitObj) circuitObj = cJSON_GetObjectItem(page, "circuit_data");
+    if (!circuitObj) circuitObj = cJSON_GetObjectItem(page, "Circuit");
+    if (!circuitObj) circuitObj = cJSON_GetObjectItem(page, "circuitScreen");
+    if (!circuitObj) circuitObj = cJSON_GetObjectItem(page, "circuitData");
 
+
+    const bool is_embedded_obj = (circuitObj && cJSON_IsObject(circuitObj));
+    const bool is_embedded_str = (circuitObj && cJSON_IsString(circuitObj));
+    const bool is_embedded = is_embedded_obj || is_embedded_str;
+
+    const char *raw_path = "";
     char resolved_path[256] = {0};
-    const bool found = resolveCircuitPath(raw_path, resolved_path, sizeof(resolved_path));
-    if (!found)
+
+    if (!is_embedded)
     {
-        ESP_LOGW(TAG, "Circuit file not found: raw='%s' first_try='%s'", raw_path, resolved_path);
-        snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag),
-                 "Circuit file not found: raw='%s'", raw_path);
-        return false;
+        raw_path = jstr(page, "circuit_file", "");
+        if (!raw_path || !raw_path[0])
+        {
+            std::string keys = "";
+            cJSON *child = page ? page->child : nullptr;
+            while (child)
+            {
+                if (child->string)
+                {
+                    keys += child->string;
+                    keys += ", ";
+                }
+                child = child->next;
+            }
+            ESP_LOGW(TAG, "No embedded circuit or circuit_file found. Page keys: [%s]", keys.c_str());
+            snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag), "circuit_file is empty and no embedded circuit");
+            return false;
+        }
+
+        const bool found = resolveCircuitPath(raw_path, resolved_path, sizeof(resolved_path));
+        if (!found)
+        {
+            ESP_LOGW(TAG, "Circuit file not found: raw='%s' first_try='%s'", raw_path, resolved_path);
+            snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag),
+                     "Circuit file not found: raw='%s'", raw_path);
+            return false;
+        }
     }
 
     const uint16_t CANVAS_WIDTH = 1180;
@@ -773,7 +803,20 @@ bool LessonPlayer::tryRenderCircuitFromJson(lv_obj_t *cont, cJSON *page)
     m_circuitCanvas->setBuffer(m_circuitBackBuffer, CANVAS_WIDTH, CANVAS_HEIGHT, LV_COLOR_FORMAT_RGB565);
     m_circuitCanvas->fill(LVColor::White);
 
-    const bool ok = m_circuitRenderer->loadAndRender(resolved_path);
+    bool ok = false;
+    if (is_embedded_obj)
+    {
+        ok = m_circuitRenderer->renderJsonObj(circuitObj);
+    }
+    else if (is_embedded_str)
+    {
+        ok = m_circuitRenderer->renderJsonString(cJSON_GetStringValue(circuitObj));
+    }
+    else
+    {
+        ok = m_circuitRenderer->loadAndRender(resolved_path);
+    }
+
 
     std::swap(m_circuitCanvasBuffer, m_circuitBackBuffer);
     m_circuitCanvas->setBuffer(m_circuitCanvasBuffer, CANVAS_WIDTH, CANVAS_HEIGHT, LV_COLOR_FORMAT_RGB565);
@@ -781,26 +824,56 @@ bool LessonPlayer::tryRenderCircuitFromJson(lv_obj_t *cont, cJSON *page)
 
     if (!ok)
     {
-        ESP_LOGW(TAG, "Circuit render failed (%s): %s", resolved_path, m_circuitRenderer->getLastError());
-        snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag),
-                 "Render failed: %s", m_circuitRenderer->getLastError());
+        if (is_embedded)
+        {
+            ESP_LOGW(TAG, "Embedded circuit render failed: %s", m_circuitRenderer->getLastError());
+            snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag),
+                     "Embedded render failed: %s", m_circuitRenderer->getLastError());
+        }
+        else
+        {
+            ESP_LOGW(TAG, "Circuit render failed (%s): %s", resolved_path, m_circuitRenderer->getLastError());
+            snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag),
+                     "Render failed: %s", m_circuitRenderer->getLastError());
+        }
         releaseCircuitRenderer();
         return false;
     }
 
-    snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag),
-             "Rendered from %s", resolved_path);
+    if (is_embedded)
+    {
+        snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag), "Rendered from embedded circuit");
+    }
+    else
+    {
+        snprintf(m_circuitRenderDiag, sizeof(m_circuitRenderDiag), "Rendered from %s", resolved_path);
+    }
 
     lv_obj_t *path_info = lv_label_create(cont);
-    lv_label_set_text_fmt(path_info, "Circuit: %s", resolved_path);
+    if (is_embedded)
+    {
+        lv_label_set_text(path_info, "Circuit: [Embedded]");
+    }
+    else
+    {
+        lv_label_set_text_fmt(path_info, "Circuit: %s", resolved_path);
+    }
     lv_obj_set_style_text_font(path_info, th_niramit_select(20), 0);
     lv_obj_set_style_text_color(path_info, lv_color_hex(0x66ccff), 0);
     lv_obj_set_width(path_info, SCR_W - 80);
     lv_obj_align(path_info, LV_ALIGN_BOTTOM_MID, 0, -60);
 
-    ESP_LOGI(TAG, "Circuit rendered from %s", resolved_path);
+    if (is_embedded)
+    {
+        ESP_LOGI(TAG, "Circuit rendered from embedded circuit JSON");
+    }
+    else
+    {
+        ESP_LOGI(TAG, "Circuit rendered from %s", resolved_path);
+    }
     return true;
 }
+
 
 void LessonPlayer::updateNavButtons()
 {

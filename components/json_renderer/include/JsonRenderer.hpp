@@ -35,12 +35,23 @@ namespace JsonRenderer
         JsonRenderer(DrawTarget *canvas);
         ~JsonRenderer();
 
+        bool loadAndRender(const char *filePath);
+
         /**
-         * @brief Load JSON file and render to canvas
-         * @param filePath Path to JSON file
+         * @brief Parse and render from a pre-parsed cJSON root object
+         * @param root cJSON object representing the circuit
          * @return true on success, false on error
          */
-        bool loadAndRender(const char *filePath);
+        bool renderJsonObj(cJSON *root);
+
+        /**
+         * @brief Parse and render from a JSON string
+         * @param jsonStr JSON string content
+         * @return true on success, false on error
+         */
+        bool renderJsonString(const char *jsonStr);
+
+
 
         /**
          * @brief Render pre-parsed screen

@@ -33,13 +33,16 @@ namespace JsonRenderer
          */
         bool parseFile(const char *filePath, Screen &screen);
 
+        bool parseString(const char *jsonString, Screen &screen);
+
         /**
-         * @brief Parse JSON string
-         * @param jsonString JSON content
+         * @brief Parse JSON from a pre-parsed cJSON root object
+         * @param root cJSON object representing the circuit
          * @param screen Output screen structure
          * @return true on success, false on error
          */
-        bool parseString(const char *jsonString, Screen &screen);
+        bool parseJsonObj(cJSON *root, Screen &screen);
+
 
         /**
          * @brief Get last error message

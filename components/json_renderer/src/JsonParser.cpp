@@ -1,4 +1,5 @@
 #include "JsonParser.hpp"
+#include "SvgPathParser.hpp"
 #include "esp_log.h"
 #include <cstdlib>
 #include <fstream>
@@ -154,6 +155,33 @@ namespace JsonRenderer
         return result;
     }
 
+    bool JsonParser::parseJsonObj(cJSON *root, Screen &screen)
+    {
+        if (!root)
+        {
+            m_lastError = "Root cJSON object is NULL";
+            return false;
+        }
+
+        bool result = parseScreen(root, screen);
+
+        if (result)
+        {
+            ESP_LOGI(TAG, "Successfully parsed JSON Object:");
+            ESP_LOGI(TAG, "  - Version: %s", screen.version.c_str());
+            ESP_LOGI(TAG, "  - Title: %s", screen.title.c_str());
+            ESP_LOGI(TAG, "  - Size: %dx%d", screen.width, screen.height);
+            ESP_LOGI(TAG, "  - Embedded symbols: %d", (int)screen.embeddedSymbols.size());
+            ESP_LOGI(TAG, "  - Widgets: %d", (int)screen.widgets.size());
+            ESP_LOGI(TAG, "  - Wires: %d", (int)screen.wires.size());
+            ESP_LOGI(TAG, "  - Ports: %d", (int)screen.ports.size());
+            ESP_LOGI(TAG, "  - Junctions: %d", (int)screen.junctions.size());
+        }
+
+        return result;
+    }
+
+
     bool JsonParser::parseScreen(cJSON *root, Screen &screen)
     {
         // Parse basic info
@@ -231,7 +259,78 @@ namespace JsonRenderer
             symbol.title = getString(obj, "title", "");
             symbol.description = getString(obj, "description", "");
             symbol.category = getString(obj, "category", "Custom");
-            symbol.pathData = getString(obj, "pathData", "");
+            std::string pathData = getString(obj, "pathData", "");
+
+            // Standard small bubble path string (comma-separated)
+            std::string tiny_bubble1 = "M 80,50 c 0,1.380712 -1.119288,2.5 -2.5,2.5 -1.380712,0 -2.5,-1.119288 -2.5,-2.5 0,-1.380712 1.119288,-2.5 2.5,-2.5 1.380712,0 2.5,1.119288 2.5,2.5 z";
+            std::string large_bubble1 = "M 85,50 c 0,2.7614 -2.2386,5 -5,5 -2.7614,0 -5,-2.2386 -5,-5 0,-2.7614 2.2386,-5 5,-5 2.7614,0 5,2.2386 5,5 z";
+
+            // Space-separated version
+            std::string tiny_bubble2 = "M 80 50 c 0 1.380712 -1.119288 2.5 -2.5 2.5 -1.380712 0 -2.5 -1.119288 -2.5 -2.5 0 -1.380712 1.119288 -2.5 2.5 -2.5 1.380712 0 2.5 1.119288 2.5 2.5 z";
+            std::string large_bubble2 = "M 85 50 c 0 2.7614 -2.2386 5 -5 5 -2.7614 0 -5 -2.2386 -5 -5 0 -2.7614 2.2386 -5 5 -5 2.7614 0 5 2.2386 5 5 z";
+
+            size_t pos1 = pathData.find(tiny_bubble1);
+            if (pos1 != std::string::npos)
+            {
+                pathData.replace(pos1, tiny_bubble1.length(), large_bubble1);
+                ESP_LOGI(TAG, "Systematically patched tiny bubble (comma-format) for symbol: %s", symbol.id.c_str());
+            }
+
+            size_t pos2 = pathData.find(tiny_bubble2);
+            if (pos2 != std::string::npos)
+            {
+                pathData.replace(pos2, tiny_bubble2.length(), large_bubble2);
+                ESP_LOGI(TAG, "Systematically patched tiny bubble (space-format) for symbol: %s", symbol.id.c_str());
+            }
+
+            std::string rawSvgContent = getString(obj, "rawSvgContent", "");
+            if (!rawSvgContent.empty())
+            {
+                size_t searchPos = 0;
+                while ((searchPos = rawSvgContent.find("<ellipse", searchPos)) != std::string::npos)
+                {
+                    size_t endTag = rawSvgContent.find(">", searchPos);
+                    if (endTag == std::string::npos) break;
+                    std::string tag = rawSvgContent.substr(searchPos, endTag - searchPos + 1);
+
+                    auto getAttr = [&](const char *attr) -> float {
+                        size_t p = tag.find(attr);
+                        if (p != std::string::npos) {
+                            p = tag.find("\"", p);
+                            if (p != std::string::npos) {
+                                return std::strtof(tag.c_str() + p + 1, nullptr);
+                            }
+                        }
+                        return 0.0f;
+                    };
+
+                    float cx = getAttr("cx=");
+                    float cy = getAttr("cy=");
+                    float rx = getAttr("rx=");
+                    float ry = getAttr("ry=");
+
+                    if (rx > 0 && ry > 0) {
+                        if (rx < 4.5f) rx = 5.0f;
+                        if (ry < 4.5f) ry = 5.0f;
+
+                        float kx = rx * 0.55228475f;
+                        float ky = ry * 0.55228475f;
+                        char buf[200];
+                        snprintf(buf, sizeof(buf),
+                                 " M %.2f %.2f C %.2f %.2f %.2f %.2f %.2f %.2f C %.2f %.2f %.2f %.2f %.2f %.2f C %.2f %.2f %.2f %.2f %.2f %.2f C %.2f %.2f %.2f %.2f %.2f %.2f Z",
+                                 cx + rx, cy,
+                                 cx + rx, cy + ky, cx + kx, cy + ry, cx, cy + ry,
+                                 cx - kx, cy + ry, cx - rx, cy + ky, cx - rx, cy,
+                                 cx - rx, cy - ky, cx - kx, cy - ry, cx, cy - ry,
+                                 cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy);
+                        pathData += buf;
+                        ESP_LOGI(TAG, "Extracted ellipse at cx=%.1f cy=%.1f rx=%.1f ry=%.1f for symbol: %s", cx, cy, rx, ry, symbol.id.c_str());
+                    }
+                    searchPos = endTag + 1;
+                }
+            }
+
+            symbol.pathData = pathData;
 
             // Parse viewBox
             cJSON *viewBox = getObjectItemFlexible(obj, "viewBox");
@@ -241,6 +340,29 @@ namespace JsonRenderer
                 symbol.viewBox.y = getFloat(viewBox, "Y", 0.0f);
                 symbol.viewBox.width = getFloat(viewBox, "Width", 150.0f);
                 symbol.viewBox.height = getFloat(viewBox, "Height", 150.0f);
+            }
+
+            // Auto-correct viewBox.x for dynamic symbols where path data starts at minX > viewBox.x
+            if (symbol.viewBox.x == 0.0f && !pathData.empty())
+            {
+                SvgRenderer::SvgPathParser pathParser;
+                const auto cmds = pathParser.parse(symbol.pathData.c_str());
+                float minPathX = 1e9f;
+                for (const auto &cmd : cmds)
+                {
+                    if (cmd.type == 'M' || cmd.type == 'L' || cmd.type == 'C' || cmd.type == 'Q')
+                    {
+                        if (cmd.args.size() >= 2)
+                        {
+                            if (cmd.args[0] < minPathX) minPathX = cmd.args[0];
+                        }
+                    }
+                }
+                if (minPathX > 0.0f && minPathX < 1e8f)
+                {
+                    symbol.viewBox.x = minPathX;
+                    ESP_LOGI(TAG, "Auto-corrected viewBox.x for dynamic symbol [%s] to %.1f", symbol.id.c_str(), minPathX);
+                }
             }
 
             screen.embeddedSymbols[symbol.id] = symbol;
