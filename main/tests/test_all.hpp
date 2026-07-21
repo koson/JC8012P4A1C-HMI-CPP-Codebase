@@ -69,6 +69,14 @@ extern void test_fetch_ensure_json_extension_appends_when_missing(void);
 extern void test_fetch_build_sd_path_formats_correctly(void);
 
 // ============================================================================
+// Test Declarations - Bezier Adaptive Subdivision
+// ============================================================================
+extern void test_bezier_adaptive_flat_line(void);
+extern void test_bezier_adaptive_curve_points(void);
+extern void test_bezier_quad_adaptive_curve(void);
+extern void test_renderer_bezier_filled_or_gate(void);
+
+// ============================================================================
 // Main Test Runner
 // ============================================================================
 inline void run_all_tests(void) {
@@ -153,6 +161,17 @@ inline void run_all_tests(void) {
     RUN_TEST(test_fetch_build_sd_path_formats_correctly);
     
     // ========================================================================
+    // Bezier Adaptive Subdivision Tests (4 tests)
+    // ========================================================================
+    ESP_LOGI(TAG, "");
+    ESP_LOGI(TAG, "--- Bezier Adaptive Subdivision Tests ---");
+
+    RUN_TEST(test_bezier_adaptive_flat_line);
+    RUN_TEST(test_bezier_adaptive_curve_points);
+    RUN_TEST(test_bezier_quad_adaptive_curve);
+    RUN_TEST(test_renderer_bezier_filled_or_gate);
+    
+    // ========================================================================
     // Finish
     // ========================================================================
     ESP_LOGI(TAG, "");
@@ -161,7 +180,7 @@ inline void run_all_tests(void) {
     int failures = UNITY_END();
     
     if (failures == 0) {
-        ESP_LOGI(TAG, "✅ ALL TESTS PASSED! (43 tests)");
+        ESP_LOGI(TAG, "✅ ALL TESTS PASSED! (47 tests)");
     } else {
         ESP_LOGE(TAG, "❌ %d TEST(S) FAILED!", failures);
     }

@@ -309,6 +309,12 @@ namespace SvgRenderer
             current.clear();
         };
 
+        float maxScale = std::max(scaleX, scaleY);
+        float localFlatness = 0.2f / (maxScale > 0.001f ? maxScale : 1.0f);
+        if (localFlatness < 0.01f) {
+            localFlatness = 0.01f;
+        }
+
         for (const auto &cmd : commands)
         {
             switch (cmd.type)
@@ -365,6 +371,60 @@ namespace SvgRenderer
                 {
                     pos.y += cmd.args[0];
                     current.push_back(pos);
+                }
+                break;
+            case 'C':
+                if (cmd.args.size() >= 6)
+                {
+                    Point p1(cmd.args[0], cmd.args[1]);
+                    Point p2(cmd.args[2], cmd.args[3]);
+                    Point p3(cmd.args[4], cmd.args[5]);
+                    auto pts = BezierConverter::subdivideBezier(pos, p1, p2, p3, localFlatness);
+                    for (size_t i = 1; i < pts.size(); i++)
+                    {
+                        current.push_back(pts[i]);
+                    }
+                    pos = p3;
+                }
+                break;
+            case 'c':
+                if (cmd.args.size() >= 6)
+                {
+                    Point p1(pos.x + cmd.args[0], pos.y + cmd.args[1]);
+                    Point p2(pos.x + cmd.args[2], pos.y + cmd.args[3]);
+                    Point p3(pos.x + cmd.args[4], pos.y + cmd.args[5]);
+                    auto pts = BezierConverter::subdivideBezier(pos, p1, p2, p3, localFlatness);
+                    for (size_t i = 1; i < pts.size(); i++)
+                    {
+                        current.push_back(pts[i]);
+                    }
+                    pos = p3;
+                }
+                break;
+            case 'Q':
+                if (cmd.args.size() >= 4)
+                {
+                    Point p1(cmd.args[0], cmd.args[1]);
+                    Point p2(cmd.args[2], cmd.args[3]);
+                    auto pts = BezierConverter::subdivideBezierQuad(pos, p1, p2, localFlatness);
+                    for (size_t i = 1; i < pts.size(); i++)
+                    {
+                        current.push_back(pts[i]);
+                    }
+                    pos = p2;
+                }
+                break;
+            case 'q':
+                if (cmd.args.size() >= 4)
+                {
+                    Point p1(pos.x + cmd.args[0], pos.y + cmd.args[1]);
+                    Point p2(pos.x + cmd.args[2], pos.y + cmd.args[3]);
+                    auto pts = BezierConverter::subdivideBezierQuad(pos, p1, p2, localFlatness);
+                    for (size_t i = 1; i < pts.size(); i++)
+                    {
+                        current.push_back(pts[i]);
+                    }
+                    pos = p2;
                 }
                 break;
             case 'Z':

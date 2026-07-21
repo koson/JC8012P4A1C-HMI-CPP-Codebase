@@ -2,7 +2,9 @@
 
 #include "lvgl.h"
 #include "LVColor.hpp"
+#include "SvgTypes.hpp"
 #include <cstdint>
+#include <vector>
 
 /**
  * @brief Abstract drawing target used by renderers.
@@ -30,4 +32,12 @@ public:
 
     virtual void fillHLine(int32_t x1, int32_t x2, int32_t y, LVColor color) = 0;
     virtual void invalidate() = 0;
+
+    virtual bool hasVectorSupport() const { return false; }
+
+    virtual void drawVectorPath(const std::vector<SvgRenderer::PathCommand> &commands,
+                                int32_t offsetX, int32_t offsetY,
+                                float scaleX, float scaleY,
+                                LVColor fillColor, LVColor strokeColor,
+                                int32_t strokeWidth = 0, lv_opa_t fillOpa = LV_OPA_COVER) {}
 };

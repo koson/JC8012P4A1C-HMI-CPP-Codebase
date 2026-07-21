@@ -47,7 +47,53 @@ public:
         int segments = 15
     );
     
+    /**
+     * @brief Convert cubic Bezier curve to line segments using adaptive subdivision
+     * 
+     * @param p0 Start point
+     * @param p1 First control point
+     * @param p2 Second control point
+     * @param p3 End point
+     * @param flatness Max deviation in pixels (default: 0.2)
+     * @return Vector of points forming the curve
+     */
+    static std::vector<Point> subdivideBezier(
+        const Point& p0,
+        const Point& p1,
+        const Point& p2,
+        const Point& p3,
+        float flatness = 0.2f
+    );
+
+    /**
+     * @brief Convert quadratic Bezier curve to line segments using adaptive subdivision
+     * 
+     * @param p0 Start point
+     * @param p1 Control point
+     * @param p2 End point
+     * @param flatness Max deviation in pixels (default: 0.2)
+     * @return Vector of points forming the curve
+     */
+    static std::vector<Point> subdivideBezierQuad(
+        const Point& p0,
+        const Point& p1,
+        const Point& p2,
+        float flatness = 0.2f
+    );
+    
 private:
+    static void subdivideBezierRecursive(
+        const Point& p0, const Point& p1, const Point& p2, const Point& p3,
+        float flatness, std::vector<Point>& points, int depth = 0
+    );
+
+    static void subdivideBezierQuadRecursive(
+        const Point& p0, const Point& p1, const Point& p2,
+        float flatness, std::vector<Point>& points, int depth = 0
+    );
+
+    static float pointToSegmentDistance(const Point& p, const Point& a, const Point& b);
+
     /**
      * @brief Calculate point on cubic Bezier curve at parameter t
      * @param t Parameter (0.0 to 1.0)

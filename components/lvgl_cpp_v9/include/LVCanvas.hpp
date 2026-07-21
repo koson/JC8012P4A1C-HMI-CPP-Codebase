@@ -45,6 +45,20 @@ public:
     /** Tell LVGL the canvas buffer has changed and needs redisplay. */
     void invalidate() override;
 
+    void drawVectorPath(const std::vector<SvgRenderer::PathCommand> &commands,
+                        int32_t offsetX, int32_t offsetY,
+                        float scaleX, float scaleY,
+                        LVColor fillColor, LVColor strokeColor,
+                        int32_t strokeWidth = 0, lv_opa_t fillOpa = LV_OPA_COVER) override;
+
+    bool hasVectorSupport() const override {
+#if LV_USE_VECTOR_GRAPHIC
+        return true;
+#else
+        return false;
+#endif
+    }
+
     void setPalette(uint8_t idx, LVColor color); // for indexed formats
 
 private:

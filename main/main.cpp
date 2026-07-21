@@ -22,6 +22,7 @@
 #include "HMINavigator.h"
 #include "FileManagerApplication.h"
 #include "font_thai.h"
+#include "LessonPlayer.h"
 
 #define RUN_TESTS 0  // Set to 1 for unit-test mode
 
@@ -56,16 +57,18 @@ extern "C" void app_main(void)
 
 
     ESP_LOGI(TAG, "===========================================");
-    ESP_LOGI(TAG, "  LabBuddy HMI 260720");
-    ESP_LOGI(TAG, "  Splash -> Home -> Library");
+    ESP_LOGI(TAG, "  LabBuddy HMI - Direct Gate Renderer");
     ESP_LOGI(TAG, "===========================================");
 
-//   while (1)  {vTaskDelay(pdMS_TO_TICKS(10000));}
-  
-
-    // Step 1: Initialize system services needed for the web server.
-    // WiFi must come up before SD card mounting when ESP-Hosted uses SDIO.
+    // Step 1: Initialize system and display
     SystemManager &sysMgr = SystemManager::getInstance();
+    
+    ESP_LOGI(TAG, "Initializing display system...");
+    if (sysMgr.initDisplay() != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to initialize display");
+        return;
+    }
 
     // Step 2: Start WiFi + Web File Manager (background task — non-fatal)
     ESP_LOGI(TAG, "Starting WiFi and Web File Manager...");
@@ -88,7 +91,6 @@ extern "C" void app_main(void)
     }
 
     // Step 3: Mount SD card after ESP-Hosted WiFi is already active.
-    // This matches the hosted SDIO + SD card combined workaround.
     ESP_LOGI(TAG, "Mounting SD card...");
     if (sysMgr.mountSDCard() != ESP_OK)
     {
@@ -107,6 +109,28 @@ extern "C" void app_main(void)
                 else
                     ESP_LOGW(TAG, "mkdir %s failed: %d", d, errno);
             }
+        }
+    }
+
+    // Step 4: Directly load and launch the OR gate lesson
+    LessonPlayer &lp = LessonPlayer::getInstance();
+    const char *lesson_path = "/sdcard/lessons/L005_OR_GATE.json";
+    ESP_LOGI(TAG, "Directly loading lesson: %s", lesson_path);
+    if (lp.loadLesson(lesson_path))
+    {
+        lp.show();
+    }
+    else
+    {
+        ESP_LOGE(TAG, "Failed to load lesson: %s. Trying fallback NOT gate...", lesson_path);
+        if (lp.loadLesson("/sdcard/lessons/L001_not_gate.json"))
+        {
+            lp.show();
+        }
+        else
+        {
+            ESP_LOGW(TAG, "No lesson JSON found on SD card. Starting HMINavigator as fallback.");
+            HMINavigator::getInstance().start();
         }
     }
 
