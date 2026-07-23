@@ -382,8 +382,10 @@ namespace JsonRenderer
                     const float extraW = widget.width - boundsW * uniformScale;
                     const float extraH = widget.height - boundsH * uniformScale;
 
-                    placeX = widgetBaseX - minX * uniformScale + extraW / 2.0f;
-                    placeY = widgetBaseY - minY * uniformScale + extraH / 2.0f;
+                    // Note: SvgRenderer::renderSymbol subtracts symbol.viewBox.x/y internally,
+                    // so placeX/Y base is widgetBaseX/Y directly to prevent double-offset.
+                    placeX = widgetBaseX + extraW / 2.0f;
+                    placeY = widgetBaseY + extraH / 2.0f;
 
                     // Detailed log showing SVG coordinates vs logical HMI coordinates
                     ESP_LOGI(TAG, "=== SVG COORD DIAGNOSTIC [%s] ===", widget.symbolId.c_str());
