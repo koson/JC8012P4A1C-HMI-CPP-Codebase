@@ -1,0 +1,23 @@
+{
+  "folders": [
+    {
+      "name": "LabBuddy HMI Firmware (ESP32-P4 & Simulator)",
+      "path": "."
+    },
+    {
+      "name": "LabBuddy Docs & Worksheets",
+      "path": "../../../Docs"
+    },
+    {
+      "name": "LVGL Port PC (VSCode)",
+      "path": "../../../__LVGL/lv_port_pc_vscode"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.git": true,
+      "**/.DS_Store": true
+    },
+    "cmake.configureOnOpen": false
+  }
+}

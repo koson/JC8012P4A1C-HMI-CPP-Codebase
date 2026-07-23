@@ -63,12 +63,17 @@ target_link_libraries(LabBuddy_Simulator PRIVATE
     -lSDL2
 )
 
-# Locate SDL2.dll
-if(EXISTS "C:/SDL2/lib/x64/SDL2.dll")
-    set(SDL2_DLL_PATH "C:/SDL2/lib/x64/SDL2.dll")
-elseif(EXISTS "C:/msys64/ucrt64/bin/SDL2.dll")
-    set(SDL2_DLL_PATH "C:/msys64/ucrt64/bin/SDL2.dll")
-else()
+# Locate SDL2.dll dynamically across machines
+find_file(SDL2_DLL_PATH SDL2.dll PATHS
+    "C:/SDL2/lib/x64"
+    "C:/msys64/ucrt64/bin"
+    "C:/msys64/mingw64/bin"
+    "$ENV{SDL2_DIR}/lib/x64"
+    "$ENV{SDL2_DIR}/bin"
+    "$ENV{SDL2_DIR}"
+)
+
+if(NOT SDL2_DLL_PATH)
     set(SDL2_DLL_PATH "C:/SDL2/lib/x64/SDL2.dll")
 endif()
 
