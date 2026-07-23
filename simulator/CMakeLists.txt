@@ -21,6 +21,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/hal
     ${CMAKE_CURRENT_SOURCE_DIR}/cJSON
     ${PROJECT_ROOT_DIR}/main
+    ${PROJECT_ROOT_DIR}/main/include
     ${PROJECT_ROOT_DIR}/managed_components
     ${PROJECT_ROOT_DIR}/managed_components/lvgl__lvgl
     ${PROJECT_ROOT_DIR}/managed_components/lvgl__lvgl/src
@@ -47,6 +48,7 @@ set(SIMULATOR_SOURCES
     hal/mouse_cursor_icon.c
     cJSON/cJSON.c
     ${PROJECT_ROOT_DIR}/main/img_pressure_needle.c
+    ${PROJECT_ROOT_DIR}/main/cpp_version/LessonPlayer.cpp
     ${JSON_RENDERER_SOURCES}
     ${SVG_RENDERER_SOURCES}
     ${LVGL_CPP_SOURCES}

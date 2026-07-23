@@ -15,6 +15,7 @@
 #include "LVCanvas.hpp"
 #include "ElectricalPanel.h"
 #include "font_thai.h"
+#include "LessonPlayer.h"
 
 static lv_obj_t *main_screen = NULL;
 static lv_obj_t *demo_screen = NULL;
@@ -283,6 +284,16 @@ static void run_thai_font_demo(void) {
   add_back_button(demo_screen);
 }
 
+// Demo 5: Interactive Lesson Player (L001 NOT Gate)
+static void run_lesson_player_demo(void) {
+  LessonPlayer &lp = LessonPlayer::getInstance();
+  if (lp.loadLesson("simulator/worksheets/L001_not_gate.json")) {
+    lp.show();
+  } else {
+    printf("[PC Simulator] Failed to load lesson file simulator/worksheets/L001_not_gate.json\n");
+  }
+}
+
 // Main Menu Screen
 static void show_main_menu(void) {
   if (main_screen) {
@@ -297,24 +308,24 @@ static void show_main_menu(void) {
   lv_label_set_text(title, "LabBuddy HMI - Main Menu");
   lv_obj_set_style_text_font(title, &lv_font_montserrat_32, 0);
   lv_obj_set_style_text_color(title, lv_color_hex(0x00FF88), 0);
-  lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 30);
+  lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 20);
 
   // Subtitle
   lv_obj_t *sub = lv_label_create(main_screen);
-  lv_label_set_text(sub, "Select a system module to run on PC Simulator");
+  lv_label_set_text(sub, "Select a system module or interactive lesson to run on PC Simulator");
   lv_obj_set_style_text_color(sub, lv_color_hex(0xAAAAAA), 0);
-  lv_obj_align(sub, LV_ALIGN_TOP_MID, 0, 75);
+  lv_obj_align(sub, LV_ALIGN_TOP_MID, 0, 60);
 
   // Container for Menu Buttons
   lv_obj_t *container = lv_obj_create(main_screen);
-  lv_obj_set_size(container, 900, 500);
-  lv_obj_align(container, LV_ALIGN_CENTER, 0, 40);
+  lv_obj_set_size(container, 950, 560);
+  lv_obj_align(container, LV_ALIGN_CENTER, 0, 45);
   lv_obj_set_style_bg_color(container, lv_color_hex(0x16213E), 0);
   lv_obj_set_style_border_color(container, lv_color_hex(0x0F4C75), 0);
   lv_obj_set_style_border_width(container, 2, 0);
   lv_obj_set_flex_flow(container, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_style_pad_all(container, 20, 0);
-  lv_obj_set_style_pad_row(container, 15, 0);
+  lv_obj_set_style_pad_all(container, 15, 0);
+  lv_obj_set_style_pad_row(container, 12, 0);
 
   struct MenuOption {
     const char *name;
@@ -324,23 +335,26 @@ static void show_main_menu(void) {
   };
 
   MenuOption options[] = {
-      {"1. Logic Circuit Simulator (JSON Renderer)",
+      {"1. Interactive Lesson Player (L001 NOT Gate)",
+       "Multi-page course engine (Cover -> Theory -> Interactive Circuit -> Verify)", run_lesson_player_demo,
+       0x0F4C75},
+      {"2. Logic Circuit Simulator (JSON Renderer)",
        "Render Gates, Wires, Ports & Junctions from JSON", run_circuit_demo,
        0x0F4C75},
-      {"2. 3-Phase Electrical Parameters Panel",
+      {"3. 3-Phase Electrical Parameters Panel",
        "Monitor Voltage, Current, Power & Energy", run_electrical_panel_demo,
        0x0F4C75},
-      {"3. HMI Widget Gallery & Controls",
+      {"4. HMI Widget Gallery & Controls",
        "Test Sliders, Switches, Gauges & Controls", run_widget_gallery_demo,
        0x0F4C75},
-      {"4. Thai Language & Font Rendering Test",
+      {"5. Thai Language & Font Rendering Test",
        "Display Thai fonts (Niramit 20/24/32)", run_thai_font_demo, 0x0F4C75},
   };
 
   for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {
     lv_obj_t *btn = lv_btn_create(container);
     lv_obj_set_width(btn, lv_pct(100));
-    lv_obj_set_height(btn, 90);
+    lv_obj_set_height(btn, 85);
     lv_obj_set_style_bg_color(btn, lv_color_hex(options[i].color), 0);
     lv_obj_set_style_bg_color(btn, lv_color_hex(0x3DBDE6), LV_STATE_PRESSED);
 

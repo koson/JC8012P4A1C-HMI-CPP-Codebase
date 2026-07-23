@@ -1,0 +1,124 @@
+{
+    "lesson_id": "L001",
+    "version": "1.0",
+    "title": "NOT Gate",
+    "title_th": "ลอจิกเกต NOT (Inverter)",
+    "ic": "74HC04",
+    "category": "basic_gates",
+    "difficulty": 1,
+    "estimated_minutes": 10,
+    "pages": [
+        {
+            "page_type": "cover",
+            "title": "NOT Gate",
+            "subtitle": "ลอจิกเกต NOT (Inverter)",
+            "ic_label": "IC: 74HC04",
+            "objectives": [
+                "เข้าใจการทำงานของ NOT gate",
+                "เขียน truth table ได้",
+                "ต่อวงจรจริงบนบอร์ดได้"
+            ]
+        },
+        {
+            "page_type": "theory",
+            "title": "ทฤษฎี: NOT Gate",
+            "body": "NOT gate หรือ Inverter คือ logic gate ที่ทำหน้าที่กลับค่า logic\nถ้า input เป็น 0 output จะเป็น 1\nถ้า input เป็น 1 output จะเป็น 0\n\nสัญลักษณ์ทางคณิตศาสตร์: Y = ~A (NOT A)",
+            "truth_table": {
+                "col_headers": [
+                    "A",
+                    "Y"
+                ],
+                "rows": [
+                    {
+                        "in": [
+                            0
+                        ],
+                        "out": [
+                            1
+                        ]
+                    },
+                    {
+                        "in": [
+                            1
+                        ],
+                        "out": [
+                            0
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "page_type": "circuit",
+            "title": "วงจร: NOT Gate (จำลอง)",
+            "hint": "แตะสวิตช์เพื่อเปลี่ยนค่า input A",
+            "inputs": [
+                "A"
+            ],
+            "outputs": [
+                "Y"
+            ],
+            "gate_type": "NOT"
+        },
+        {
+            "page_type": "verify",
+            "title": "ทดสอบฮาร์ดแวร์",
+            "ic": "74HC04",
+            "instructions": [
+                "ใส่ IC 74HC04 ลงบน ZIF socket",
+                "ต่อขา 1 (A1) เข้า Input ช่อง 1",
+                "ต่อขา 2 (Y1) เข้า Output ช่อง 1",
+                "ต่อ VCC (ขา 14) และ GND (ขา 7)"
+            ],
+            "verification": {
+                "ic_name": "74HC04",
+                "description": "Single NOT gate, gate 1 (pin 1=A, pin 2=Y)",
+                "drive_ports": [
+                    "port_input_A"
+                ],
+                "read_ports": [
+                    "port_output_Y"
+                ],
+                "truth_table": [
+                    {
+                        "inputs": [
+                            0
+                        ],
+                        "expected": [
+                            1
+                        ]
+                    },
+                    {
+                        "inputs": [
+                            1
+                        ],
+                        "expected": [
+                            0
+                        ]
+                    }
+                ],
+                "timing": {
+                    "drive_settle_ms": 5,
+                    "read_delay_ms": 2
+                },
+                "common_errors": [
+                    {
+                        "pattern": "all_outputs_0",
+                        "condition": "Y always returns 0 regardless of input",
+                        "message": "ลืมต่อ VCC (ขา 14) หรือ GND (ขา 7)"
+                    },
+                    {
+                        "pattern": "all_outputs_1",
+                        "condition": "Y always returns 1 regardless of input",
+                        "message": "ขา Y (ขา 2) อาจลัดวงจรกับ VCC"
+                    },
+                    {
+                        "pattern": "output_follows_input",
+                        "condition": "Y == A instead of Y == NOT A",
+                        "message": "ลองสลับขา input กับ output"
+                    }
+                ]
+            }
+        }
+    ]
+}
