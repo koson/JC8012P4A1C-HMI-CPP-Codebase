@@ -339,8 +339,39 @@ namespace JsonRenderer
                 {
                     const float boundsW = vbW;
                     const float boundsH = vbH;
-                    const float minX = symbol.viewBox.x;
-                    const float minY = symbol.viewBox.y;
+                    float minX = symbol.viewBox.x;
+                    float minY = symbol.viewBox.y;
+
+                    // If pathData has baked absolute coordinates (e.g. minX=70) while viewBox.x was 0,
+                    // compute actual path minX to prevent double-offset shift
+                    if (symbol.pathData && symbol.pathData[0] != '\0')
+                    {
+                        SvgRenderer::SvgPathParser parser;
+                        const auto commands = parser.parse(symbol.pathData);
+                        float pathMinX = std::numeric_limits<float>::infinity();
+                        float pathMinY = std::numeric_limits<float>::infinity();
+                        float cx = 0.0f, cy = 0.0f;
+                        for (const auto &cmd : commands)
+                        {
+                            bool isRel = (cmd.type >= 'a' && cmd.type <= 'z');
+                            for (size_t i = 0; i + 1 < cmd.args.size(); i += 2)
+                            {
+                                float px = (isRel ? cx : 0.0f) + cmd.args[i];
+                                float py = (isRel ? cy : 0.0f) + cmd.args[i + 1];
+                                pathMinX = std::min(pathMinX, px);
+                                pathMinY = std::min(pathMinY, py);
+                            }
+                            if (!cmd.args.empty() && cmd.args.size() >= 2)
+                            {
+                                cx = (isRel ? cx : 0.0f) + cmd.args[cmd.args.size() - 2];
+                                cy = (isRel ? cy : 0.0f) + cmd.args[cmd.args.size() - 1];
+                            }
+                        }
+                        if (std::isfinite(pathMinX) && pathMinX > 0.0f && symbol.viewBox.x == 0.0f && pathMinX >= widgetBaseX)
+                        {
+                            minX = pathMinX;
+                        }
+                    }
 
                     // Scale uniformly based on width to align pins with wires
                     const float uniformScale = widget.width / boundsW;
