@@ -51,3 +51,4 @@ managed_components/
 # Dependencies lock file (keep this - defines component versions)
 dependencies.lock
 /build_pc
+/.obsidian
