@@ -1,0 +1,234 @@
+{
+    "version": "1.1",
+    "title": "NOT Gate — 74HC04 Verification",
+    "description": "Single inverter circuit with auto-verification for 74HC04",
+    "width": 1280,
+    "height": 800,
+    "backgroundColor": "#F5F5F5",
+    "symbolLibrary": "symbol_library.json",
+    "ports": [
+        {
+            "id": "port_input_A",
+            "type": "input",
+            "x": 141.0,
+            "y": 400.0,
+            "radius": 10.0,
+            "label": "A",
+            "labelPosition": "left",
+            "direction": "right",
+            "state": "active",
+            "fill": "#3498DB",
+            "stroke": "#2C3E50",
+            "strokeWidth": 2.0
+        },
+        {
+            "id": "port_output_Y",
+            "type": "output",
+            "x": 706.0,
+            "y": 400.0,
+            "radius": 10.0,
+            "label": "Y",
+            "labelPosition": "right",
+            "direction": "right",
+            "state": "active",
+            "fill": "#2ECC71",
+            "stroke": "#2C3E50",
+            "strokeWidth": 2.0
+        }
+    ],
+    "wires": [
+        {
+            "id": "wire_A",
+            "path": "m 141,400 l 243,0",
+            "strokeWidth": 5.0,
+            "color": "#2C3E50",
+            "routingStyle": "Direct"
+        },
+        {
+            "id": "wire_Y",
+            "path": "m 560,400 l 146,0",
+            "strokeWidth": 5.0,
+            "color": "#2C3E50",
+            "routingStyle": "Direct"
+        }
+    ],
+    "components": [
+        {
+            "id": "ic_74hc04",
+            "type": "ic_not",
+            "x": 384.0,
+            "y": 370.0,
+            "width": 176.0,
+            "height": 60.0,
+            "label": "74HC04",
+            "pins": {
+                "A": "port_input_A",
+                "Y": "port_output_Y",
+                "VCC": "pin14",
+                "GND": "pin7"
+            }
+        }
+    ],
+    "labels": [
+        {
+            "id": "label_ic",
+            "text": "74HC04 Hex Inverter",
+            "x": 400,
+            "y": 340,
+            "fontSize": 14,
+            "fill": "#2C3E50"
+        },
+        {
+            "id": "label_vcc",
+            "text": "VCC (pin 14)",
+            "x": 600,
+            "y": 310,
+            "fontSize": 12,
+            "fill": "#E74C3C"
+        },
+        {
+            "id": "label_gnd",
+            "text": "GND (pin 7)",
+            "x": 600,
+            "y": 500,
+            "fontSize": 12,
+            "fill": "#7F8C8D"
+        }
+    ],
+    "verification": {
+        "ic_name": "74HC04",
+        "description": "Single NOT gate (pin 1=A input, pin 2=Y output, pin 14=VCC, pin 7=GND)",
+        "drive_ports": [
+            "port_input_A"
+        ],
+        "read_ports": [
+            "port_output_Y"
+        ],
+        "truth_table": [
+            {
+                "inputs": [
+                    0
+                ],
+                "expected": [
+                    1
+                ]
+            },
+            {
+                "inputs": [
+                    1
+                ],
+                "expected": [
+                    0
+                ]
+            }
+        ],
+        "timing": {
+            "drive_settle_ms": 5,
+            "read_delay_ms": 2
+        },
+        "common_errors": [
+            {
+                "pattern": "all_outputs_0",
+                "condition": "output Y always 0 regardless of input",
+                "message": "ลืมต่อ VCC (ขา 14) หรือ GND (ขา 7) — IC ไม่มีไฟเลี้ยง"
+            },
+            {
+                "pattern": "all_outputs_1",
+                "condition": "output Y always 1 regardless of input",
+                "message": "ขา Y (ขา 2) อาจลัดวงจรกับ VCC หรือขา A ไม่ถึง IC"
+            },
+            {
+                "pattern": "not_inverted",
+                "condition": "output Y equals input A (no inversion)",
+                "message": "ขา A และ Y อาจสลับกัน — ตรวจสอบว่าต่อถูกขาหรือเปล่า"
+            },
+            {
+                "pattern": "output_floating",
+                "condition": "output Y oscillates or reads inconsistently",
+                "message": "ขา Y (ขา 2) อาจลอย (floating) — ตรวจสอบการเชื่อมต่อสาย"
+            }
+        ],
+        "fault_cases": [
+            {
+                "id": "fault_no_vcc",
+                "description": "ไม่ต่อ VCC (ขา 14)",
+                "expected_result": "FAIL",
+                "fail_pattern": "all_outputs_0",
+                "hint": "ตรวจสอบสายไฟ VCC ที่ขา 14 ของ IC — ต้องต่อกับ 3.3V หรือ 5V"
+            },
+            {
+                "id": "fault_no_gnd",
+                "description": "ไม่ต่อ GND (ขา 7)",
+                "expected_result": "FAIL",
+                "fail_pattern": "all_outputs_0",
+                "hint": "ตรวจสอบสาย GND ที่ขา 7 ของ IC — ต้องต่อกับ GND ร่วมกับแหล่งจ่าย"
+            },
+            {
+                "id": "fault_input_disconnected",
+                "description": "ขา A (ขา 1) ไม่ได้ต่อ — ลอยอยู่",
+                "expected_result": "FAIL",
+                "fail_pattern": "output_floating",
+                "hint": "ขา Input (ขา 1) ต้องต่อกับสัญญาณ — ถ้าลอยอยู่ IC จะอ่านค่าไม่ได้"
+            },
+            {
+                "id": "fault_output_disconnected",
+                "description": "ขา Y (ขา 2) ไม่ได้ต่อเข้า probe",
+                "expected_result": "FAIL",
+                "fail_pattern": "output_floating",
+                "hint": "ขา Output (ขา 2) ต้องต่อกับจุดวัด — ตรวจสอบสายต่อเข้า DIG:IN"
+            },
+            {
+                "id": "fault_pins_swapped",
+                "description": "ต่อขา A (ขา 1) กับ Y (ขา 2) สลับกัน",
+                "expected_result": "FAIL",
+                "fail_pattern": "not_inverted",
+                "hint": "ตรวจสอบว่าขา Input คือขา 1 และขา Output คือขา 2 — ดูใน datasheet"
+            },
+            {
+                "id": "fault_wrong_gate",
+                "description": "ใช้ gate ผิดตัวบน IC (เช่น ใช้ gate 2 แทน gate 1)",
+                "expected_result": "FAIL",
+                "fail_pattern": "output_floating",
+                "hint": "74HC04 มี 6 gate — ตรวจสอบว่าใช้ gate ที่ 1 (ขา 1, 2) ไม่ใช่ gate อื่น"
+            }
+        ],
+        "lesson_steps": [
+            {
+                "step": 1,
+                "title": "ทำความรู้จัก NOT Gate",
+                "type": "info",
+                "content_md": "## NOT Gate คืออะไร?\n\nNOT gate (Inverter) เป็นวงจรลอจิกที่ **กลับสภาวะ** ของสัญญาณ:\n- Input = 0 → Output = **1**\n- Input = 1 → Output = **0**\n\nสัญลักษณ์คือสามเหลี่ยมมีวงกลมเล็กที่ปลาย Output"
+            },
+            {
+                "step": 2,
+                "title": "ดู Datasheet — 74HC04",
+                "type": "info",
+                "content_md": "## IC 74HC04 — Hex Inverter\n\n```\nขา 14 = VCC (ไฟเลี้ยง 3.3V หรือ 5V)\nขา 7  = GND\nขา 1  = Input A (gate 1)\nขา 2  = Output Y (gate 1)\n```\n\nIC นี้มี **6 gate** ในตัวเดียว — เราจะใช้ gate ที่ 1 (ขา 1 และ 2)"
+            },
+            {
+                "step": 3,
+                "title": "ประกอบวงจร",
+                "type": "build",
+                "content_md": "## การต่อวงจร\n\n1. วาง IC 74HC04 บน protoboard ให้ร่องกลางคร่อม\n2. ต่อ **ขา 14 → VCC** (3.3V)\n3. ต่อ **ขา 7 → GND**\n4. ต่อ **ขา 1** เข้ากับจุด Input (DIG:OUT ของ LabBuddy)\n5. ต่อ **ขา 2** เข้ากับจุดวัด (DIG:IN ของ LabBuddy)",
+                "checklist": [
+                    "VCC ต่อที่ขา 14 แล้ว",
+                    "GND ต่อที่ขา 7 แล้ว",
+                    "Input A ต่อที่ขา 1 แล้ว",
+                    "Output Y ต่อที่ขา 2 แล้ว"
+                ]
+            },
+            {
+                "step": 4,
+                "title": "ทดสอบด้วยมือก่อน",
+                "type": "manual_test",
+                "content_md": "## ทดสอบ manual ก่อน Verify\n\nก่อนกด Verify ลองตรวจด้วยตัวเอง:\n\n| ให้ Input (ขา 1) | Output (ขา 2) ควรเป็น |\n|---|---|\n| ต่อลง GND (0) | **3.3V / Logic 1** |\n| ต่อขึ้น VCC (1) | **0V / Logic 0** |\n\nถ้าผลตรงนี้ถูกต้อง → กด **Verify** ได้เลย"
+            },
+            {
+                "step": 5,
+                "title": "กด Verify",
+                "type": "verify",
+                "content_md": "## Auto Verification\n\nกด **Verify** เพื่อให้ LabBuddy ทดสอบวงจรอัตโนมัติ:\n- ระบบจะส่งสัญญาณ 0 และ 1 เข้า Input\n- วัดผลที่ Output และเปรียบเทียบกับ truth table\n- แสดงผล **PASS** หรือ **FAIL** พร้อม hint"
+            }
+        ]
+    }
+}

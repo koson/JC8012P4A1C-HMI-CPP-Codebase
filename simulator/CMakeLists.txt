@@ -44,6 +44,7 @@ file(GLOB_RECURSE FONT_THAI_SOURCES "${PROJECT_ROOT_DIR}/components/font_thai/sr
 
 set(SIMULATOR_SOURCES
     main.cpp
+    pc_stubs.cpp
     hal/hal.c
     hal/mouse_cursor_icon.c
     cJSON/cJSON.c
@@ -62,9 +63,21 @@ target_link_libraries(LabBuddy_Simulator PRIVATE
     -lSDL2
 )
 
-# Copy SDL2.dll to binary folder automatically post-build
+# Locate SDL2.dll
+if(EXISTS "C:/SDL2/lib/x64/SDL2.dll")
+    set(SDL2_DLL_PATH "C:/SDL2/lib/x64/SDL2.dll")
+elseif(EXISTS "C:/msys64/ucrt64/bin/SDL2.dll")
+    set(SDL2_DLL_PATH "C:/msys64/ucrt64/bin/SDL2.dll")
+else()
+    set(SDL2_DLL_PATH "C:/SDL2/lib/x64/SDL2.dll")
+endif()
+
+# Copy SDL2.dll & worksheets directory to binary folder automatically post-build
 add_custom_command(TARGET LabBuddy_Simulator POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "C:/msys64/ucrt64/bin/SDL2.dll"
+    "${SDL2_DLL_PATH}"
     $<TARGET_FILE_DIR:LabBuddy_Simulator>
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/worksheets"
+    $<TARGET_FILE_DIR:LabBuddy_Simulator>/worksheets
 )

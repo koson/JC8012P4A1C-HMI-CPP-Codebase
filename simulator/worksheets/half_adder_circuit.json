@@ -1,0 +1,325 @@
+{
+  "version": "1.1",
+  "title": "Circuit Diagram (Imported from SVG)",
+  "description": "Converted by SvgToJsonConverterService",
+  "width": 1280,
+  "height": 800,
+  "backgroundColor": "#F5F5F5",
+  "embeddedSymbols": {
+    "Xor_Gate": {
+      "id": "Xor_Gate",
+      "title": "Xor Gate",
+      "category": "Logic Gates",
+      "pathData": "M 24.65625,70 H 45 C 65,70 75,50 75,50 75,50 70,30 45,30 H 24.65625 c 1.789926,3.094188 3.151364,6.453471 4.0625,10 C 29.54012,43.197121 30,46.545819 30,50 c 0,3.454181 -0.45988,6.802879 -1.28125,10 -0.911136,3.546529 -2.272574,6.905812 -4.0625,10 z M 18.65625,70 C 22.629549,64.322431 25,57.455703 25,50 25,42.544297 22.629549,35.677569 18.65625,30",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "And_Gate": {
+      "id": "And_Gate",
+      "title": "And Gate",
+      "category": "Logic Gates",
+      "pathData": "M 25,70 V 60 50 40 30 h 30 c 11.045695,0 20,8.954305 20,20 0,11.045695 -8.954305,20 -20,20 z",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "Connector": {
+      "id": "Connector",
+      "title": "Connector",
+      "description": "Exit to or entry from another part of chart.",
+      "category": "Flowchart",
+      "pathData": "M 55,75 a 20,20 0 1,0 40,0 a 20,20 0 1,0 -40,0",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "Or_Gate": {
+      "id": "Or_Gate",
+      "title": "Or Gate",
+      "category": "Logic Gates",
+      "pathData": "M 24.65625,70 H 45 C 65,70 75,50 75,50 75,50 70,30 45,30 H 24.65625 c 1.789926,3.094188 3.151364,6.453471 4.0625,10 C 29.54012,43.197121 30,46.545819 30,50 c 0,3.454181 -0.45988,6.802879 -1.28125,10 -0.911136,3.546529 -2.272574,6.905812 -4.0625,10 z",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path10": {
+      "id": "path10",
+      "title": "",
+      "category": "Custom",
+      "pathData": "m 149.12994,221.56249 c 243.74501,0 243.74501,0 243.74501,0",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path11": {
+      "id": "path11",
+      "title": "",
+      "category": "Custom",
+      "pathData": "m 149.12994,285.75944 h 243.74501 v 0",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path16": {
+      "id": "path16",
+      "title": "",
+      "category": "Custom",
+      "pathData": "m 547.19239,251.89058 c 160.89967,0 160.89967,0 160.89967,0",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path17": {
+      "id": "path17",
+      "title": "",
+      "category": "Custom",
+      "pathData": "m 538.01752,500.33327 c 170.07454,0 170.07454,0 170.07454,0",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    }
+  },
+  "ports": [
+    {
+      "id": "port_use1-3",
+      "type": "input",
+      "x": 128.0,
+      "y": 222.0,
+      "radius": 10.0,
+      "label": "A",
+      "labelPosition": "left",
+      "direction": "right",
+      "state": "active",
+      "fill": "#3498DB",
+      "stroke": "#2C3E50",
+      "strokeWidth": 2.0
+    },
+    {
+      "id": "port_use10",
+      "type": "input",
+      "x": 128.0,
+      "y": 286.0,
+      "radius": 10.0,
+      "label": "B",
+      "labelPosition": "left",
+      "direction": "right",
+      "state": "active",
+      "fill": "#E74C3C",
+      "stroke": "#2C3E50",
+      "strokeWidth": 2.0
+    },
+    {
+      "id": "port_use15",
+      "type": "output",
+      "x": 729.0,
+      "y": 252.0,
+      "radius": 10.0,
+      "label": "SUM",
+      "labelPosition": "right",
+      "direction": "right",
+      "state": "active",
+      "fill": "#9B59B6",
+      "stroke": "#2C3E50",
+      "strokeWidth": 2.0
+    },
+    {
+      "id": "port_use16",
+      "type": "output",
+      "x": 729.0,
+      "y": 500.0,
+      "radius": 10.0,
+      "label": "CARRY",
+      "labelPosition": "right",
+      "direction": "right",
+      "state": "active",
+      "fill": "#27AE60",
+      "stroke": "#2C3E50",
+      "strokeWidth": 2.0
+    }
+  ],
+  "wires": [
+    {
+      "id": "wire_path13",
+      "path": "M 387.68826,470.00519 H 299.74922 V 221.56249",
+      "strokeWidth": 5.0,
+      "color": "#2C3E50",
+      "routingStyle": "Direct"
+    },
+    {
+      "id": "wire_path14",
+      "path": "M 387.68826,545.82541 H 231.86428 V 285.75944",
+      "strokeWidth": 5.0,
+      "color": "#2C3E50",
+      "routingStyle": "Direct"
+    }
+  ],
+  "junctions": [
+    {
+      "id": "junction_path15",
+      "x": 300.0,
+      "y": 222.0,
+      "radius": 8.0,
+      "fill": "#2C3E50"
+    },
+    {
+      "id": "junction_circle15",
+      "x": 232.0,
+      "y": 286.0,
+      "radius": 8.0,
+      "fill": "#2C3E50"
+    }
+  ],
+  "widgets": [
+    {
+      "symbolId": "And_Gate",
+      "scale": 3.0065853,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 156,
+      "y": 174
+    },
+    {
+      "symbolId": "Xor_Gate",
+      "scale": 3.0065853,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 161,
+      "y": 50
+    },
+    {
+      "symbolId": "path10",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "symbolId": "path11",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "symbolId": "path16",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "symbolId": "path17",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+{
+    "version": "1.1",
+    "title": "AND Gate — 74HC08 Verification",
+    "description": "2-input AND gate circuit with auto-verification for 74HC08",
+    "width": 1280,
+    "height": 800,
+    "backgroundColor": "#F5F5F5",
+    "symbolLibrary": "symbol_library.json",
+    "ports": [
+        {
+            "id": "port_input_A",
+            "type": "input",
+            "x": 141.0,
+            "y": 369.0,
+            "radius": 10.0,
+            "label": "A",
+            "labelPosition": "left",
+            "direction": "right",
+            "state": "active",
+            "fill": "#3498DB",
+            "stroke": "#2C3E50",
+            "strokeWidth": 2.0
+        },
+        {
+            "id": "port_input_B",
+            "type": "input",
+            "x": 141.0,
+            "y": 433.0,
+            "radius": 10.0,
+            "label": "B",
+            "labelPosition": "left",
+            "direction": "right",
+            "state": "active",
+            "fill": "#E74C3C",
+            "stroke": "#2C3E50",
+            "strokeWidth": 2.0
+        },
+        {
+            "id": "port_output_Y",
+            "type": "output",
+            "x": 706.0,
+            "y": 399.0,
+            "radius": 10.0,
+            "label": "Y",
+            "labelPosition": "right",
+            "direction": "right",
+            "state": "active",
+            "fill": "#2ECC71",
+            "stroke": "#2C3E50",
+            "strokeWidth": 2.0
+        }
+    ],
+    "wires": [
+        {
+            "id": "wire_A",
+            "path": "m 140.78407,368.72704 c 243.74501,0 243.74501,0 243.74501,0",
+            "strokeWidth": 5.0,
+            "color": "#2C3E50",
+            "routingStyle": "Direct"
+        },
+        {
+            "id": "wire_B",
+            "path": "m 140.78407,432.92399 h 243.74501 v 0",
+            "strokeWidth": 5.0,
+            "color": "#2C3E50",
+            "routingStyle": "Direct"
+        },
+        {
+            "id": "wire_Y",
+            "path": "m 536.66735,399.05512 c 168.91879,0 168.91879,0 168.91879,0",
+            "strokeWidth": 5.0,
+            "color": "#2C3E50",
+            "routingStyle": "Direct"
+        }
+    ],
+    "junctions": [],
+    "widgets": [
+        {
+            "symbolId": "And_Gate",
+            "scale": 3.0065853,
+            "rotation": 0.0,
+            "fillColor": "#ECF0F1",
+            "strokeColor": "#2C3E50",
+            "strokeWidth": 2.0,
+            "flipHorizontal": false,
+            "flipVertical": false,
+            "type": "svgSymbol",
+            "x": 155,
+            "y": 124
+        }
+    ],
+    "verification": {
+        "ic_name": "74HC08",
+        "description": "2-input AND gate (pin 1=A, pin 2=B, pin 3=Y)",
+        "drive_ports": [
+            "port_input_A",
+            "port_input_B"
+        ],
+        "read_ports": [
+            "port_output_Y"
+        ],
+        "truth_table": [
+            {
+                "inputs": [
+                    0,
+                    0
+                ],
+                "expected": [
+                    0
+                ]
+            },
+            {
+                "inputs": [
+                    0,
+                    1
+                ],
+                "expected": [
+                    0
+                ]
+            },
+            {
+                "inputs": [
+                    1,
+                    0
+                ],
+                "expected": [
+                    0
+                ]
+            },
+            {
+                "inputs": [
+                    1,
+                    1
+                ],
+                "expected": [
+                    1
+                ]
+            }
+        ],
+        "timing": {
+            "drive_settle_ms": 5,
+            "read_delay_ms": 2
+        },
+        "common_errors": [
+            {
+                "pattern": "all_outputs_0",
+                "condition": "output Y always 0 regardless of inputs",
+                "message": "ลืมต่อ VCC (ขา 14) หรือ GND (ขา 7)"
+            },
+            {
+                "pattern": "all_outputs_1",
+                "condition": "output Y always 1 regardless of inputs",
+                "message": "ขา Y อาจลัดวงจรกับ VCC"
+            },
+            {
+                "pattern": "input_shorted",
+                "condition": "output matches A but ignores B, or vice versa",
+                "message": "ขา A กับ B อาจถูกต่อเข้าหากัน"
+            }
+        ]
+    }
+}

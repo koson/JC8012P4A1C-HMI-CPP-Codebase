@@ -1,0 +1,108 @@
+{
+  "version": "1.1",
+  "title": "Circuit Diagram (Imported from SVG)",
+  "description": "Converted by SvgToJsonConverterService",
+  "width": 1280,
+  "height": 800,
+  "backgroundColor": "#F5F5F5",
+  "embeddedSymbols": {
+    "Xor_Gate": {
+      "id": "Xor_Gate",
+      "title": "Xor Gate",
+      "category": "Logic Gates",
+      "pathData": "M 24.65625,70 H 45 C 65,70 75,50 75,50 75,50 70,30 45,30 H 24.65625 c 1.789926,3.094188 3.151364,6.453471 4.0625,10 C 29.54012,43.197121 30,46.545819 30,50 c 0,3.454181 -0.45988,6.802879 -1.28125,10 -0.911136,3.546529 -2.272574,6.905812 -4.0625,10 z M 18.65625,70 C 22.629549,64.322431 25,57.455703 25,50 25,42.544297 22.629549,35.677569 18.65625,30",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "And_Gate": {
+      "id": "And_Gate",
+      "title": "And Gate",
+      "category": "Logic Gates",
+      "pathData": "M 25,70 V 60 50 40 30 h 30 c 11.045695,0 20,8.954305 20,20 0,11.045695 -8.954305,20 -20,20 z",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "Connector": {
+      "id": "Connector",
+      "title": "Connector",
+      "description": "Exit to or entry from another part of chart.",
+      "category": "Flowchart",
+      "pathData": "M 55,75 a 20,20 0 1,0 40,0 a 20,20 0 1,0 -40,0",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "Or_Gate": {
+      "id": "Or_Gate",
+      "title": "Or Gate",
+      "category": "Logic Gates",
+      "pathData": "M 24.65625,70 H 45 C 65,70 75,50 75,50 75,50 70,30 45,30 H 24.65625 c 1.789926,3.094188 3.151364,6.453471 4.0625,10 C 29.54012,43.197121 30,46.545819 30,50 c 0,3.454181 -0.45988,6.802879 -1.28125,10 -0.911136,3.546529 -2.272574,6.905812 -4.0625,10 z",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    }
+  },
+  "ports": [],
+  "wires": [],
+  "junctions": [],
+  "widgets": [
+    {
+      "type": "label",
+      "x": 310,
+      "y": 72,
+      "text": "การทดลองที่ 1",
+      "fontSize": 96,
+      "fontWeight": "normal",
+      "textColor": "#000000",
+      "id": "text1"
+    },
+    {
+      "type": "label",
+      "x": 244,
+      "y": 229,
+      "text": "วงจร Half Adder",
+      "fontSize": 96,
+      "fontWeight": "normal",
+      "textColor": "#000000",
+      "id": "text2"
+    }
+  ]
+}

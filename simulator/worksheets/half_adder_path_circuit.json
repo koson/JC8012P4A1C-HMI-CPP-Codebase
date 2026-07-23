@@ -1,0 +1,558 @@
+{
+  "version": "1.1",
+  "title": "Circuit Diagram (Imported from SVG)",
+  "description": "Converted by SvgToJsonConverterService",
+  "width": 1280,
+  "height": 800,
+  "backgroundColor": "#F5F5F5",
+  "embeddedSymbols": {
+    "Xor_Gate": {
+      "id": "Xor_Gate",
+      "title": "Xor Gate",
+      "category": "Logic Gates",
+      "pathData": "M 24.65625,70 H 45 C 65,70 75,50 75,50 75,50 70,30 45,30 H 24.65625 c 1.789926,3.094188 3.151364,6.453471 4.0625,10 C 29.54012,43.197121 30,46.545819 30,50 c 0,3.454181 -0.45988,6.802879 -1.28125,10 -0.911136,3.546529 -2.272574,6.905812 -4.0625,10 z M 18.65625,70 C 22.629549,64.322431 25,57.455703 25,50 25,42.544297 22.629549,35.677569 18.65625,30",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "And_Gate": {
+      "id": "And_Gate",
+      "title": "And Gate",
+      "category": "Logic Gates",
+      "pathData": "M 25,70 V 60 50 40 30 h 30 c 11.045695,0 20,8.954305 20,20 0,11.045695 -8.954305,20 -20,20 z",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "Connector": {
+      "id": "Connector",
+      "title": "Connector",
+      "description": "Exit to or entry from another part of chart.",
+      "category": "Flowchart",
+      "pathData": "M 55,75 a 20,20 0 1,0 40,0 a 20,20 0 1,0 -40,0",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "Nand_Gate": {
+      "id": "Nand_Gate",
+      "title": "Nand Gate",
+      "category": "Logic Gates",
+      "pathData": "M 25,70 V 60 50 40 30 h 30 c 11.045695,0 20,8.954305 20,20 0,11.045695 -8.954305,20 -20,20 z m 80,50 c 0,1.380712 -1.119288,2.5 -2.5,2.5 -1.380712,0 -2.5,-1.119288 -2.5,-2.5 0,-1.380712 1.119288,-2.5 2.5,-2.5 1.380712,0 2.5,1.119288 2.5,2.5 z",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "SquaredBalloon": {
+      "id": "SquaredBalloon",
+      "title": "Squared Balloon",
+      "category": "Custom",
+      "pathData": "m 126,199 25,43 30,-43 m 120,195 25,43 30,-43 m 118,180 25,43 30,-43 M 80,65 H 330 V 205 H 80 Z M 75,60 H 325 V 200 H 75 Z M 80,65 H 315 V 190 H 80 Z",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path36": {
+      "id": "path36",
+      "title": "",
+      "category": "Custom",
+      "pathData": "M 24.65625,70 H 45 C 65,70 75,50 75,50 75,50 70,30 45,30 H 24.65625 c 1.789926,3.094188 3.151364,6.453471 4.0625,10 C 29.54012,43.197121 30,46.545819 30,50 c 0,3.454181 -0.45988,6.802879 -1.28125,10 -0.911136,3.546529 -2.272574,6.905812 -4.0625,10 z",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path37": {
+      "id": "path37",
+      "title": "",
+      "category": "Custom",
+      "pathData": "M 18.65625,70 C 22.629549,64.322431 25,57.455703 25,50 25,42.544297 22.629549,35.677569 18.65625,30",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path38": {
+      "id": "path38",
+      "title": "",
+      "category": "Custom",
+      "pathData": "M 25,70 V 60 50 40 30 h 30 c 11.045695,0 20,8.954305 20,20 0,11.045695 -8.954305,20 -20,20 z",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path27": {
+      "id": "path27",
+      "title": "net_a_and",
+      "category": "Custom",
+      "pathData": "m 296.7233,223.94201 c 91.26414,0 91.26414,0 91.26414,0",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path28": {
+      "id": "path28",
+      "title": "net_b_and",
+      "category": "Custom",
+      "pathData": "m 296.7233,248.39829 c 91.26414,0 91.26414,0 91.26414,0",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path29": {
+      "id": "path29",
+      "title": "",
+      "category": "Custom",
+      "pathData": "M 389.90082,319.76878 H 346.41263",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path30": {
+      "id": "path30",
+      "title": "",
+      "category": "Custom",
+      "pathData": "m 346.41262,319.76877 10e-6,-95.82676",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path31": {
+      "id": "path31",
+      "title": "",
+      "category": "Custom",
+      "pathData": "M 389.90082,339.76878 H 327.515",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path32": {
+      "id": "path32",
+      "title": "",
+      "category": "Custom",
+      "pathData": "m 327.51499,339.76877 10e-6,-91.37048",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path34": {
+      "id": "path34",
+      "title": "net_sum",
+      "category": "Custom",
+      "pathData": "m 439.84096,235.28059 h 57.75278",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    },
+    "path35": {
+      "id": "path35",
+      "title": "net_carry",
+      "category": "Custom",
+      "pathData": "m 440.90083,329.76878 h 56.69291",
+      "viewBox": {
+        "X": 0.0,
+        "Y": 0.0,
+        "Width": 150.0,
+        "Height": 150.0
+      },
+      "DefaultWidth": 0.0,
+      "DefaultHeight": 0.0,
+      "Pins": {
+        "Inputs": [],
+        "Outputs": []
+      }
+    }
+  },
+  "ports": [
+    {
+      "id": "port_use1-6",
+      "type": "input",
+      "x": 224.0,
+      "y": 193.0,
+      "radius": 7.0,
+      "label": "B",
+      "labelPosition": "left",
+      "direction": "right",
+      "state": "active",
+      "fill": "#E74C3C",
+      "stroke": "#2C3E50",
+      "strokeWidth": 2.0
+    },
+    {
+      "id": "port_use24",
+      "type": "input",
+      "x": 224.0,
+      "y": 217.0,
+      "radius": 7.0,
+      "label": "B",
+      "labelPosition": "left",
+      "direction": "right",
+      "state": "active",
+      "fill": "#E74C3C",
+      "stroke": "#2C3E50",
+      "strokeWidth": 2.0
+    },
+    {
+      "id": "port_use33",
+      "type": "input",
+      "x": 439.0,
+      "y": 204.0,
+      "radius": 7.0,
+      "label": "SUM",
+      "labelPosition": "left",
+      "direction": "right",
+      "state": "active",
+      "fill": "#9B59B6",
+      "stroke": "#2C3E50",
+      "strokeWidth": 2.0
+    },
+    {
+      "id": "port_use34",
+      "type": "input",
+      "x": 439.0,
+      "y": 298.0,
+      "radius": 7.0,
+      "label": "CARRY",
+      "labelPosition": "left",
+      "direction": "right",
+      "state": "active",
+      "fill": "#27AE60",
+      "stroke": "#2C3E50",
+      "strokeWidth": 2.0
+    }
+  ],
+  "wires": [],
+  "junctions": [
+    {
+      "id": "junction_path33",
+      "x": 262.0,
+      "y": 217.0,
+      "radius": 8.0,
+      "fill": "#2C3E50"
+    },
+    {
+      "id": "junction_circle33",
+      "x": 280.0,
+      "y": 193.0,
+      "radius": 8.0,
+      "fill": "#2C3E50"
+    }
+  ],
+  "widgets": [
+    {
+      "symbolId": "Xor_Gate",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 332,
+      "y": 193
+    },
+    {
+      "symbolId": "path36",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "symbolId": "path37",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "symbolId": "And_Gate",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 329,
+      "y": 273
+    },
+    {
+      "symbolId": "path38",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "symbolId": "path27",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "symbolId": "path28",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "symbolId": "path29",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "symbolId": "path30",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "symbolId": "path31",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "symbolId": "SquaredBalloon",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 94,
+      "y": 8
+    },
+    {
+      "symbolId": "path32",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "symbolId": "path34",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "symbolId": "path35",
+      "scale": 1.0,
+      "rotation": 0.0,
+      "fillColor": "#ECF0F1",
+      "strokeColor": "#2C3E50",
+      "strokeWidth": 2.0,
+      "flipHorizontal": false,
+      "flipVertical": false,
+      "type": "svgSymbol",
+      "x": 0,
+      "y": 0
+    }
+  ]
+}
