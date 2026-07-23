@@ -1,10 +1,12 @@
 #include "LVStorage.hpp"
 #include "esp_log.h"
+#ifndef _WIN32
 #include "esp_vfs_fat.h"
 #include "sdmmc_cmd.h"
 #include "driver/sdmmc_host.h"
 #include "sd_pwr_ctrl_by_on_chip_ldo.h"  // For ESP32-P4 SD power control
 #include "ff.h"  // FATFS definitions
+#endif
 #include <sys/stat.h>
 #include <dirent.h>
 #include <fstream>
@@ -58,6 +60,11 @@ bool LVStorage::mount(StorageType type, const char* mountPoint)
     ESP_LOGI(TAG, "Mounting %s storage at %s", 
         type == SD_CARD ? "SD_CARD" : "SPIFFS", mountPoint);
     
+#ifdef _WIN32
+    m_mounted = true;
+    ESP_LOGI(TAG, "PC Simulator: Storage ready at %s", mountPoint);
+    return true;
+#else
     esp_err_t ret;
     
     switch (type) {
@@ -129,6 +136,7 @@ bool LVStorage::mount(StorageType type, const char* mountPoint)
     }
     
     return true;
+#endif
 }
 
 bool LVStorage::unmount()
@@ -139,6 +147,10 @@ bool LVStorage::unmount()
     
     ESP_LOGI(TAG, "Unmounting storage");
     
+#ifdef _WIN32
+    m_mounted = false;
+    return true;
+#else
     esp_err_t ret;
     
     switch (m_storageType) {
@@ -161,6 +173,7 @@ bool LVStorage::unmount()
     }
     
     return (ret == ESP_OK);
+#endif
 }
 
 bool LVStorage::fileExists(const char* path)
@@ -307,7 +320,11 @@ bool LVStorage::readTextLines(const char* path, std::vector<std::string>& lines)
 
 bool LVStorage::createDir(const char* path)
 {
+#ifdef _WIN32
+    if (mkdir(path) == 0) {
+#else
     if (mkdir(path, 0775) == 0) {
+#endif
         ESP_LOGD(TAG, "Created directory: %s", path);
         return true;
     }
@@ -347,7 +364,8 @@ std::vector<std::string> LVStorage::listDir(const char* path, bool filesOnly)
             continue;
         }
         
-        if (filesOnly && entry->d_type == DT_DIR) {
+        std::string fullPath = std::string(path) + "/" + entry->d_name;
+        if (filesOnly && dirExists(fullPath.c_str())) {
             continue;  // Skip directories if filesOnly
         }
         
@@ -366,13 +384,14 @@ size_t LVStorage::getTotalSpace()
         return 0;
     }
     
+#ifndef _WIN32
     if (m_storageType == SD_CARD && m_cardHandle) {
         sdmmc_card_t* card = (sdmmc_card_t*)m_cardHandle;
         return ((uint64_t)card->csd.capacity) * card->csd.sector_size;
-    } else if (m_storageType == SPIFFS) {
-        // SPIFFS support not yet implemented
-        return 0;
     }
+#else
+    return (size_t)1024 * 1024 * 1024;
+#endif
     
     return 0;
 }

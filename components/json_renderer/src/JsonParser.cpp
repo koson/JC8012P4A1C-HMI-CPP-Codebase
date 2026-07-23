@@ -2,6 +2,7 @@
 #include "SvgPathParser.hpp"
 #include "esp_log.h"
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <sstream>
 #include <cctype>
