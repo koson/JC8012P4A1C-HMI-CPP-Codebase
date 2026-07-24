@@ -1,0 +1,260 @@
+{
+  "version": "1.0",
+  "lesson_id": "editor-20260724",
+  "title": "XOR_ Gate_Lesson",
+  "title_th": "XOR_ Gate_Lesson",
+  "category": "custom",
+  "difficulty": "beginner",
+  "estimated_minutes": 25,
+  "ic": "",
+  "pages": [
+    {
+      "page_type": "cover",
+      "title": "XOR gate lesson ",
+      "subtitle": "การทดลอง XOR gate ",
+      "ic_label": "7486 ",
+      "objectives": [
+        "เข้าใจหลักการทำงานของ XOR Gate",
+        "สามารถสร้างวงจร XOR Gate แบบ 2 อินพุต"
+      ],
+      "body": null,
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "theory",
+      "title": "ทฤษฎีพื้นฐาน",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": "XOR Gate ให้ผลลัพธ์เป็น 1 เมื่ออินพุต **แตกต่างกัน** ถ้าอินพุตเหมือนกัน ผลลัพธ์จะเป็น 0\nตารางความจริง:\n\n- 0 XOR 0 = 0\n    \n- 0 XOR 1 = 1\n    \n- 1 XOR 0 = 1\n    \n- 1 XOR 1 = 0",
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "circuit",
+      "title": "วงจรทดลอง",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": null,
+      "circuit_screen": {
+        "Version": "1.0",
+        "Title": "Converted Circuit",
+        "Description": "coord_mode=raw",
+        "Width": 1000,
+        "Height": 1000,
+        "BackgroundColor": "#FFFFFF",
+        "EmbeddedSymbols": {
+          "Dynamic_Symbol_1900898110": {
+            "Id": "Dynamic_Symbol_1900898110",
+            "Title": "Xor Gate",
+            "Category": "Dynamic",
+            "PathData": "M 150 30 L 170 30 M 70 15 L 93 15 M 70 45 L 93 45 M 80 0 C 90.72 18.56 90.72 41.44 80 60 M 110 0 C 127.47 0.56 143.06 12.25 150 30 C 143.06 47.75 127.47 59.44 110 60 L 85 60 C 95.72 41.44 95.72 18.56 85 0 Z",
+            "ViewBox": {
+              "X": 0,
+              "Y": 0,
+              "Width": 100,
+              "Height": 60
+            },
+            "RawSvgContent": "<path d=\"M 150 30 L 170 30 M 70 15 L 93 15 M 70 45 L 93 45\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 80 0 C 90.72 18.56 90.72 41.44 80 60\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 110 0 C 127.47 0.56 143.06 12.25 150 30 C 143.06 47.75 127.47 59.44 110 60 L 85 60 C 95.72 41.44 95.72 18.56 85 0 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "Description": "Generated dynamically from draw.io SVG element payload"
+          }
+        },
+        "Ports": [
+          {
+            "Id": "3",
+            "Type": "input",
+            "X": 5,
+            "Y": 15,
+            "Radius": 5
+          },
+          {
+            "Id": "4",
+            "Type": "input",
+            "X": 5,
+            "Y": 45,
+            "Radius": 5
+          },
+          {
+            "Id": "7",
+            "Type": "output",
+            "X": 225,
+            "Y": 30,
+            "Radius": 5
+          }
+        ],
+        "Wires": [
+          {
+            "Id": "5",
+            "Path": "M 5.00 15.00 L 70.00 15.00",
+            "StrokeWidth": 2,
+            "Color": "#2C3E50",
+            "SourceId": "3"
+          },
+          {
+            "Id": "6",
+            "Path": "M 5.00 45.00 L 70.00 45.00",
+            "StrokeWidth": 2,
+            "Color": "#2C3E50",
+            "SourceId": "4"
+          },
+          {
+            "Id": "8",
+            "Path": "M 170.00 30.00 L 225.00 30.00",
+            "StrokeWidth": 2,
+            "Color": "#2C3E50",
+            "TargetId": "7"
+          }
+        ],
+        "Junctions": [],
+        "Widgets": [
+          {
+            "Id": "10",
+            "Type": "svgSymbol",
+            "X": 70,
+            "Y": 0,
+            "Width": 100,
+            "Height": 60,
+            "Rotation": 0,
+            "SymbolId": "Dynamic_Symbol_1900898110",
+            "RawGroupContent": "",
+            "Stroke": "#2C3E50",
+            "StrokeWidth": 2,
+            "Scale": 1
+          }
+        ]
+      },
+      "circuit_file": null,
+      "hint": "ต่อสายบน protoboard ",
+      "inputs": [
+        "A0",
+        "A1"
+      ],
+      "outputs": [
+        "Y0"
+      ],
+      "gate_type": "XOR",
+      "ic": null,
+      "instructions": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "verify",
+      "title": "ตรวจสอบวงจร",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": null,
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": "748",
+      "instructions": [
+        "ต่อวงจร",
+        "ตรวจสอบวงจร"
+      ],
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null,
+      "verification": {
+        "ic_name": "",
+        "description": "",
+        "drive_ports": [
+          "pin0",
+          "pin1"
+        ],
+        "read_ports": [
+          "pin0"
+        ],
+        "truth_table": [
+          {
+            "inputs": [
+              0,
+              0
+            ],
+            "expected": [
+              0
+            ]
+          },
+          {
+            "inputs": [
+              0,
+              1
+            ],
+            "expected": [
+              1
+            ]
+          },
+          {
+            "inputs": [
+              1,
+              0
+            ],
+            "expected": [
+              1
+            ]
+          },
+          {
+            "inputs": [
+              1,
+              1
+            ],
+            "expected": [
+              0
+            ]
+          }
+        ],
+        "timing": null,
+        "common_errors": []
+      }
+    },
+    {
+      "page_type": "summary",
+      "title": "สรุปผล",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": "สำเร็จแล้วครับ ผู้เรียนเข้าใจการทำงานของ XOR Gate และสามารถทดสอบวงจรได้",
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    }
+  ]
+}

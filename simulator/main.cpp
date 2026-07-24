@@ -429,15 +429,19 @@ int main(int argc, char **argv) {
   (void)argv;
 
   printf("[PC Simulator] Initializing LVGL 9...\n");
+  fflush(stdout);
   lv_init();
 
   printf("[PC Simulator] Initializing SDL Display HAL (1280x800)...\n");
+  fflush(stdout);
   sdl_hal_init(1280, 800);
 
   printf("[PC Simulator] Loading Main Menu via ScreenManager...\n");
+  fflush(stdout);
   show_main_menu();
 
   printf("[PC Simulator] Running main loop...\n");
+  fflush(stdout);
   while (1) {
     uint32_t sleep_time_ms = lv_timer_handler();
     if (sleep_time_ms == LV_NO_TIMER_READY) {

@@ -60,7 +60,7 @@ add_executable(LabBuddy_Simulator ${SIMULATOR_SOURCES})
 
 target_link_libraries(LabBuddy_Simulator PRIVATE
     lvgl
-    -lSDL2
+    SDL2::SDL2
 )
 
 # Locate SDL2.dll dynamically across machines
