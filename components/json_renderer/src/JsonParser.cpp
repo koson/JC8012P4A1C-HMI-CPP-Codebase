@@ -6,6 +6,8 @@
 #include <fstream>
 #include <sstream>
 #include <cctype>
+#include <limits>
+#include <cmath>
 
 static const char *TAG = "JsonParser";
 
@@ -313,6 +315,37 @@ namespace JsonRenderer
                     if (rx > 0 && ry > 0) {
                         if (rx < 4.5f) rx = 5.0f;
                         if (ry < 4.5f) ry = 5.0f;
+
+                        // Dynamically find max X of body polygon near cy
+                        float bodyMaxX = -std::numeric_limits<float>::infinity();
+                        SvgRenderer::SvgPathParser pathParser;
+                        const auto cmds = pathParser.parse(pathData.c_str());
+                        float currentX = 0.0f, currentY = 0.0f;
+                        for (const auto &cmd : cmds)
+                        {
+                            bool isRel = (cmd.type >= 'a' && cmd.type <= 'z');
+                            for (size_t i = 0; i + 1 < cmd.args.size(); i += 2)
+                            {
+                                float px = (isRel ? currentX : 0.0f) + cmd.args[i];
+                                float py = (isRel ? currentY : 0.0f) + cmd.args[i + 1];
+                                if (std::abs(py - cy) < 5.0f && px > bodyMaxX)
+                                {
+                                    bodyMaxX = px;
+                                }
+                            }
+                            if (!cmd.args.empty() && cmd.args.size() >= 2)
+                            {
+                                currentX = (isRel ? currentX : 0.0f) + cmd.args[cmd.args.size() - 2];
+                                currentY = (isRel ? currentY : 0.0f) + cmd.args[cmd.args.size() - 1];
+                            }
+                        }
+
+                        // Tangent touch adjustment (dynamic, zero hardcoding):
+                        // align bubble left edge with body tip
+                        if (std::isfinite(bodyMaxX) && cx - rx < bodyMaxX && cx >= bodyMaxX)
+                        {
+                            cx = bodyMaxX + rx;
+                        }
 
                         float kx = rx * 0.55228475f;
                         float ky = ry * 0.55228475f;

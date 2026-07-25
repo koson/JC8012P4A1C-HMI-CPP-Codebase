@@ -11,11 +11,11 @@
     {
       "page_type": "cover",
       "title": "Half Adder lesson ",
-      "subtitle": "การทดลอง Half Adder ",
+      "subtitle": "\u0E01\u0E32\u0E23\u0E17\u0E14\u0E25\u0E2D\u0E07 Half Adder ",
       "ic_label": null,
       "objectives": [
-        "เข้าใจหลักการทำงานของ Half Adder",
-        "สามารถสร้างวงจรบวกเลขแบบ 1 บิต"
+        "\u0E40\u0E02\u0E49\u0E32\u0E43\u0E08\u0E2B\u0E25\u0E31\u0E01\u0E01\u0E32\u0E23\u0E17\u0E33\u0E07\u0E32\u0E19\u0E02\u0E2D\u0E07 Half Adder",
+        "\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E27\u0E07\u0E08\u0E23\u0E1A\u0E27\u0E01\u0E40\u0E25\u0E02\u0E41\u0E1A\u0E1A 1 \u0E1A\u0E34\u0E15"
       ],
       "body": null,
       "circuit_screen": null,
@@ -33,11 +33,11 @@
     },
     {
       "page_type": "theory",
-      "title": "ทฤษฎีพื้นฐาน",
+      "title": "\u0E17\u0E24\u0E29\u0E0E\u0E35\u0E1E\u0E37\u0E49\u0E19\u0E10\u0E32\u0E19",
       "subtitle": null,
       "ic_label": null,
       "objectives": null,
-      "body": "Half Adder เป็นวงจรลอจิกที่ใช้สำหรับบวกเลขแบบ 1 บิต มีอินพุต 2 ตัว คือ A และ B ให้ผลลัพธ์ 2 ค่า คือ\n\n- **Sum** (ผลบวก)\n    \n- **Carry** (ตัวทด)\n    \n\nโครงสร้างภายในประกอบด้วย\n\n- XOR Gate สำหรับผลลัพธ์ Sum\n    \n- AND Gate สำหรับผลลัพธ์ Carry\n    \n\nตารางความจริงของ Half Adder:\n\n| A   | B   | Sum | Carry |     |\n| --- | --- | --- | ----- | --- |\n| 0   | 0   | 0   | 0     |     |\n| 0   | 1   | 1   | 0     |     |\n| 1   | 0   | 1   | 0     |     |\n| 1   | 1   | 0   | 1     |     |\n",
+      "body": "Half Adder \u0E40\u0E1B\u0E47\u0E19\u0E27\u0E07\u0E08\u0E23\u0E25\u0E2D\u0E08\u0E34\u0E01\u0E17\u0E35\u0E48\u0E43\u0E0A\u0E49\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E1A\u0E27\u0E01\u0E40\u0E25\u0E02\u0E41\u0E1A\u0E1A 1 \u0E1A\u0E34\u0E15 \u0E21\u0E35\u0E2D\u0E34\u0E19\u0E1E\u0E38\u0E15 2 \u0E15\u0E31\u0E27 \u0E04\u0E37\u0E2D A \u0E41\u0E25\u0E30 B \u0E43\u0E2B\u0E49\u0E1C\u0E25\u0E25\u0E31\u0E1E\u0E18\u0E4C 2 \u0E04\u0E48\u0E32 \u0E04\u0E37\u0E2D\n\n- **Sum** (\u0E1C\u0E25\u0E1A\u0E27\u0E01)\n    \n- **Carry** (\u0E15\u0E31\u0E27\u0E17\u0E14)\n    \n\n\u0E42\u0E04\u0E23\u0E07\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E20\u0E32\u0E22\u0E43\u0E19\u0E1B\u0E23\u0E30\u0E01\u0E2D\u0E1A\u0E14\u0E49\u0E27\u0E22\n\n- XOR Gate \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E1C\u0E25\u0E25\u0E31\u0E1E\u0E18\u0E4C Sum\n    \n- AND Gate \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E1C\u0E25\u0E25\u0E31\u0E1E\u0E18\u0E4C Carry\n    \n\n\u0E15\u0E32\u0E23\u0E32\u0E07\u0E04\u0E27\u0E32\u0E21\u0E08\u0E23\u0E34\u0E07\u0E02\u0E2D\u0E07 Half Adder:\n\n| A   | B   | Sum | Carry |     |\n| --- | --- | --- | ----- | --- |\n| 0   | 0   | 0   | 0     |     |\n| 0   | 1   | 1   | 0     |     |\n| 1   | 0   | 1   | 0     |     |\n| 1   | 1   | 0   | 1     |     |\n",
       "circuit_screen": null,
       "circuit_file": null,
       "hint": null,
@@ -53,176 +53,202 @@
     },
     {
       "page_type": "circuit",
-      "title": "วงจรทดลอง",
+      "title": "\u0E27\u0E07\u0E08\u0E23\u0E17\u0E14\u0E25\u0E2D\u0E07",
       "subtitle": null,
       "ic_label": null,
       "objectives": null,
       "body": null,
       "circuit_screen": {
-        "Version": "1.0",
-        "Title": "Converted Circuit",
-        "Description": "coord_mode=raw",
-        "Width": 1000,
-        "Height": 1000,
-        "BackgroundColor": "#FFFFFF",
-        "EmbeddedSymbols": {
-          "Dynamic_Symbol_757365594": {
-            "Id": "Dynamic_Symbol_757365594",
-            "Title": "And Gate",
-            "Category": "Dynamic",
-            "PathData": "M 180 30 L 200 30 M 100 15 L 120 15 M 100 45 L 120 45 M 120 0 L 150 0 C 166.57 0 180 13.43 180 30 C 180 46.57 166.57 60 150 60 L 120 60 Z",
-            "ViewBox": {
-              "X": 0,
-              "Y": 0,
-              "Width": 100,
-              "Height": 60
-            },
-            "RawSvgContent": "<path d=\"M 180 30 L 200 30 M 100 15 L 120 15 M 100 45 L 120 45\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 120 0 L 150 0 C 166.57 0 180 13.43 180 30 C 180 46.57 166.57 60 150 60 L 120 60 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
-            "Description": "Generated dynamically from draw.io SVG element payload"
-          },
-          "Dynamic_Symbol_1900898110": {
-            "Id": "Dynamic_Symbol_1900898110",
-            "Title": "Xor Gate",
-            "Category": "Dynamic",
-            "PathData": "M 180 140 L 200 140 M 100 125 L 123 125 M 100 155 L 123 155 M 110 110 C 120.72 128.56 120.72 151.44 110 170 M 140 110 C 157.47 110.56 173.06 122.25 180 140 C 173.06 157.75 157.47 169.44 140 170 L 115 170 C 125.72 151.44 125.72 128.56 115 110 Z",
-            "ViewBox": {
-              "X": 0,
-              "Y": 0,
-              "Width": 100,
-              "Height": 60
-            },
-            "RawSvgContent": "<path d=\"M 180 140 L 200 140 M 100 125 L 123 125 M 100 155 L 123 155\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 110 110 C 120.72 128.56 120.72 151.44 110 170\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 140 110 C 157.47 110.56 173.06 122.25 180 140 C 173.06 157.75 157.47 169.44 140 170 L 115 170 C 125.72 151.44 125.72 128.56 115 110 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
-            "Description": "Generated dynamically from draw.io SVG element payload"
-          }
-        },
-        "Ports": [
+        "version": "1.0",
+        "title": "Converted Circuit",
+        "description": "coord_mode=raw",
+        "width": 1000,
+        "height": 1000,
+        "backgroundColor": "#FFFFFF",
+        "embeddedSymbols": {},
+        "ports": [],
+        "junctions": [],
+        "wires": [
           {
-            "Id": "PuhCVLmzmZMDmefYS34E-3",
-            "Type": "input",
-            "X": 5,
-            "Y": 15,
-            "Radius": 5
+            "id": "PuhCVLmzmZMDmefYS34E-5",
+            "path": "M 5.00 15.00 L 150.00 30.00",
+            "strokeWidth": 2,
+            "color": "#2C3E50",
+            "sourceId": "PuhCVLmzmZMDmefYS34E-3",
+            "targetId": "PuhCVLmzmZMDmefYS34E-1",
+            "logicState": null
           },
           {
-            "Id": "PuhCVLmzmZMDmefYS34E-4",
-            "Type": "input",
-            "X": 5,
-            "Y": 45,
-            "Radius": 5
+            "id": "PuhCVLmzmZMDmefYS34E-6",
+            "path": "M 5.00 45.00 L 150.00 30.00",
+            "strokeWidth": 2,
+            "color": "#2C3E50",
+            "sourceId": "PuhCVLmzmZMDmefYS34E-4",
+            "targetId": "PuhCVLmzmZMDmefYS34E-1",
+            "logicState": null
           },
           {
-            "Id": "PuhCVLmzmZMDmefYS34E-7",
-            "Type": "output",
-            "X": 285,
-            "Y": 30,
-            "Radius": 5
+            "id": "PuhCVLmzmZMDmefYS34E-8",
+            "path": "M 150.00 30.00 L 285.00 30.00",
+            "strokeWidth": 2,
+            "color": "#2C3E50",
+            "sourceId": "PuhCVLmzmZMDmefYS34E-1",
+            "targetId": "PuhCVLmzmZMDmefYS34E-7",
+            "logicState": null
           },
           {
-            "Id": "PuhCVLmzmZMDmefYS34E-9",
-            "Type": "output",
-            "X": 285,
-            "Y": 140,
-            "Radius": 5
+            "id": "PuhCVLmzmZMDmefYS34E-10",
+            "path": "M 150.00 140.00 L 285.00 140.00",
+            "strokeWidth": 2,
+            "color": "#2C3E50",
+            "sourceId": "PuhCVLmzmZMDmefYS34E-2",
+            "targetId": "PuhCVLmzmZMDmefYS34E-9",
+            "logicState": null
           },
           {
-            "Id": "PuhCVLmzmZMDmefYS34E-11",
-            "Type": "output",
-            "X": 75,
-            "Y": 15,
-            "Radius": 5
+            "id": "PuhCVLmzmZMDmefYS34E-13",
+            "path": "M 150.00 140.00 L 75.00 15.00",
+            "strokeWidth": 2,
+            "color": "#2C3E50",
+            "sourceId": "PuhCVLmzmZMDmefYS34E-2",
+            "targetId": "PuhCVLmzmZMDmefYS34E-11",
+            "logicState": null
           },
           {
-            "Id": "PuhCVLmzmZMDmefYS34E-12",
-            "Type": "output",
-            "X": 45,
-            "Y": 45,
-            "Radius": 5
+            "id": "PuhCVLmzmZMDmefYS34E-14",
+            "path": "M 150.00 140.00 L 45.00 45.00",
+            "strokeWidth": 2,
+            "color": "#2C3E50",
+            "sourceId": "PuhCVLmzmZMDmefYS34E-2",
+            "targetId": "PuhCVLmzmZMDmefYS34E-12",
+            "logicState": null
           }
         ],
-        "Wires": [
+        "widgets": [
           {
-            "Id": "PuhCVLmzmZMDmefYS34E-5",
-            "Path": "M 5.00 15.00 L 100.00 15.00",
-            "StrokeWidth": 2,
-            "Color": "#2C3E50",
-            "SourceId": "PuhCVLmzmZMDmefYS34E-3",
-            "TargetId": "PuhCVLmzmZMDmefYS34E-1"
+            "id": "PuhCVLmzmZMDmefYS34E-1",
+            "type": "legacy",
+            "x": 100,
+            "y": 0,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbolId": "",
+            "rawGroupContent": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "strokeWidth": 2,
+            "scale": 1
           },
           {
-            "Id": "PuhCVLmzmZMDmefYS34E-6",
-            "Path": "M 5.00 45.00 L 100.00 45.00",
-            "StrokeWidth": 2,
-            "Color": "#2C3E50",
-            "SourceId": "PuhCVLmzmZMDmefYS34E-4",
-            "TargetId": "PuhCVLmzmZMDmefYS34E-1"
+            "id": "PuhCVLmzmZMDmefYS34E-2",
+            "type": "legacy",
+            "x": 100,
+            "y": 110,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbolId": "",
+            "rawGroupContent": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "strokeWidth": 2,
+            "scale": 1
           },
           {
-            "Id": "PuhCVLmzmZMDmefYS34E-8",
-            "Path": "M 200.00 30.00 L 285.00 30.00",
-            "StrokeWidth": 2,
-            "Color": "#2C3E50",
-            "SourceId": "PuhCVLmzmZMDmefYS34E-1",
-            "TargetId": "PuhCVLmzmZMDmefYS34E-7"
+            "id": "PuhCVLmzmZMDmefYS34E-3",
+            "type": "legacy",
+            "x": 0,
+            "y": 10,
+            "width": 10,
+            "height": 10,
+            "rotation": 0,
+            "symbolId": "",
+            "rawGroupContent": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "strokeWidth": 2,
+            "scale": 1
           },
           {
-            "Id": "PuhCVLmzmZMDmefYS34E-10",
-            "Path": "M 200.00 140.00 L 285.00 140.00",
-            "StrokeWidth": 2,
-            "Color": "#2C3E50",
-            "SourceId": "PuhCVLmzmZMDmefYS34E-2",
-            "TargetId": "PuhCVLmzmZMDmefYS34E-9"
+            "id": "PuhCVLmzmZMDmefYS34E-4",
+            "type": "legacy",
+            "x": 0,
+            "y": 40,
+            "width": 10,
+            "height": 10,
+            "rotation": 0,
+            "symbolId": "",
+            "rawGroupContent": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "strokeWidth": 2,
+            "scale": 1
           },
           {
-            "Id": "PuhCVLmzmZMDmefYS34E-13",
-            "Path": "M 100.00 125.00 L 74.40 125.00 L 75.00 15.00",
-            "StrokeWidth": 2,
-            "Color": "#2C3E50",
-            "SourceId": "PuhCVLmzmZMDmefYS34E-2",
-            "TargetId": "PuhCVLmzmZMDmefYS34E-11"
+            "id": "PuhCVLmzmZMDmefYS34E-7",
+            "type": "legacy",
+            "x": 280,
+            "y": 25,
+            "width": 10,
+            "height": 10,
+            "rotation": 0,
+            "symbolId": "",
+            "rawGroupContent": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "strokeWidth": 2,
+            "scale": 1
           },
           {
-            "Id": "PuhCVLmzmZMDmefYS34E-14",
-            "Path": "M 100.00 155.00 L 44.40 155.00 L 45.00 45.00",
-            "StrokeWidth": 2,
-            "Color": "#2C3E50",
-            "SourceId": "PuhCVLmzmZMDmefYS34E-2",
-            "TargetId": "PuhCVLmzmZMDmefYS34E-12"
-          }
-        ],
-        "Junctions": [],
-        "Widgets": [
-          {
-            "Id": "PuhCVLmzmZMDmefYS34E-1",
-            "Type": "svgSymbol",
-            "X": 100,
-            "Y": 0,
-            "Width": 100,
-            "Height": 60,
-            "Rotation": 0,
-            "SymbolId": "Dynamic_Symbol_757365594",
-            "RawGroupContent": "",
-            "Stroke": "#2C3E50",
-            "StrokeWidth": 2,
-            "Scale": 1
+            "id": "PuhCVLmzmZMDmefYS34E-9",
+            "type": "legacy",
+            "x": 280,
+            "y": 135,
+            "width": 10,
+            "height": 10,
+            "rotation": 0,
+            "symbolId": "",
+            "rawGroupContent": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "strokeWidth": 2,
+            "scale": 1
           },
           {
-            "Id": "PuhCVLmzmZMDmefYS34E-2",
-            "Type": "svgSymbol",
-            "X": 100,
-            "Y": 110,
-            "Width": 100,
-            "Height": 60,
-            "Rotation": 0,
-            "SymbolId": "Dynamic_Symbol_1900898110",
-            "RawGroupContent": "",
-            "Stroke": "#2C3E50",
-            "StrokeWidth": 2,
-            "Scale": 1
+            "id": "PuhCVLmzmZMDmefYS34E-11",
+            "type": "legacy",
+            "x": 70,
+            "y": 10,
+            "width": 10,
+            "height": 10,
+            "rotation": 0,
+            "symbolId": "",
+            "rawGroupContent": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "strokeWidth": 2,
+            "scale": 1
+          },
+          {
+            "id": "PuhCVLmzmZMDmefYS34E-12",
+            "type": "legacy",
+            "x": 40,
+            "y": 40,
+            "width": 10,
+            "height": 10,
+            "rotation": 0,
+            "symbolId": "",
+            "rawGroupContent": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "strokeWidth": 2,
+            "scale": 1
           }
         ]
       },
       "circuit_file": null,
-      "hint": "ต่อสายบน protoboard ",
+      "hint": "\u0E15\u0E48\u0E2D\u0E2A\u0E32\u0E22\u0E1A\u0E19 protoboard ",
       "inputs": [
         "A0",
         "A1"
@@ -241,7 +267,7 @@
     },
     {
       "page_type": "verify",
-      "title": "ตรวจสอบวงจร",
+      "title": "\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E27\u0E07\u0E08\u0E23",
       "subtitle": null,
       "ic_label": null,
       "objectives": null,
@@ -254,8 +280,8 @@
       "gate_type": null,
       "ic": null,
       "instructions": [
-        "ต่อวงจร",
-        "ตรวจสอบวงจร"
+        "\u0E15\u0E48\u0E2D\u0E27\u0E07\u0E08\u0E23",
+        "\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E27\u0E07\u0E08\u0E23"
       ],
       "photo_url": null,
       "photo_caption": null,
@@ -320,11 +346,11 @@
     },
     {
       "page_type": "summary",
-      "title": "สรุปผล",
+      "title": "\u0E2A\u0E23\u0E38\u0E1B\u0E1C\u0E25",
       "subtitle": null,
       "ic_label": null,
       "objectives": null,
-      "body": "สำเร็จแล้วครับ ผู้เรียนสามารถเข้าใจการทำงานของ Half Adder และสามารถทดสอบวงจรได้อย่างถูกต้อง",
+      "body": "\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08\u0E41\u0E25\u0E49\u0E27\u0E04\u0E23\u0E31\u0E1A \u0E1C\u0E39\u0E49\u0E40\u0E23\u0E35\u0E22\u0E19\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E02\u0E49\u0E32\u0E43\u0E08\u0E01\u0E32\u0E23\u0E17\u0E33\u0E07\u0E32\u0E19\u0E02\u0E2D\u0E07 Half Adder \u0E41\u0E25\u0E30\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E17\u0E14\u0E2A\u0E2D\u0E1A\u0E27\u0E07\u0E08\u0E23\u0E44\u0E14\u0E49\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
       "circuit_screen": null,
       "circuit_file": null,
       "hint": null,

@@ -5,6 +5,10 @@
       "path": "."
     },
     {
+      "name": "LabBuddy C# Software & WASM Authoring",
+      "path": "../../Software"
+    },
+    {
       "name": "LabBuddy Docs & Worksheets",
       "path": "../../../Docs"
     },

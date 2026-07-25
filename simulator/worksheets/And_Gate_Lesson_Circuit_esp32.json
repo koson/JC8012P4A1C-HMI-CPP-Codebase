@@ -11,12 +11,12 @@
     {
       "page_type": "cover",
       "title": "AND gate lesson",
-      "subtitle": "การทดลอง  AND gate",
+      "subtitle": "\u0E01\u0E32\u0E23\u0E17\u0E14\u0E25\u0E2D\u0E07  AND gate",
       "ic_label": "7408",
       "objectives": [
-        "เข้าใจหลักการทำงานของ AND Gate",
-        "สามารถสร้างวงจร AND Gate แบบ 2 อินพุต",
-        "สามารถทดสอบผลลัพธ์ด้วยตารางความจริง"
+        "\u0E40\u0E02\u0E49\u0E32\u0E43\u0E08\u0E2B\u0E25\u0E31\u0E01\u0E01\u0E32\u0E23\u0E17\u0E33\u0E07\u0E32\u0E19\u0E02\u0E2D\u0E07 AND Gate",
+        "\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E27\u0E07\u0E08\u0E23 AND Gate \u0E41\u0E1A\u0E1A 2 \u0E2D\u0E34\u0E19\u0E1E\u0E38\u0E15",
+        "\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E17\u0E14\u0E2A\u0E2D\u0E1A\u0E1C\u0E25\u0E25\u0E31\u0E1E\u0E18\u0E4C\u0E14\u0E49\u0E27\u0E22\u0E15\u0E32\u0E23\u0E32\u0E07\u0E04\u0E27\u0E32\u0E21\u0E08\u0E23\u0E34\u0E07"
       ],
       "body": null,
       "circuit_screen": null,
@@ -34,11 +34,11 @@
     },
     {
       "page_type": "theory",
-      "title": "ทฤษฎีพื้นฐาน",
+      "title": "\u0E17\u0E24\u0E29\u0E0E\u0E35\u0E1E\u0E37\u0E49\u0E19\u0E10\u0E32\u0E19",
       "subtitle": null,
       "ic_label": null,
       "objectives": null,
-      "body": "AND Gate เป็นลอจิกเกทที่ให้ผลลัพธ์เป็น 1 (True) เฉพาะเมื่อ อินพุตทุกตัวเป็น 1  \nถ้าอินพุตตัวใดตัวหนึ่งเป็น 0 ผลลัพธ์จะเป็น 0",
+      "body": "AND Gate \u0E40\u0E1B\u0E47\u0E19\u0E25\u0E2D\u0E08\u0E34\u0E01\u0E40\u0E01\u0E17\u0E17\u0E35\u0E48\u0E43\u0E2B\u0E49\u0E1C\u0E25\u0E25\u0E31\u0E1E\u0E18\u0E4C\u0E40\u0E1B\u0E47\u0E19 1 (True) \u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E21\u0E37\u0E48\u0E2D \u0E2D\u0E34\u0E19\u0E1E\u0E38\u0E15\u0E17\u0E38\u0E01\u0E15\u0E31\u0E27\u0E40\u0E1B\u0E47\u0E19 1  \n\u0E16\u0E49\u0E32\u0E2D\u0E34\u0E19\u0E1E\u0E38\u0E15\u0E15\u0E31\u0E27\u0E43\u0E14\u0E15\u0E31\u0E27\u0E2B\u0E19\u0E36\u0E48\u0E07\u0E40\u0E1B\u0E47\u0E19 0 \u0E1C\u0E25\u0E25\u0E31\u0E1E\u0E18\u0E4C\u0E08\u0E30\u0E40\u0E1B\u0E47\u0E19 0",
       "circuit_screen": null,
       "circuit_file": null,
       "hint": null,
@@ -54,103 +54,115 @@
     },
     {
       "page_type": "circuit",
-      "title": "วงจรทดลอง",
+      "title": "\u0E27\u0E07\u0E08\u0E23\u0E17\u0E14\u0E25\u0E2D\u0E07",
       "subtitle": null,
       "ic_label": null,
       "objectives": null,
       "body": null,
       "circuit_screen": {
-        "Version": "1.0",
-        "Title": "Converted Circuit",
-        "Description": "coord_mode=raw",
-        "Width": 1000,
-        "Height": 1000,
-        "BackgroundColor": "#FFFFFF",
-        "EmbeddedSymbols": {
-          "Dynamic_Symbol_757365594": {
-            "Id": "Dynamic_Symbol_757365594",
-            "Title": "And Gate",
-            "Category": "Dynamic",
-            "PathData": "M 140 30 L 160 30 M 60 15 L 80 15 M 60 45 L 80 45 M 80 0 L 110 0 C 126.57 0 140 13.43 140 30 C 140 46.57 126.57 60 110 60 L 80 60 Z",
-            "ViewBox": {
-              "X": 0,
-              "Y": 0,
-              "Width": 100,
-              "Height": 60
-            },
-            "RawSvgContent": "<path d=\"M 140 30 L 160 30 M 60 15 L 80 15 M 60 45 L 80 45\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 80 0 L 110 0 C 126.57 0 140 13.43 140 30 C 140 46.57 126.57 60 110 60 L 80 60 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
-            "Description": "Generated dynamically from draw.io SVG element payload"
-          }
-        },
-        "Ports": [
+        "version": "1.0",
+        "title": "Converted Circuit",
+        "description": "coord_mode=raw",
+        "width": 1000,
+        "height": 1000,
+        "backgroundColor": "#FFFFFF",
+        "embeddedSymbols": {},
+        "ports": [],
+        "junctions": [],
+        "wires": [
           {
-            "Id": "3",
-            "Type": "input",
-            "X": 5,
-            "Y": 15,
-            "Radius": 5
+            "id": "5",
+            "path": "M 5.00 45.00 L 110.00 30.00",
+            "strokeWidth": 2,
+            "color": "#2C3E50",
+            "sourceId": "4",
+            "targetId": "2",
+            "logicState": null
           },
           {
-            "Id": "4",
-            "Type": "input",
-            "X": 5,
-            "Y": 45,
-            "Radius": 5
+            "id": "6",
+            "path": "M 5.00 15.00 L 110.00 30.00",
+            "strokeWidth": 2,
+            "color": "#2C3E50",
+            "sourceId": "3",
+            "targetId": "2",
+            "logicState": null
           },
           {
-            "Id": "7",
-            "Type": "output",
-            "X": 205,
-            "Y": 30,
-            "Radius": 5
+            "id": "8",
+            "path": "M 110.00 30.00 L 205.00 30.00",
+            "strokeWidth": 2,
+            "color": "#2C3E50",
+            "sourceId": "2",
+            "targetId": "7",
+            "logicState": null
           }
         ],
-        "Wires": [
+        "widgets": [
           {
-            "Id": "5",
-            "Path": "M 5.00 45.00 L 60.00 45.00",
-            "StrokeWidth": 2,
-            "Color": "#2C3E50",
-            "SourceId": "4",
-            "TargetId": "2"
+            "id": "2",
+            "type": "legacy",
+            "x": 60,
+            "y": 0,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbolId": "",
+            "rawGroupContent": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "strokeWidth": 2,
+            "scale": 1
           },
           {
-            "Id": "6",
-            "Path": "M 5.00 15.00 L 60.00 15.00",
-            "StrokeWidth": 2,
-            "Color": "#2C3E50",
-            "SourceId": "3",
-            "TargetId": "2"
+            "id": "3",
+            "type": "legacy",
+            "x": 0,
+            "y": 10,
+            "width": 10,
+            "height": 10,
+            "rotation": 0,
+            "symbolId": "",
+            "rawGroupContent": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "strokeWidth": 2,
+            "scale": 1
           },
           {
-            "Id": "8",
-            "Path": "M 160.00 30.00 L 205.00 30.00",
-            "StrokeWidth": 2,
-            "Color": "#2C3E50",
-            "SourceId": "2",
-            "TargetId": "7"
-          }
-        ],
-        "Junctions": [],
-        "Widgets": [
+            "id": "4",
+            "type": "legacy",
+            "x": 0,
+            "y": 40,
+            "width": 10,
+            "height": 10,
+            "rotation": 0,
+            "symbolId": "",
+            "rawGroupContent": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "strokeWidth": 2,
+            "scale": 1
+          },
           {
-            "Id": "2",
-            "Type": "svgSymbol",
-            "X": 60,
-            "Y": 0,
-            "Width": 100,
-            "Height": 60,
-            "Rotation": 0,
-            "SymbolId": "Dynamic_Symbol_757365594",
-            "RawGroupContent": "",
-            "Stroke": "#2C3E50",
-            "StrokeWidth": 2,
-            "Scale": 1
+            "id": "7",
+            "type": "legacy",
+            "x": 200,
+            "y": 25,
+            "width": 10,
+            "height": 10,
+            "rotation": 0,
+            "symbolId": "",
+            "rawGroupContent": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "strokeWidth": 2,
+            "scale": 1
           }
         ]
       },
       "circuit_file": null,
-      "hint": "ต่อสายบน protobord ",
+      "hint": "\u0E15\u0E48\u0E2D\u0E2A\u0E32\u0E22\u0E1A\u0E19 protobord ",
       "inputs": [
         "A0",
         "A1"
@@ -168,7 +180,7 @@
     },
     {
       "page_type": "verify",
-      "title": "ตรวจสอบวงจร",
+      "title": "\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E27\u0E07\u0E08\u0E23",
       "subtitle": null,
       "ic_label": null,
       "objectives": null,
@@ -181,8 +193,8 @@
       "gate_type": null,
       "ic": "7408",
       "instructions": [
-        "ต่อวงจร",
-        "ตรวจสอบวงจร"
+        "\u0E15\u0E48\u0E2D\u0E27\u0E07\u0E08\u0E23",
+        "\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E27\u0E07\u0E08\u0E23"
       ],
       "photo_url": null,
       "photo_caption": null,
@@ -242,11 +254,11 @@
     },
     {
       "page_type": "summary",
-      "title": "สรุปผล",
+      "title": "\u0E2A\u0E23\u0E38\u0E1B\u0E1C\u0E25",
       "subtitle": null,
       "ic_label": null,
       "objectives": null,
-      "body": "สำเร็จแล้วครับ",
+      "body": "\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08\u0E41\u0E25\u0E49\u0E27\u0E04\u0E23\u0E31\u0E1A",
       "circuit_screen": null,
       "circuit_file": null,
       "hint": null,
