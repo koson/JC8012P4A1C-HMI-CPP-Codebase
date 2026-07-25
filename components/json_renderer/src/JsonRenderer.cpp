@@ -371,6 +371,10 @@ namespace JsonRenderer
                         {
                             minX = pathMinX;
                         }
+                        if (std::isfinite(pathMinY) && pathMinY > 0.0f && symbol.viewBox.y == 0.0f && pathMinY >= widgetBaseY)
+                        {
+                            minY = pathMinY;
+                        }
                     }
 
                     // Scale uniformly based on width to align pins with wires
@@ -382,8 +386,6 @@ namespace JsonRenderer
                     const float extraW = widget.width - boundsW * uniformScale;
                     const float extraH = widget.height - boundsH * uniformScale;
 
-                    // Note: SvgRenderer::renderSymbol subtracts symbol.viewBox.x/y internally,
-                    // so placeX/Y base is widgetBaseX/Y directly to prevent double-offset.
                     placeX = widgetBaseX + extraW / 2.0f;
                     placeY = widgetBaseY + extraH / 2.0f;
 
@@ -735,10 +737,15 @@ namespace JsonRenderer
                     if (std::isfinite(pMinX) && std::isfinite(pMinY) && std::isfinite(pMaxX) && std::isfinite(pMaxY) &&
                         (pMaxX > pMinX) && (pMaxY > pMinY))
                     {
-                        int32_t pbx1 = (int32_t)((placeX + pMinX * logicalScaleX) * m_scaleX + m_offsetX);
-                        int32_t pby1 = (int32_t)((placeY + pMinY * logicalScaleY) * m_scaleY + m_offsetY);
-                        int32_t pbx2 = (int32_t)((placeX + pMaxX * logicalScaleX) * m_scaleX + m_offsetX);
-                        int32_t pby2 = (int32_t)((placeY + pMaxY * logicalScaleY) * m_scaleY + m_offsetY);
+                        float relMinX = pMinX >= widgetBaseX ? (pMinX - widgetBaseX) : pMinX;
+                        float relMaxX = pMinX >= widgetBaseX ? (pMaxX - widgetBaseX) : pMaxX;
+                        float relMinY = pMinY >= widgetBaseY ? (pMinY - widgetBaseY) : pMinY;
+                        float relMaxY = pMinY >= widgetBaseY ? (pMaxY - widgetBaseY) : pMaxY;
+
+                        int32_t pbx1 = (int32_t)((placeX + relMinX * logicalScaleX) * m_scaleX + m_offsetX);
+                        int32_t pby1 = (int32_t)((placeY + relMinY * logicalScaleY) * m_scaleY + m_offsetY);
+                        int32_t pbx2 = (int32_t)((placeX + relMaxX * logicalScaleX) * m_scaleX + m_offsetX);
+                        int32_t pby2 = (int32_t)((placeY + relMaxY * logicalScaleY) * m_scaleY + m_offsetY);
                         LVColor magenta(255, 0, 255);
                         m_canvas->drawLine(pbx1, pby1, pbx2, pby1, magenta, 1);
                         m_canvas->drawLine(pbx2, pby1, pbx2, pby2, magenta, 1);
@@ -746,8 +753,8 @@ namespace JsonRenderer
                         m_canvas->drawLine(pbx1, pby2, pbx1, pby1, magenta, 1);
 
                         // Output reference point of symbol path (right-most point at path vertical center)
-                        const float outRefXJson = placeX + pMaxX * logicalScaleX;
-                        const float outRefYJson = placeY + ((pMinY + pMaxY) * 0.5f) * logicalScaleY;
+                        const float outRefXJson = placeX + relMaxX * logicalScaleX;
+                        const float outRefYJson = placeY + ((relMinY + relMaxY) * 0.5f) * logicalScaleY;
                         int32_t outRefX = (int32_t)(outRefXJson * m_scaleX + m_offsetX);
                         int32_t outRefY = (int32_t)(outRefYJson * m_scaleY + m_offsetY);
                         m_canvas->drawCircle(outRefX, outRefY, 4, LVColor(50, 230, 50));

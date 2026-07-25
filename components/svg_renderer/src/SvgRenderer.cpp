@@ -51,9 +51,38 @@ namespace SvgRenderer
         float finalScaleX = symbol.scale * scaleX;
         float finalScaleY = symbol.scale * scaleY;
 
+        float viewBoxX = symbol.viewBox.x;
+        float viewBoxY = symbol.viewBox.y;
+        if (viewBoxX == 0.0f || viewBoxY == 0.0f)
+        {
+            float pathMinX = std::numeric_limits<float>::infinity();
+            float pathMinY = std::numeric_limits<float>::infinity();
+            float cx = 0.0f, cy = 0.0f;
+            for (const auto &cmd : commands)
+            {
+                bool isRel = (cmd.type >= 'a' && cmd.type <= 'z');
+                for (size_t i = 0; i + 1 < cmd.args.size(); i += 2)
+                {
+                    float px = (isRel ? cx : 0.0f) + cmd.args[i];
+                    float py = (isRel ? cy : 0.0f) + cmd.args[i + 1];
+                    if (px < pathMinX) pathMinX = px;
+                    if (py < pathMinY) pathMinY = py;
+                }
+                if (!cmd.args.empty() && cmd.args.size() >= 2)
+                {
+                    cx = (isRel ? cx : 0.0f) + cmd.args[cmd.args.size() - 2];
+                    cy = (isRel ? cy : 0.0f) + cmd.args[cmd.args.size() - 1];
+                }
+            }
+            if (viewBoxX == 0.0f && std::isfinite(pathMinX) && pathMinX > 0.0f)
+                viewBoxX = pathMinX;
+            if (viewBoxY == 0.0f && std::isfinite(pathMinY) && pathMinY > 0.0f)
+                viewBoxY = pathMinY;
+        }
+
         // Adjust position for viewBox offset
-        int32_t offsetX = x - static_cast<int32_t>(symbol.viewBox.x * finalScaleX);
-        int32_t offsetY = y - static_cast<int32_t>(symbol.viewBox.y * finalScaleY);
+        int32_t offsetX = x - static_cast<int32_t>(viewBoxX * finalScaleX);
+        int32_t offsetY = y - static_cast<int32_t>(viewBoxY * finalScaleY);
 
         // Render path
         renderPath(commands, offsetX, offsetY, finalScaleX, finalScaleY, strokeColor, strokeWidth);
@@ -320,8 +349,38 @@ namespace SvgRenderer
 
         float finalScaleX = symbol.scale * scaleX;
         float finalScaleY = symbol.scale * scaleY;
-        int32_t offsetX = x - static_cast<int32_t>(symbol.viewBox.x * finalScaleX);
-        int32_t offsetY = y - static_cast<int32_t>(symbol.viewBox.y * finalScaleY);
+
+        float viewBoxX = symbol.viewBox.x;
+        float viewBoxY = symbol.viewBox.y;
+        if (viewBoxX == 0.0f || viewBoxY == 0.0f)
+        {
+            float pathMinX = std::numeric_limits<float>::infinity();
+            float pathMinY = std::numeric_limits<float>::infinity();
+            float cx = 0.0f, cy = 0.0f;
+            for (const auto &cmd : commands)
+            {
+                bool isRel = (cmd.type >= 'a' && cmd.type <= 'z');
+                for (size_t i = 0; i + 1 < cmd.args.size(); i += 2)
+                {
+                    float px = (isRel ? cx : 0.0f) + cmd.args[i];
+                    float py = (isRel ? cy : 0.0f) + cmd.args[i + 1];
+                    if (px < pathMinX) pathMinX = px;
+                    if (py < pathMinY) pathMinY = py;
+                }
+                if (!cmd.args.empty() && cmd.args.size() >= 2)
+                {
+                    cx = (isRel ? cx : 0.0f) + cmd.args[cmd.args.size() - 2];
+                    cy = (isRel ? cy : 0.0f) + cmd.args[cmd.args.size() - 1];
+                }
+            }
+            if (viewBoxX == 0.0f && std::isfinite(pathMinX) && pathMinX > 0.0f)
+                viewBoxX = pathMinX;
+            if (viewBoxY == 0.0f && std::isfinite(pathMinY) && pathMinY > 0.0f)
+                viewBoxY = pathMinY;
+        }
+
+        int32_t offsetX = x - static_cast<int32_t>(viewBoxX * finalScaleX);
+        int32_t offsetY = y - static_cast<int32_t>(viewBoxY * finalScaleY);
 
         renderPathFilled(commands, offsetX, offsetY, finalScaleX, finalScaleY, fillColor);
     }
