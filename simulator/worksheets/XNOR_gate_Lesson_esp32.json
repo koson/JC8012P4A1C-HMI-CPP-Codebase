@@ -60,7 +60,7 @@
       "objectives": null,
       "body": null,
       "circuit_screen": {
-        "version": "1.0",
+        "version": "2.0-2607",
         "title": "Converted Circuit",
         "description": "coord_mode=raw",
         "width": 1000,
