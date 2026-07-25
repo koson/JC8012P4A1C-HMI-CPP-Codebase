@@ -65,6 +65,33 @@ namespace SvgRenderer
         m_quadraticBezierSegments = quadraticSegments;
     }
 
+    static std::vector<std::pair<std::vector<PathCommand>, bool>> decomposeSubpaths(const std::vector<PathCommand> &commands)
+    {
+        std::vector<std::pair<std::vector<PathCommand>, bool>> result;
+        std::vector<PathCommand> current;
+        bool isClosed = false;
+
+        for (const auto &cmd : commands)
+        {
+            if ((cmd.type == 'M' || cmd.type == 'm') && !current.empty())
+            {
+                result.push_back({current, isClosed});
+                current.clear();
+                isClosed = false;
+            }
+            current.push_back(cmd);
+            if (cmd.type == 'Z' || cmd.type == 'z')
+            {
+                isClosed = true;
+            }
+        }
+        if (!current.empty())
+        {
+            result.push_back({current, isClosed});
+        }
+        return result;
+    }
+
     void SvgRenderer::renderPath(
         const std::vector<PathCommand> &commands,
         int32_t offsetX,
@@ -76,7 +103,11 @@ namespace SvgRenderer
     {
         if (m_canvas->hasVectorSupport())
         {
-            m_canvas->drawVectorPath(commands, offsetX, offsetY, scaleX, scaleY, LVColor::Black, toLVColor(strokeColor), strokeWidth, 0);
+            auto subpaths = decomposeSubpaths(commands);
+            for (const auto &sp : subpaths)
+            {
+                m_canvas->drawVectorPath(sp.first, offsetX, offsetY, scaleX, scaleY, LVColor::Black, toLVColor(strokeColor), strokeWidth, 0);
+            }
             return;
         }
 
@@ -305,7 +336,14 @@ namespace SvgRenderer
     {
         if (m_canvas->hasVectorSupport())
         {
-            m_canvas->drawVectorPath(commands, offsetX, offsetY, scaleX, scaleY, toLVColor(fillColor), LVColor::Black, 0, LV_OPA_COVER);
+            auto subpaths = decomposeSubpaths(commands);
+            for (const auto &sp : subpaths)
+            {
+                if (sp.second) // Only fill closed sub-paths (polygons)
+                {
+                    m_canvas->drawVectorPath(sp.first, offsetX, offsetY, scaleX, scaleY, toLVColor(fillColor), LVColor::Black, 0, LV_OPA_COVER);
+                }
+            }
             return;
         }
 
