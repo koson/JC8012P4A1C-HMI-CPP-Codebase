@@ -93,6 +93,15 @@ namespace JsonRenderer
         Junction() : x(0), y(0), radius(3.0f) {}
     };
 
+    struct TextLabel
+    {
+        std::string text;
+        float x;
+        float y;
+
+        TextLabel() : x(0), y(0) {}
+    };
+
     /**
      * @brief Symbol definition from embedded symbols
      */
@@ -103,6 +112,8 @@ namespace JsonRenderer
         std::string description;
         std::string category;
         std::string pathData;
+        std::string rawSvgContent;
+        std::vector<TextLabel> textLabels;
         SvgRenderer::ViewBox viewBox;
 
         SymbolDef() : viewBox(0, 0, 150, 150) {}

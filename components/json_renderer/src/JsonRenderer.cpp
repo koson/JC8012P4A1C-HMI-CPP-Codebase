@@ -575,17 +575,38 @@ namespace JsonRenderer
             m_debugInfo += wbuf;
             firstWidget = false;
 
+            const bool isTextComponent = (!symbolDef.textLabels.empty()) ||
+                                         (symbolDef.rawSvgContent.find("stroke=\"none\"") != std::string::npos &&
+                                          symbolDef.rawSvgContent.find("fill=\"none\"") != std::string::npos);
+
             const float symbolScaleX = m_scaleX * logicalScaleX;
             const float symbolScaleY = m_scaleY * logicalScaleY;
             int32_t symbolStroke = clampStrokePx(widget.strokeWidth);
-            m_svgRenderer->renderSymbolFilled(
-                symbol, scaledX, scaledY,
-                fillColor,
-                symbolScaleX, symbolScaleY);
-            m_svgRenderer->renderSymbol(
-                symbol, scaledX, scaledY,
-                strokeColor, symbolStroke,
-                symbolScaleX, symbolScaleY, widget.rotation);
+
+            if (!isTextComponent)
+            {
+                m_svgRenderer->renderSymbolFilled(
+                    symbol, scaledX, scaledY,
+                    fillColor,
+                    symbolScaleX, symbolScaleY);
+                m_svgRenderer->renderSymbol(
+                    symbol, scaledX, scaledY,
+                    strokeColor, symbolStroke,
+                    symbolScaleX, symbolScaleY, widget.rotation);
+            }
+
+            // Render embedded text labels (e.g. "A", "B", "Y")
+            for (const auto &lbl : symbolDef.textLabels)
+            {
+                if (!lbl.text.empty())
+                {
+                    int32_t lblX = (int32_t)((placeX + lbl.x * logicalScaleX) * m_scaleX + m_offsetX);
+                    int32_t lblY = (int32_t)((placeY + (lbl.y - 12.0f) * logicalScaleY) * m_scaleY + m_offsetY);
+                    int32_t fontSize = (int32_t)(16.0f * m_scaleY * logicalScaleY);
+                    if (fontSize < 12) fontSize = 12;
+                    m_canvas->drawText(lblX, lblY, lbl.text.c_str(), LVColor::Black, fontSize);
+                }
+            }
 
             if (m_debugMode)
             {
@@ -881,6 +902,10 @@ namespace JsonRenderer
                 case 'L':
                 {
                     float tx = cmd.args[0], ty = cmd.args[1];
+                    if (std::abs(ty - cy) <= 1.5f)
+                    {
+                        ty = cy; // Snap nearly horizontal wire to perfectly flat line
+                    }
                     m_canvas->drawLine(
                         (int32_t)(cx * m_scaleX + m_offsetX), (int32_t)(cy * m_scaleY + m_offsetY),
                         (int32_t)(tx * m_scaleX + m_offsetX), (int32_t)(ty * m_scaleY + m_offsetY),
@@ -894,6 +919,10 @@ namespace JsonRenderer
                 case 'l':
                 {
                     float tx = cx + cmd.args[0], ty = cy + cmd.args[1];
+                    if (std::abs(ty - cy) <= 1.5f)
+                    {
+                        ty = cy; // Snap nearly horizontal wire to perfectly flat line
+                    }
                     m_canvas->drawLine(
                         (int32_t)(cx * m_scaleX + m_offsetX), (int32_t)(cy * m_scaleY + m_offsetY),
                         (int32_t)(tx * m_scaleX + m_offsetX), (int32_t)(ty * m_scaleY + m_offsetY),
@@ -1031,12 +1060,15 @@ namespace JsonRenderer
             int32_t scaledY = (int32_t)(port.y * m_scaleY + m_offsetY);
             int32_t scaledRadius = std::min((int32_t)(port.radius * m_scaleX), kMaxPortRadiusPx);
 
-            // Draw circle for port
-            m_canvas->drawCircle(
+            // Draw open circle for port (matches Draw.io port style: white fill, dark outline)
+            m_canvas->drawEllipse(
                 scaledX,
                 scaledY,
                 scaledRadius,
-                lvColor);
+                scaledRadius,
+                LVColor::White,
+                LVColor(44, 62, 80),
+                2);
 
             if (m_debugMode)
             {

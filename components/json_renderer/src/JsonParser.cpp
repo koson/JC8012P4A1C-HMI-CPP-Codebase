@@ -400,6 +400,29 @@ namespace JsonRenderer
             }
 
             symbol.pathData = pathData;
+            symbol.rawSvgContent = rawSvgContent;
+
+            // Parse textLabels
+            cJSON *textLabels = getObjectItemFlexible(obj, "textLabels");
+            if (textLabels && cJSON_IsArray(textLabels))
+            {
+                int count = cJSON_GetArraySize(textLabels);
+                for (int i = 0; i < count; i++)
+                {
+                    cJSON *lbl = cJSON_GetArrayItem(textLabels, i);
+                    if (lbl && cJSON_IsObject(lbl))
+                    {
+                        TextLabel tl;
+                        tl.text = getString(lbl, "text", "");
+                        tl.x = getFloat(lbl, "x", 0.0f);
+                        tl.y = getFloat(lbl, "y", 0.0f);
+                        if (!tl.text.empty())
+                        {
+                            symbol.textLabels.push_back(tl);
+                        }
+                    }
+                }
+            }
 
             // Parse viewBox
             cJSON *viewBox = getObjectItemFlexible(obj, "viewBox");
@@ -411,12 +434,53 @@ namespace JsonRenderer
                 symbol.viewBox.height = getFloat(viewBox, "Height", 150.0f);
             }
 
-            // Auto-correct viewBox.x for dynamic symbols where path data starts at minX > viewBox.x
-            if (symbol.viewBox.x == 0.0f && !pathData.empty())
+            if (symbol.textLabels.empty() && !rawSvgContent.empty())
+            {
+                size_t textPos = rawSvgContent.find("<text");
+                while (textPos != std::string::npos)
+                {
+                    size_t closeTag = rawSvgContent.find(">", textPos);
+                    size_t endTextTag = rawSvgContent.find("</text>", closeTag);
+                    if (closeTag != std::string::npos && endTextTag != std::string::npos)
+                    {
+                        std::string content = rawSvgContent.substr(closeTag + 1, endTextTag - closeTag - 1);
+                        size_t first = content.find_first_not_of(" \t\n\r");
+                        if (first != std::string::npos)
+                        {
+                            size_t last = content.find_last_not_of(" \t\n\r");
+                            content = content.substr(first, (last - first + 1));
+                        }
+                        if (!content.empty())
+                        {
+                            TextLabel tl;
+                            tl.text = content;
+                            std::string tagHeader = rawSvgContent.substr(textPos, closeTag - textPos);
+                            auto getAttr = [&](const char *attr) -> float {
+                                size_t p = tagHeader.find(attr);
+                                if (p != std::string::npos) {
+                                    p = tagHeader.find("\"", p);
+                                    if (p != std::string::npos) {
+                                        return std::strtof(tagHeader.c_str() + p + 1, nullptr);
+                                    }
+                                }
+                                return 0.0f;
+                            };
+                            tl.x = getAttr("x=");
+                            tl.y = getAttr("y=");
+                            symbol.textLabels.push_back(tl);
+                        }
+                    }
+                    textPos = rawSvgContent.find("<text", textPos + 5);
+                }
+            }
+
+            // Auto-correct viewBox.x and viewBox.y for dynamic symbols where path data starts at minPathX/Y != viewBox.x/y
+            if (!pathData.empty())
             {
                 SvgRenderer::SvgPathParser pathParser;
                 const auto cmds = pathParser.parse(symbol.pathData.c_str());
                 float minPathX = 1e9f;
+                float minPathY = 1e9f;
                 for (const auto &cmd : cmds)
                 {
                     if (cmd.type == 'M' || cmd.type == 'L' || cmd.type == 'C' || cmd.type == 'Q')
@@ -424,13 +488,19 @@ namespace JsonRenderer
                         if (cmd.args.size() >= 2)
                         {
                             if (cmd.args[0] < minPathX) minPathX = cmd.args[0];
+                            if (cmd.args[1] < minPathY) minPathY = cmd.args[1];
                         }
                     }
                 }
-                if (minPathX > 0.0f && minPathX < 1e8f)
+                if (symbol.viewBox.x == 0.0f && minPathX > 0.0f && minPathX < 1e8f)
                 {
                     symbol.viewBox.x = minPathX;
                     ESP_LOGI(TAG, "Auto-corrected viewBox.x for dynamic symbol [%s] to %.1f", symbol.id.c_str(), minPathX);
+                }
+                if (symbol.viewBox.y == 0.0f && std::isfinite(minPathY) && std::abs(minPathY) < 1e5f)
+                {
+                    symbol.viewBox.y = minPathY;
+                    ESP_LOGI(TAG, "Auto-corrected viewBox.y for dynamic symbol [%s] to %.1f", symbol.id.c_str(), minPathY);
                 }
             }
 
