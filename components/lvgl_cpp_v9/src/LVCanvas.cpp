@@ -565,6 +565,11 @@ void LVCanvas::drawVectorPath(const std::vector<VectorPathCommand> &commands,
     {
         lv_draw_vector_dsc_set_stroke_color(dsc, strokeColor.raw());
         lv_draw_vector_dsc_set_stroke_width(dsc, (float)strokeWidth);
+        lv_draw_vector_dsc_set_stroke_opa(dsc, LV_OPA_COVER);
+    }
+    else
+    {
+        lv_draw_vector_dsc_set_stroke_opa(dsc, LV_OPA_TRANSP);
     }
 
     lv_draw_vector_dsc_add_path(dsc, path);

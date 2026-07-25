@@ -1,10 +1,10 @@
+#include <algorithm>
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dirent.h>
-#include <vector>
 #include <string>
-#include <algorithm>
+#include <vector>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -20,8 +20,8 @@
 #include "JsonRenderer.hpp"
 #include "LVCanvas.hpp"
 #include "LVScreen.hpp"
-#include "ScreenManager.hpp"
 #include "LessonPlayer.h"
+#include "ScreenManager.hpp"
 #include "font_thai.h"
 
 static void show_main_menu(void);
@@ -42,7 +42,8 @@ static void add_back_button(lv_obj_t *parent) {
       back_btn,
       [](lv_event_t *e) {
         if (lv_event_get_code(e) == LV_EVENT_CLICKED) {
-          ScreenManager::getInstance().back(LVScreen::Transition::MoveRight, 200);
+          ScreenManager::getInstance().back(LVScreen::Transition::MoveRight,
+                                            200);
         }
       },
       LV_EVENT_CLICKED, NULL);
@@ -94,12 +95,14 @@ static void open_worksheet_file(const std::string &full_path) {
   lv_obj_set_style_bg_color(root, lv_color_hex(0x1E1E2E), 0);
 
   static uint8_t canvas_buf[1280 * 720 * 4];
-  LVCanvas *canvas = new LVCanvas(root, 1280, 720, LV_COLOR_FORMAT_ARGB8888, canvas_buf);
+  LVCanvas *canvas =
+      new LVCanvas(root, 1280, 720, LV_COLOR_FORMAT_ARGB8888, canvas_buf);
   lv_obj_center(canvas->obj());
 
   JsonRenderer::JsonRenderer renderer(canvas);
   if (!renderer.loadAndRender(full_path.c_str())) {
-    printf("[LessonBrowser] Failed to render circuit: %s\n", renderer.getLastError());
+    printf("[LessonBrowser] Failed to render circuit: %s\n",
+           renderer.getLastError());
   }
 
   add_back_button(root);
@@ -126,7 +129,8 @@ static void run_lesson_browser_demo(void) {
 
   // Scan worksheets folder
   std::vector<std::string> json_files;
-  const char *folder_paths[] = {"worksheets", "simulator/worksheets", "../simulator/worksheets"};
+  const char *folder_paths[] = {"worksheets", "simulator/worksheets",
+                                "../simulator/worksheets"};
   std::string active_folder = "";
 
   for (const char *fp : folder_paths) {
@@ -141,7 +145,8 @@ static void run_lesson_browser_demo(void) {
         }
       }
       closedir(dir);
-      if (!json_files.empty()) break;
+      if (!json_files.empty())
+        break;
     }
   }
 
@@ -160,7 +165,8 @@ static void run_lesson_browser_demo(void) {
 
   if (json_files.empty()) {
     lv_obj_t *lbl_empty = lv_label_create(container);
-    lv_label_set_text(lbl_empty, "No .json worksheet files found in worksheets directory.");
+    lv_label_set_text(
+        lbl_empty, "No .json worksheet files found in worksheets directory.");
     lv_obj_set_style_text_color(lbl_empty, lv_color_hex(0xE74C3C), 0);
   } else {
     for (size_t i = 0; i < json_files.size(); i++) {
@@ -173,7 +179,8 @@ static void run_lesson_browser_demo(void) {
       std::string full_path = active_folder + "/" + json_files[i];
 
       lv_obj_t *lbl = lv_label_create(btn);
-      lv_label_set_text_fmt(lbl, LV_SYMBOL_FILE " %d. %s", (int)(i + 1), json_files[i].c_str());
+      lv_label_set_text_fmt(lbl, LV_SYMBOL_FILE " %d. %s", (int)(i + 1),
+                            json_files[i].c_str());
       lv_obj_set_style_text_font(lbl, &lv_font_montserrat_18, 0);
       lv_obj_set_style_text_color(lbl, lv_color_hex(0xFFFFFF), 0);
       lv_obj_align(lbl, LV_ALIGN_LEFT_MID, 15, 0);
@@ -200,7 +207,8 @@ static void run_lesson_browser_demo(void) {
 
 // Demo 3: Logic Circuit Simulator (2-Stage AND Circuit)
 static void run_circuit_demo(void) {
-  const char *paths[] = {"worksheets/and2_circuit.json", "simulator/worksheets/and2_circuit.json"};
+  const char *paths[] = {"worksheets/and2_circuit.json",
+                         "simulator/worksheets/and2_circuit.json"};
   for (const char *p : paths) {
     FILE *f = fopen(p, "r");
     if (f) {
@@ -370,10 +378,11 @@ static void show_main_menu(void) {
 
   MenuOption options[] = {
       {"1. 📁 Lesson & Worksheet File Browser (Select & Run)",
-       "Browse and render all 29+ JSON lessons & circuit worksheets", run_lesson_browser_demo,
-       0x00A86B},
+       "Browse and render all 29+ JSON lessons & circuit worksheets",
+       run_lesson_browser_demo, 0x00A86B},
       {"2. Interactive Lesson Player (L001 NOT Gate)",
-       "Multi-page course engine (Cover -> Theory -> Interactive Circuit -> Verify)",
+       "Multi-page course engine (Cover -> Theory -> Interactive Circuit -> "
+       "Verify)",
        run_lesson_player_demo, 0x0F4C75},
       {"3. Logic Circuit Simulator (2-Stage AND Circuit)",
        "Render Gates, Wires, Ports & Junctions from JSON", run_circuit_demo,
@@ -427,7 +436,18 @@ static void show_main_menu(void) {
 int main(int argc, char **argv) {
   (void)argc;
   (void)argv;
-
+#ifdef _WIN32
+  // บังคับสร้างหน้าต่าง Console สีดำสำหรับดู Log บน Windows
+  AllocConsole();
+#if defined(_MSC_VER)
+  FILE *f_dummy;
+  freopen_s(&f_dummy, "CONOUT$", "w", stdout);
+  freopen_s(&f_dummy, "CONOUT$", "w", stderr);
+#else
+  (void)freopen("CONOUT$", "w", stdout);
+  (void)freopen("CONOUT$", "w", stderr);
+#endif
+#endif
   printf("[PC Simulator] Initializing LVGL 9...\n");
   fflush(stdout);
   lv_init();

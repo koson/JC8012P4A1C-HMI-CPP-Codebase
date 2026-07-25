@@ -351,12 +351,14 @@ namespace SvgRenderer
         std::vector<std::vector<Point>> subpaths;
         std::vector<Point> current;
         Point pos(0, 0), start(0, 0);
+        bool pathClosed = false;
 
         auto flush = [&]()
         {
-            if (current.size() >= 3)
+            if (pathClosed && current.size() >= 3)
                 subpaths.push_back(current);
             current.clear();
+            pathClosed = false;
         };
 
         float maxScale = std::max(scaleX, scaleY);
@@ -370,11 +372,20 @@ namespace SvgRenderer
             switch (cmd.type)
             {
             case 'M':
+            case 'm':
                 flush();
                 if (cmd.args.size() >= 2)
                 {
-                    pos.x = cmd.args[0];
-                    pos.y = cmd.args[1];
+                    if (cmd.type == 'M')
+                    {
+                        pos.x = cmd.args[0];
+                        pos.y = cmd.args[1];
+                    }
+                    else
+                    {
+                        pos.x += cmd.args[0];
+                        pos.y += cmd.args[1];
+                    }
                     start = pos;
                     current.push_back(pos);
                 }
@@ -480,6 +491,7 @@ namespace SvgRenderer
             case 'Z':
             case 'z':
                 current.push_back(start); // close the polygon
+                pathClosed = true;
                 flush();
                 pos = start;
                 break;
