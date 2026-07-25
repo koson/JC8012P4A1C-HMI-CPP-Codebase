@@ -324,6 +324,41 @@ namespace JsonRenderer
                                  cx - kx, cy + ry, cx - rx, cy + ky, cx - rx, cy,
                                  cx - rx, cy - ky, cx - kx, cy - ry, cx, cy - ry,
                                  cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy);
+                        // Trim any pin line segment inside pathData that passes through the extracted ellipse
+                        float bubbleOuterX = cx + rx;
+                        char searchPin[64];
+                        snprintf(searchPin, sizeof(searchPin), "M %.0f %.0f L", cx - 3.75f, cy); // e.g. "M 150 30 L"
+                        size_t pinPos = pathData.find("M ");
+                        while (pinPos != std::string::npos)
+                        {
+                            float px1 = 0, py1 = 0, px2 = 0, py2 = 0;
+                            int nmatched = sscanf(pathData.c_str() + pinPos, "M %f %f L %f %f", &px1, &py1, &px2, &py2);
+                            if (nmatched == 4 && std::abs(py1 - cy) < 1.0f && std::abs(py2 - cy) < 1.0f)
+                            {
+                                if (px1 < bubbleOuterX && px2 >= bubbleOuterX)
+                                {
+                                    char origSegment[128], newSegment[128];
+                                    snprintf(origSegment, sizeof(origSegment), "M %.2f %.2f L %.2f %.2f", px1, py1, px2, py2);
+                                    snprintf(newSegment, sizeof(newSegment), "M %.2f %.2f L %.2f %.2f", bubbleOuterX, py1, px2, py2);
+
+                                    // Match formatted float strings in pathData
+                                    size_t segPos = pathData.find(origSegment);
+                                    if (segPos == std::string::npos)
+                                    {
+                                        snprintf(origSegment, sizeof(origSegment), "M %.0f %.0f L %.0f %.0f", px1, py1, px2, py2);
+                                        segPos = pathData.find(origSegment);
+                                    }
+                                    if (segPos != std::string::npos)
+                                    {
+                                        pathData.replace(segPos, strlen(origSegment), newSegment);
+                                        ESP_LOGI(TAG, "Trimmed pin line inside bubble for %s: %s -> %s", symbol.id.c_str(), origSegment, newSegment);
+                                    }
+                                    break;
+                                }
+                            }
+                            pinPos = pathData.find("M ", pinPos + 2);
+                        }
+
                         pathData += buf;
                         ESP_LOGI(TAG, "Extracted ellipse at cx=%.1f cy=%.1f rx=%.1f ry=%.1f for symbol: %s", cx, cy, rx, ry, symbol.id.c_str());
                     }
