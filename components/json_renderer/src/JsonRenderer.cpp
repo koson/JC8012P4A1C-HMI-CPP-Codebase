@@ -1079,24 +1079,93 @@ namespace JsonRenderer
 
         for (const auto &port : screen.ports)
         {
-            // Parse color
-            SvgRenderer::Color color = parseColor(port.color);
-            LVColor lvColor(color.r, color.g, color.b);
-
-            // Apply auto-scaling; cap radius so port dots stay small regardless of zoom
             int32_t scaledX = (int32_t)(port.x * m_scaleX + m_offsetX);
             int32_t scaledY = (int32_t)(port.y * m_scaleY + m_offsetY);
-            int32_t scaledRadius = std::min((int32_t)(port.radius * m_scaleX), kMaxPortRadiusPx);
+            int32_t scaledRadius = (int32_t)(4.5f * m_scaleX);
+            if (scaledRadius < 4) scaledRadius = 4;
 
-            // Draw open circle for port (matches Draw.io port style: white fill, dark outline)
-            m_canvas->drawEllipse(
-                scaledX,
-                scaledY,
-                scaledRadius,
-                scaledRadius,
-                LVColor::White,
-                LVColor(44, 62, 80),
-                2);
+            auto pointOnSegment = [](float px, float py, float x1, float y1, float x2, float y2) -> bool {
+                float minX = std::min(x1, x2) - 2.5f, maxX = std::max(x1, x2) + 2.5f;
+                float minY = std::min(y1, y2) - 2.5f, maxY = std::max(y1, y2) + 2.5f;
+                if (px < minX || px > maxX || py < minY || py > maxY) return false;
+                
+                float dx = x2 - x1, dy = y2 - y1;
+                float lenSq = dx * dx + dy * dy;
+                if (lenSq < 1e-4f) return (std::abs(px - x1) <= 3.5f && std::abs(py - y1) <= 3.5f);
+                
+                float t = std::max(0.0f, std::min(1.0f, ((px - x1) * dx + (py - y1) * dy) / lenSq));
+                float projX = x1 + t * dx, projY = y1 + t * dy;
+                float distSq = (px - projX) * (px - projX) + (py - projY) * (py - projY);
+                return distSq <= 12.25f;
+            };
+
+            int touchCount = 0;
+            SvgRenderer::SvgPathParser parser;
+            for (const auto &w : screen.wires)
+            {
+                auto cmds = parser.parse(w.path.c_str());
+                float cx = 0, cy = 0;
+                for (const auto &cmd : cmds)
+                {
+                    if (cmd.type == 'M' || cmd.type == 'm')
+                    {
+                        cx = cmd.args[0]; cy = cmd.args[1];
+                    }
+                    else if (cmd.type == 'L' || cmd.type == 'l')
+                    {
+                        float tx = cmd.args[0], ty = cmd.args[1];
+                        if (pointOnSegment(port.x, port.y, cx, cy, tx, ty))
+                        {
+                            touchCount++;
+                        }
+                        cx = tx; cy = ty;
+                    }
+                }
+            }
+
+            // Auto-detect Junction vs External Port:
+            // If 2 or more wire connections touch or branch from this point, it is a Junction!
+            if (touchCount >= 2 || port.type == "junction")
+            {
+                int32_t jRadius = (int32_t)(3.5f * m_scaleX);
+                if (jRadius < 3) jRadius = 3;
+                m_canvas->drawCircle(scaledX, scaledY, jRadius, LVColor(44, 62, 80), true);
+                continue;
+            }
+
+            // Configurable hardware port connector colors:
+            // Input ports: Solid Blue (#3498DB)
+            // Output ports: Solid Yellow (#F1C40F)
+            LVColor fillColor;
+            if (!port.color.empty() && port.color != "#000000" && port.color != "#000" && port.color != "#2C3E50")
+            {
+                SvgRenderer::Color c = parseColor(port.color);
+                fillColor = LVColor(c.r, c.g, c.b);
+            }
+            else if (port.type == "input" || port.type == "in")
+            {
+                fillColor = LVColor(52, 152, 219); // Blue hardware connector (#3498DB)
+            }
+            else if (port.type == "output" || port.type == "out")
+            {
+                fillColor = LVColor(241, 196, 15); // Yellow hardware connector (#F1C40F)
+            }
+            else
+            {
+                bool isInput = (port.x < screen.width * 0.45f);
+                if (isInput)
+                {
+                    fillColor = LVColor(52, 152, 219); // Blue hardware connector (#3498DB)
+                }
+                else
+                {
+                    fillColor = LVColor(241, 196, 15); // Yellow hardware connector (#F1C40F)
+                }
+            }
+
+            // Draw solid filled circle using LVGL native layer command (masks out wire line underneath)
+            m_canvas->drawCircle(scaledX, scaledY, scaledRadius, fillColor, true);
+            m_canvas->drawCircle(scaledX, scaledY, scaledRadius, LVColor(44, 62, 80), false);
 
             if (m_debugMode)
             {
@@ -1122,19 +1191,20 @@ namespace JsonRenderer
 
         for (const auto &junction : screen.junctions)
         {
-            // Draw filled circle for junction
-            LVColor color = LVColor::Black;
+            // Draw solid black filled circle for junction
+            LVColor color = LVColor(44, 62, 80);
 
-            // Apply auto-scaling
             int32_t scaledX = (int32_t)(junction.x * m_scaleX + m_offsetX);
             int32_t scaledY = (int32_t)(junction.y * m_scaleY + m_offsetY);
-            int32_t scaledRadius = (int32_t)(junction.radius * m_scaleX);
+            int32_t scaledRadius = (int32_t)(3.5f * m_scaleX);
+            if (scaledRadius < 3) scaledRadius = 3;
 
             m_canvas->drawCircle(
                 scaledX,
                 scaledY,
                 scaledRadius,
-                color);
+                color,
+                true);
 
             ESP_LOGD(TAG, "  Junction: %s at (%.0f, %.0f)", junction.id.c_str(), junction.x, junction.y);
         }
