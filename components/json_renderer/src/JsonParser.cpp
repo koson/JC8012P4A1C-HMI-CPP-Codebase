@@ -328,7 +328,7 @@ namespace JsonRenderer
                             {
                                 float px = (isRel ? currentX : 0.0f) + cmd.args[i];
                                 float py = (isRel ? currentY : 0.0f) + cmd.args[i + 1];
-                                if (std::abs(py - cy) < 5.0f && px > bodyMaxX)
+                                if (std::abs(py - cy) < 5.0f && px < cx && px > bodyMaxX)
                                 {
                                     bodyMaxX = px;
                                 }

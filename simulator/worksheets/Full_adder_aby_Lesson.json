@@ -1,0 +1,565 @@
+{
+  "version": "1.0",
+  "lesson_id": "editor-20260726",
+  "title": "Full_adder_aby_Lesson",
+  "title_th": "Full_adder_aby_Lesson",
+  "category": "custom",
+  "difficulty": "beginner",
+  "estimated_minutes": 5,
+  "ic": "",
+  "pages": [
+    {
+      "page_type": "circuit",
+      "title": "วงจรทดลอง",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": null,
+      "circuit_screen": {
+        "version": "2.0-2607",
+        "title": "Converted Circuit",
+        "description": "coord_mode=raw",
+        "width": 1000,
+        "height": 1000,
+        "background_color": "#FFFFFF",
+        "embedded_symbols": {
+          "Dynamic_Symbol_938875406": {
+            "id": "Dynamic_Symbol_938875406",
+            "title": "Xor Gate",
+            "category": "Dynamic",
+            "path_data": "M 209.1 30.15 L 229.1 30.15 M 129.1 15.15 L 152.1 15.15 M 129.1 45.15 L 152.1 45.15 M 139.1 0.15 C 149.82 18.71 149.82 41.59 139.1 60.15 M 169.1 0.15 C 186.57 0.71 202.16 12.4 209.1 30.15 C 202.16 47.9 186.57 59.59 169.1 60.15 L 144.1 60.15 C 154.82 41.59 154.82 18.71 144.1 0.15 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 60
+            },
+            "raw_svg_content": "<path d=\"M 209.1 30.15 L 229.1 30.15 M 129.1 15.15 L 152.1 15.15 M 129.1 45.15 L 152.1 45.15\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 139.1 0.15 C 149.82 18.71 149.82 41.59 139.1 60.15\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 169.1 0.15 C 186.57 0.71 202.16 12.4 209.1 30.15 C 202.16 47.9 186.57 59.59 169.1 60.15 L 144.1 60.15 C 154.82 41.59 154.82 18.71 144.1 0.15 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1401889052": {
+            "id": "Dynamic_Symbol_1401889052",
+            "title": "Xor Gate",
+            "category": "Dynamic",
+            "path_data": "M 369.1 100.15 L 389.1 100.15 M 289.1 85.15 L 312.1 85.15 M 289.1 115.15 L 312.1 115.15 M 299.1 70.15 C 309.82 88.71 309.82 111.59 299.1 130.15 M 329.1 70.15 C 346.57 70.71 362.16 82.4 369.1 100.15 C 362.16 117.9 346.57 129.59 329.1 130.15 L 304.1 130.15 C 314.82 111.59 314.82 88.71 304.1 70.15 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 60
+            },
+            "raw_svg_content": "<path d=\"M 369.1 100.15 L 389.1 100.15 M 289.1 85.15 L 312.1 85.15 M 289.1 115.15 L 312.1 115.15\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 299.1 70.15 C 309.82 88.71 309.82 111.59 299.1 130.15\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 329.1 70.15 C 346.57 70.71 362.16 82.4 369.1 100.15 C 362.16 117.9 346.57 129.59 329.1 130.15 L 304.1 130.15 C 314.82 111.59 314.82 88.71 304.1 70.15 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_112426844": {
+            "id": "Dynamic_Symbol_112426844",
+            "title": "And Gate",
+            "category": "Dynamic",
+            "path_data": "M 459.1 190.15 L 479.1 190.15 M 379.1 175.15 L 399.1 175.15 M 379.1 205.15 L 399.1 205.15 M 399.1 160.15 L 429.1 160.15 C 445.67 160.15 459.1 173.58 459.1 190.15 C 459.1 206.72 445.67 220.15 429.1 220.15 L 399.1 220.15 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 60
+            },
+            "raw_svg_content": "<path d=\"M 459.1 190.15 L 479.1 190.15 M 379.1 175.15 L 399.1 175.15 M 379.1 205.15 L 399.1 205.15\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 399.1 160.15 L 429.1 160.15 C 445.67 160.15 459.1 173.58 459.1 190.15 C 459.1 206.72 445.67 220.15 429.1 220.15 L 399.1 220.15 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_172345382": {
+            "id": "Dynamic_Symbol_172345382",
+            "title": "And Gate",
+            "category": "Dynamic",
+            "path_data": "M 459.1 270.15 L 479.1 270.15 M 379.1 255.15 L 399.1 255.15 M 379.1 285.15 L 399.1 285.15 M 399.1 240.15 L 429.1 240.15 C 445.67 240.15 459.1 253.58 459.1 270.15 C 459.1 286.72 445.67 300.15 429.1 300.15 L 399.1 300.15 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 60
+            },
+            "raw_svg_content": "<path d=\"M 459.1 270.15 L 479.1 270.15 M 379.1 255.15 L 399.1 255.15 M 379.1 285.15 L 399.1 285.15\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 399.1 240.15 L 429.1 240.15 C 445.67 240.15 459.1 253.58 459.1 270.15 C 459.1 286.72 445.67 300.15 429.1 300.15 L 399.1 300.15 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1917548810": {
+            "id": "Dynamic_Symbol_1917548810",
+            "title": "Or Gate",
+            "category": "Dynamic",
+            "path_data": "M 609.1 230.15 L 629.1 230.15 M 529.1 215.15 L 552.1 215.15 M 529.1 245.15 L 552.1 245.15 M 569.1 200.15 C 586.57 200.71 602.16 212.4 609.1 230.15 C 602.16 247.9 586.57 259.59 569.1 260.15 L 544.1 260.15 C 554.82 241.59 554.82 218.71 544.1 200.15 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 60
+            },
+            "raw_svg_content": "<path d=\"M 609.1 230.15 L 629.1 230.15 M 529.1 215.15 L 552.1 215.15 M 529.1 245.15 L 552.1 245.15\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 569.1 200.15 C 586.57 200.71 602.16 212.4 609.1 230.15 C 602.16 247.9 586.57 259.59 569.1 260.15 L 544.1 260.15 C 554.82 241.59 554.82 218.71 544.1 200.15 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1612681526": {
+            "id": "Dynamic_Symbol_1612681526",
+            "title": "Component",
+            "category": "Dynamic",
+            "path_data": "M 424.1,85.15 H 484.1 V 115.15 H 424.1 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 60,
+              "height": 30
+            },
+            "raw_svg_content": "<rect x=\"424.1\" y=\"85.15\" width=\"60\" height=\"30\" fill=\"none\" stroke=\"none\" pointer-events=\"all\" /><text x=\"454\" y=\"104\" fill=\"#000000\" font-family=\"Helvetica\" font-size=\"12px\" text-anchor=\"middle\" style=\"fill: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\">SUM</text>",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1047264402": {
+            "id": "Dynamic_Symbol_1047264402",
+            "title": "Component",
+            "category": "Dynamic",
+            "path_data": "M 666.1,215.15 H 726.1 V 245.15 H 666.1 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 60,
+              "height": 30
+            },
+            "raw_svg_content": "<rect x=\"666.1\" y=\"215.15\" width=\"60\" height=\"30\" fill=\"none\" stroke=\"none\" pointer-events=\"all\" /><text x=\"696\" y=\"234\" fill=\"#000000\" font-family=\"Helvetica\" font-size=\"12px\" text-anchor=\"middle\" style=\"fill: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\">C-OUT</text>",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_258072522": {
+            "id": "Dynamic_Symbol_258072522",
+            "title": "Component",
+            "category": "Dynamic",
+            "path_data": "M -0.9,0.15 H 59.1 V 30.15 H -0.9 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 60,
+              "height": 30
+            },
+            "raw_svg_content": "<rect x=\"-0.9\" y=\"0.15\" width=\"60\" height=\"30\" fill=\"none\" stroke=\"none\" pointer-events=\"all\" /><text x=\"29\" y=\"19\" fill=\"#000000\" font-family=\"Helvetica\" font-size=\"12px\" text-anchor=\"middle\" style=\"fill: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\">A</text>",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_274861286": {
+            "id": "Dynamic_Symbol_274861286",
+            "title": "Component",
+            "category": "Dynamic",
+            "path_data": "M -0.9,30.15 H 59.1 V 60.15 H -0.9 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 60,
+              "height": 30
+            },
+            "raw_svg_content": "<rect x=\"-0.9\" y=\"30.15\" width=\"60\" height=\"30\" fill=\"none\" stroke=\"none\" pointer-events=\"all\" /><text x=\"29\" y=\"49\" fill=\"#000000\" font-family=\"Helvetica\" font-size=\"12px\" text-anchor=\"middle\" style=\"fill: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\">B</text>",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1937253891": {
+            "id": "Dynamic_Symbol_1937253891",
+            "title": "Component",
+            "category": "Dynamic",
+            "path_data": "M -0.9,100.15 H 59.1 V 130.15 H -0.9 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 60,
+              "height": 30
+            },
+            "raw_svg_content": "<rect x=\"-0.9\" y=\"100.15\" width=\"60\" height=\"30\" fill=\"none\" stroke=\"none\" pointer-events=\"all\" /><text x=\"29\" y=\"119\" fill=\"#000000\" font-family=\"Helvetica\" font-size=\"12px\" text-anchor=\"middle\" style=\"fill: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\">C-IN</text>",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          }
+        },
+        "ports": [
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-3",
+            "type": "input",
+            "x": 55,
+            "y": 15,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-4",
+            "type": "input",
+            "x": 55,
+            "y": 45,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-9",
+            "type": "input",
+            "x": 55,
+            "y": 115,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-13",
+            "type": "input",
+            "x": 85,
+            "y": 15,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-19",
+            "type": "output",
+            "x": 235,
+            "y": 30,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-20",
+            "type": "output",
+            "x": 275,
+            "y": 115,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-33",
+            "type": "output",
+            "x": 430,
+            "y": 100,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-35",
+            "type": "output",
+            "x": 665,
+            "y": 230,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          }
+        ],
+        "wires": [
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-8",
+            "path": "M 235.00 30.00 L 279.05 30.15 L 279.05 85.20 L 289.10 85.15",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "SSU5uMxD7_3hAj9Vabwi-19",
+            "target_id": "SSU5uMxD7_3hAj9Vabwi-7",
+            "logic_state": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-29",
+            "path": "M 85.00 15.00 L 83.99 285.10 L 379.10 285.15",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "SSU5uMxD7_3hAj9Vabwi-13",
+            "target_id": "SSU5uMxD7_3hAj9Vabwi-12",
+            "logic_state": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-18",
+            "path": "M 55.00 45.00 L 105.00 45.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "SSU5uMxD7_3hAj9Vabwi-4",
+            "target_id": "SSU5uMxD7_3hAj9Vabwi-16",
+            "logic_state": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-5",
+            "path": "M 55.00 15.00 L 129.10 15.15",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "SSU5uMxD7_3hAj9Vabwi-3",
+            "target_id": "SSU5uMxD7_3hAj9Vabwi-2",
+            "logic_state": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-6",
+            "path": "M 105.00 45.00 L 129.10 45.15",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "SSU5uMxD7_3hAj9Vabwi-16",
+            "target_id": "SSU5uMxD7_3hAj9Vabwi-2",
+            "logic_state": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-10",
+            "path": "M 55.00 115.00 L 289.10 115.15",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "SSU5uMxD7_3hAj9Vabwi-9",
+            "target_id": "SSU5uMxD7_3hAj9Vabwi-7",
+            "logic_state": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-22",
+            "path": "M 379.10 205.15 L 233.68 205.10 L 235.00 30.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "SSU5uMxD7_3hAj9Vabwi-11",
+            "target_id": "SSU5uMxD7_3hAj9Vabwi-19",
+            "logic_state": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-23",
+            "path": "M 379.10 175.15 L 273.99 175.10 L 275.00 115.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "SSU5uMxD7_3hAj9Vabwi-11",
+            "target_id": "SSU5uMxD7_3hAj9Vabwi-20",
+            "logic_state": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-28",
+            "path": "M 105.00 45.00 L 104.10 255.10 L 379.10 255.15",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "SSU5uMxD7_3hAj9Vabwi-16",
+            "target_id": "SSU5uMxD7_3hAj9Vabwi-12",
+            "logic_state": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-31",
+            "path": "M 479.1 190.15 L 504.1 190.15 L 504.1 215.1 L 529.1 215.15",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "SSU5uMxD7_3hAj9Vabwi-11",
+            "target_id": "SSU5uMxD7_3hAj9Vabwi-30",
+            "logic_state": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-32",
+            "path": "M 479.1 270.15 L 504.1 270.15 L 504.1 245.1 L 529.1 245.15",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "SSU5uMxD7_3hAj9Vabwi-12",
+            "target_id": "SSU5uMxD7_3hAj9Vabwi-30",
+            "logic_state": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-34",
+            "path": "M 389.10 100.15 L 430.00 100.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "SSU5uMxD7_3hAj9Vabwi-7",
+            "target_id": "SSU5uMxD7_3hAj9Vabwi-33",
+            "logic_state": null
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-36",
+            "path": "M 629.10 230.15 L 665.00 230.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "SSU5uMxD7_3hAj9Vabwi-30",
+            "target_id": "SSU5uMxD7_3hAj9Vabwi-35",
+            "logic_state": null
+          }
+        ],
+        "junctions": [
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-16",
+            "x": 105,
+            "y": 45,
+            "radius": 5,
+            "color": "#2C3E50"
+          }
+        ],
+        "widgets": [
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-2",
+            "type": "svgSymbol",
+            "x": 130,
+            "y": 0,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_938875406",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-7",
+            "type": "svgSymbol",
+            "x": 290,
+            "y": 70,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1401889052",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-11",
+            "type": "svgSymbol",
+            "x": 380,
+            "y": 160,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_112426844",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-12",
+            "type": "svgSymbol",
+            "x": 380,
+            "y": 240,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_172345382",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-30",
+            "type": "svgSymbol",
+            "x": 530,
+            "y": 200,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1917548810",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-37",
+            "type": "svgSymbol",
+            "x": 425,
+            "y": 85,
+            "width": 60,
+            "height": 30,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1612681526",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-38",
+            "type": "svgSymbol",
+            "x": 667,
+            "y": 215,
+            "width": 60,
+            "height": 30,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1047264402",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-39",
+            "type": "svgSymbol",
+            "x": 0,
+            "y": 0,
+            "width": 60,
+            "height": 30,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_258072522",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-40",
+            "type": "svgSymbol",
+            "x": 0,
+            "y": 30,
+            "width": 60,
+            "height": 30,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_274861286",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "SSU5uMxD7_3hAj9Vabwi-41",
+            "type": "svgSymbol",
+            "x": 0,
+            "y": 100,
+            "width": 60,
+            "height": 30,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1937253891",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          }
+        ],
+        "verification": null
+      },
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "verification": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    }
+  ]
+}

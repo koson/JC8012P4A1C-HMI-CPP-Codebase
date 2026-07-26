@@ -600,10 +600,10 @@ namespace JsonRenderer
             {
                 if (!lbl.text.empty())
                 {
-                    int32_t lblX = (int32_t)((placeX + lbl.x * logicalScaleX) * m_scaleX + m_offsetX);
-                    int32_t lblY = (int32_t)((placeY + (lbl.y - 12.0f) * logicalScaleY) * m_scaleY + m_offsetY);
-                    int32_t fontSize = (int32_t)(16.0f * m_scaleY * logicalScaleY);
-                    if (fontSize < 12) fontSize = 12;
+                    int32_t lblX = (int32_t)((placeX + 2.0f) * m_scaleX + m_offsetX);
+                    int32_t lblY = (int32_t)((placeY + widget.height / 2.0f - 8.0f) * m_scaleY + m_offsetY);
+                    int32_t fontSize = (int32_t)(16.0f * m_scaleY);
+                    if (fontSize < 14) fontSize = 14;
                     m_canvas->drawText(lblX, lblY, lbl.text.c_str(), LVColor::Black, fontSize);
                 }
             }
@@ -844,6 +844,33 @@ namespace JsonRenderer
 
         SvgRenderer::SvgPathParser parser;
 
+        // Collect all port and widget pin Y coordinates for exact horizontal snapping
+        std::vector<float> pinYCoords;
+        for (const auto &p : screen.ports)
+        {
+            pinYCoords.push_back(p.y);
+        }
+        for (const auto &w : screen.widgets)
+        {
+            if (w.type == "svgSymbol" && w.height > 0)
+            {
+                pinYCoords.push_back(w.y + 15.0f);
+                pinYCoords.push_back(w.y + w.height / 2.0f);
+                pinYCoords.push_back(w.y + w.height - 15.0f);
+            }
+        }
+
+        auto snapY = [&](float yVal) -> float {
+            for (float targetY : pinYCoords)
+            {
+                if (std::abs(yVal - targetY) <= 2.5f)
+                {
+                    return targetY;
+                }
+            }
+            return yVal;
+        };
+
         for (const auto &wire : screen.wires)
         {
             if (wire.path.empty())
@@ -873,7 +900,7 @@ namespace JsonRenderer
                 {
                 case 'M':
                     cx = cmd.args[0];
-                    cy = cmd.args[1];
+                    cy = snapY(cmd.args[1]);
                     sx = cx;
                     sy = cy;
                     if (!hasStart)
@@ -888,6 +915,7 @@ namespace JsonRenderer
                 case 'm':
                     cx += cmd.args[0];
                     cy += cmd.args[1];
+                    cy = snapY(cy);
                     sx = cx;
                     sy = cy;
                     if (!hasStart)
@@ -901,8 +929,8 @@ namespace JsonRenderer
                     break;
                 case 'L':
                 {
-                    float tx = cmd.args[0], ty = cmd.args[1];
-                    if (std::abs(ty - cy) <= 1.5f)
+                    float tx = cmd.args[0], ty = snapY(cmd.args[1]);
+                    if (std::abs(ty - cy) <= 2.5f)
                     {
                         ty = cy; // Snap nearly horizontal wire to perfectly flat line
                     }
@@ -918,8 +946,8 @@ namespace JsonRenderer
                 }
                 case 'l':
                 {
-                    float tx = cx + cmd.args[0], ty = cy + cmd.args[1];
-                    if (std::abs(ty - cy) <= 1.5f)
+                    float tx = cx + cmd.args[0], ty = snapY(cy + cmd.args[1]);
+                    if (std::abs(ty - cy) <= 2.5f)
                     {
                         ty = cy; // Snap nearly horizontal wire to perfectly flat line
                     }
