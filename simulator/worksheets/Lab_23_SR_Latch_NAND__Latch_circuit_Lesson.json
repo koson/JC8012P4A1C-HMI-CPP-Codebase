@@ -1,0 +1,395 @@
+{
+  "version": "1.0",
+  "lesson_id": "editor-20260730",
+  "title": "Lab_23_SR_Latch_NAND_ Latch_circuit_Lesson",
+  "title_th": "Lab_23_SR_Latch_NAND_ Latch_circuit_Lesson",
+  "category": "custom",
+  "difficulty": "beginner",
+  "estimated_minutes": 25,
+  "ic": "",
+  "pages": [
+    {
+      "page_type": "cover",
+      "title": "SR Latch (NAND Latch) Lesson",
+      "subtitle": "วงจรแลตช์จำสภาวะ SR ด้วย NAND Gate (Active-Low)",
+      "ic_label": "7400",
+      "objectives": [
+        "เข้าใจหลักการทำงานของ NAND SR Latch ($\\bar{S}\\bar{R}$ Latch)",
+        "เรียนรู้สภาวะการควบคุมแบบ Active-Low ($\\bar{S}=0 \\rightarrow Set$, $\\bar{R}=0 \\rightarrow Reset$)"
+      ],
+      "body": null,
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "verification": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "theory",
+      "title": "ทฤษฎีพื้นฐาน",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": "NAND SR Latch เป็นวงจรจำสภาวะ 1 บิตแบบ Active-Low ที่ใช้สัญญาณป้อนกลับ (Feedback) จาก NAND Gate 2 ตัว:\n- $\\bar{S}=0, \\bar{R}=1 \\rightarrow Q=1, \\bar{Q}=0$ (Set)\n- $\\bar{S}=1, \\bar{R}=0 \\rightarrow Q=0, \\bar{Q}=1$ (Reset)\n- $\\bar{S}=1, \\bar{R}=1 \\rightarrow$ คงค่าเดิม (Hold)\n- $\\bar{S}=0, \\bar{R}=0 \\rightarrow$ สภาวะห้ามใช้งาน (Forbidden / Invalid State ทำให้เอาต์พุตทั้งคู่เป็น 1)",
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "verification": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "circuit",
+      "title": "วงจรทดลอง",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": null,
+      "circuit_screen": {
+        "version": "2.0-2607",
+        "title": "Converted Circuit",
+        "description": "coord_mode=raw",
+        "width": 1000,
+        "height": 1000,
+        "background_color": "#FFFFFF",
+        "embedded_symbols": {
+          "Dynamic_Symbol_508450499": {
+            "id": "Dynamic_Symbol_508450499",
+            "title": "And Gate",
+            "category": "Dynamic",
+            "path_data": "M 119.3 29.2 L 139.3 29.2 M 39.3 14.2 L 59.3 14.2 M 39.3 44.2 L 59.3 44.2 M 59.3 -0.8 L 89.3 -0.8 C 105.87 -0.8 119.3 12.63 119.3 29.2 C 119.3 45.77 105.87 59.2 89.3 59.2 L 59.3 59.2 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 60
+            },
+            "raw_svg_content": "<path d=\"M 119.3 29.2 L 139.3 29.2 M 39.3 14.2 L 59.3 14.2 M 39.3 44.2 L 59.3 44.2\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 59.3 -0.8 L 89.3 -0.8 C 105.87 -0.8 119.3 12.63 119.3 29.2 C 119.3 45.77 105.87 59.2 89.3 59.2 L 59.3 59.2 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><ellipse cx=\"123.05\" cy=\"29.2\" rx=\"3.75\" ry=\"3.75\" fill=\"#ffffff\" stroke=\"#000000\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1596621096": {
+            "id": "Dynamic_Symbol_1596621096",
+            "title": "And Gate",
+            "category": "Dynamic",
+            "path_data": "M 119.3 149.2 L 139.3 149.2 M 39.3 134.2 L 59.3 134.2 M 39.3 164.2 L 59.3 164.2 M 59.3 119.2 L 89.3 119.2 C 105.87 119.2 119.3 132.63 119.3 149.2 C 119.3 165.77 105.87 179.2 89.3 179.2 L 59.3 179.2 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 60
+            },
+            "raw_svg_content": "<path d=\"M 119.3 149.2 L 139.3 149.2 M 39.3 134.2 L 59.3 134.2 M 39.3 164.2 L 59.3 164.2\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 59.3 119.2 L 89.3 119.2 C 105.87 119.2 119.3 132.63 119.3 149.2 C 119.3 165.77 105.87 179.2 89.3 179.2 L 59.3 179.2 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><ellipse cx=\"123.05\" cy=\"149.2\" rx=\"3.75\" ry=\"3.75\" fill=\"#ffffff\" stroke=\"#000000\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1783687149": {
+            "id": "Dynamic_Symbol_1783687149",
+            "title": "Inverting Contact",
+            "category": "Dynamic",
+            "path_data": "",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 10,
+              "height": 10
+            },
+            "raw_svg_content": "<ellipse cx=\"139.3\" cy=\"149.2\" rx=\"4\" ry=\"4\" fill=\"#ffffff\" stroke=\"#000000\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          }
+        },
+        "ports": [
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-16",
+            "type": "input",
+            "x": 140,
+            "y": 30,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-19",
+            "type": "output",
+            "x": 5,
+            "y": 15,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-22",
+            "type": "output",
+            "x": 5,
+            "y": 165,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-26",
+            "type": "output",
+            "x": 195,
+            "y": 30,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-30",
+            "type": "output",
+            "x": 195,
+            "y": 150,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-18",
+            "type": "output",
+            "x": 140,
+            "y": 150,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          }
+        ],
+        "wires": [
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-14",
+            "path": "M 39.30 44.20 L 39.30 59.20 L 139.30 129.20 L 140.00 150.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "CfasowpfS4fuEIK-9qhX-2",
+            "target_id": "CfasowpfS4fuEIK-9qhX-18",
+            "logic_state": null
+          },
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-15",
+            "path": "M 140.00 30.00 L 139.30 44.20 L 39.30 114.20 L 39.30 134.20",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "CfasowpfS4fuEIK-9qhX-16",
+            "target_id": null,
+            "logic_state": null
+          },
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-21",
+            "path": "M 39.30 14.20 L 5.00 15.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "CfasowpfS4fuEIK-9qhX-2",
+            "target_id": "CfasowpfS4fuEIK-9qhX-19",
+            "logic_state": null
+          },
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-23",
+            "path": "M 39.30 164.20 L 5.00 165.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": null,
+            "target_id": "CfasowpfS4fuEIK-9qhX-22",
+            "logic_state": null
+          },
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-27",
+            "path": "M 140.00 30.00 L 195.00 30.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "CfasowpfS4fuEIK-9qhX-16",
+            "target_id": "CfasowpfS4fuEIK-9qhX-26",
+            "logic_state": null
+          },
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-31",
+            "path": "M 140.00 150.00 L 195.00 150.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "CfasowpfS4fuEIK-9qhX-18",
+            "target_id": "CfasowpfS4fuEIK-9qhX-30",
+            "logic_state": null
+          }
+        ],
+        "junctions": [],
+        "widgets": [
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-2",
+            "type": "svgSymbol",
+            "x": 40,
+            "y": 0,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_508450499",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "CfasowpfS4fuEIK-9qhX-3",
+            "type": "svgSymbol",
+            "x": 40,
+            "y": 120,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1596621096",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          }
+        ],
+        "verification": null
+      },
+      "circuit_file": null,
+      "hint": "ใช้ NAND Gate 2 ตัว (IC 7400) ต่อเอาต์พุตไขว้เข้าอินพุตป้อนกลับของอีกฝั่ง",
+      "inputs": [
+        "A0",
+        "A1"
+      ],
+      "outputs": [
+        "Y0",
+        "Y1"
+      ],
+      "gate_type": "NAND",
+      "ic": null,
+      "instructions": null,
+      "verification": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "verify",
+      "title": "ตรวจสอบวงจร",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": null,
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": [
+        "ป้อนสภาวะ Active-Low ($\\bar{S}=0, \\bar{R}=1$) เพื่อ Set เอาต์พุต $Q=1$",
+        "ป้อนสภาวะ Active-Low ($\\bar{S}=1, \\bar{R}=0$) เพื่อ Reset เอาต์พุต $Q=0$"
+      ],
+      "verification": {
+        "ic_name": "",
+        "description": "",
+        "drive_ports": [
+          "pin0",
+          "pin1"
+        ],
+        "read_ports": [
+          "pin0",
+          "pin1"
+        ],
+        "truth_table": [
+          {
+            "inputs": [
+              0,
+              0
+            ],
+            "expected": [
+              0,
+              0
+            ]
+          },
+          {
+            "inputs": [
+              0,
+              1
+            ],
+            "expected": [
+              0,
+              0
+            ]
+          },
+          {
+            "inputs": [
+              1,
+              0
+            ],
+            "expected": [
+              0,
+              0
+            ]
+          },
+          {
+            "inputs": [
+              1,
+              1
+            ],
+            "expected": [
+              0,
+              0
+            ]
+          }
+        ],
+        "timing": null,
+        "common_errors": [],
+        "fault_cases": [],
+        "lesson_steps": []
+      },
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "summary",
+      "title": "สรุปผล",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": "สำเร็จแล้วครับ! ผู้เรียนเข้าใจหลักการทำงานของ NAND SR Latch (Active-Low) ในการบันทึกและคงสภาวะข้อมูลดิจิทัลเรียบร้อยแล้ว",
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "verification": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    }
+  ]
+}

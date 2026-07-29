@@ -1,0 +1,473 @@
+{
+  "version": "1.0",
+  "lesson_id": "editor-20260729",
+  "title": "Lab_10_Or_from_nand_circuit_Lesson",
+  "title_th": "Lab_10_Or_from_nand_circuit_Lesson",
+  "category": "custom",
+  "difficulty": "beginner",
+  "estimated_minutes": 25,
+  "ic": "",
+  "pages": [
+    {
+      "page_type": "cover",
+      "title": "Universal Gate Construction Lesson",
+      "subtitle": "การสร้าง OR Gate จาก NAND Gate",
+      "ic_label": "7400",
+      "objectives": [
+        "พิสูจน์คุณสมบัติ Universal Gate ของ NAND Gate",
+        "สามารถต่อ NAND Gate ดัดแปลงเป็น OR Gate"
+      ],
+      "body": null,
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "verification": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "theory",
+      "title": "ทฤษฎีพื้นฐาน",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": "NAND Gate เป็น Universal Gate ที่สามารถสร้างเกตตรรกะอื่นได้ทั้งหมด โดยอาศัยทฤษฎีเดอมอร์แกน (De Morgan's Law):\n1. **NOT:** รวบขาอินพุต NAND เข้าด้วยกัน ($\\overline{A \\cdot A} = \\overline{A}$)\n2. **AND:** ต่อ NOT หลัง NAND Gate ($\\overline{\\overline{A \\cdot B}} = A \\cdot B$)\n3. **OR:** ใช้ NOT ที่อินพุตแต่ละขาก่อนเข้า NAND Gate ($\\overline{\\overline{A} \\cdot \\overline{B}} = A + B$)",
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "verification": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "circuit",
+      "title": "วงจรทดลอง",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": null,
+      "circuit_screen": {
+        "version": "2.0-2607",
+        "title": "Converted Circuit",
+        "description": "coord_mode=raw",
+        "width": 1000,
+        "height": 1000,
+        "background_color": "#FFFFFF",
+        "embedded_symbols": {
+          "Dynamic_Symbol_717403347": {
+            "id": "Dynamic_Symbol_717403347",
+            "title": "Component",
+            "category": "Dynamic",
+            "path_data": "M 298.6,55.05 H 318.6 V 85.05 H 298.6 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 20,
+              "height": 30
+            },
+            "raw_svg_content": "<rect x=\"298.6\" y=\"55.05\" width=\"20\" height=\"30\" fill=\"none\" stroke=\"none\" pointer-events=\"all\" /><text x=\"309\" y=\"74\" fill=\"#000000\" font-family=\"Helvetica\" font-size=\"12px\" text-anchor=\"middle\" style=\"fill: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\">Y</text>",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1525646727": {
+            "id": "Dynamic_Symbol_1525646727",
+            "title": "And Gate",
+            "category": "Dynamic",
+            "path_data": "M 129.6 30.05 L 149.6 30.05 M 49.6 15.05 L 69.6 15.05 M 49.6 45.05 L 69.6 45.05 M 69.6 0.05 L 99.6 0.05 C 116.17 0.05 129.6 13.48 129.6 30.05 C 129.6 46.62 116.17 60.05 99.6 60.05 L 69.6 60.05 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 60
+            },
+            "raw_svg_content": "<path d=\"M 129.6 30.05 L 149.6 30.05 M 49.6 15.05 L 69.6 15.05 M 49.6 45.05 L 69.6 45.05\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 69.6 0.05 L 99.6 0.05 C 116.17 0.05 129.6 13.48 129.6 30.05 C 129.6 46.62 116.17 60.05 99.6 60.05 L 69.6 60.05 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><ellipse cx=\"133.35\" cy=\"30.05\" rx=\"3.75\" ry=\"3.75\" fill=\"#ffffff\" stroke=\"#000000\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1549402055": {
+            "id": "Dynamic_Symbol_1549402055",
+            "title": "Component",
+            "category": "Dynamic",
+            "path_data": "M -0.4,15.05 H 14.6 V 45.05 H -0.4 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 15,
+              "height": 30
+            },
+            "raw_svg_content": "<rect x=\"-0.4\" y=\"15.05\" width=\"15\" height=\"30\" fill=\"none\" stroke=\"none\" pointer-events=\"all\" /><text x=\"7\" y=\"34\" fill=\"#000000\" font-family=\"Helvetica\" font-size=\"12px\" text-anchor=\"middle\" style=\"fill: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\">A</text>",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1259228779": {
+            "id": "Dynamic_Symbol_1259228779",
+            "title": "Component",
+            "category": "Dynamic",
+            "path_data": "M -0.4,95.05 H 14.6 V 125.05 H -0.4 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 15,
+              "height": 30
+            },
+            "raw_svg_content": "<rect x=\"-0.4\" y=\"95.05\" width=\"15\" height=\"30\" fill=\"none\" stroke=\"none\" pointer-events=\"all\" /><text x=\"7\" y=\"114\" fill=\"#000000\" font-family=\"Helvetica\" font-size=\"12px\" text-anchor=\"middle\" style=\"fill: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\">B</text>",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1112659846": {
+            "id": "Dynamic_Symbol_1112659846",
+            "title": "And Gate",
+            "category": "Dynamic",
+            "path_data": "M 129.6 110.05 L 149.6 110.05 M 49.6 95.05 L 69.6 95.05 M 49.6 125.05 L 69.6 125.05 M 69.6 80.05 L 99.6 80.05 C 116.17 80.05 129.6 93.48 129.6 110.05 C 129.6 126.62 116.17 140.05 99.6 140.05 L 69.6 140.05 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 60
+            },
+            "raw_svg_content": "<path d=\"M 129.6 110.05 L 149.6 110.05 M 49.6 95.05 L 69.6 95.05 M 49.6 125.05 L 69.6 125.05\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 69.6 80.05 L 99.6 80.05 C 116.17 80.05 129.6 93.48 129.6 110.05 C 129.6 126.62 116.17 140.05 99.6 140.05 L 69.6 140.05 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><ellipse cx=\"133.35\" cy=\"110.05\" rx=\"3.75\" ry=\"3.75\" fill=\"#ffffff\" stroke=\"#000000\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1948217559": {
+            "id": "Dynamic_Symbol_1948217559",
+            "title": "And Gate",
+            "category": "Dynamic",
+            "path_data": "M 259.6 70.05 L 279.6 70.05 M 179.6 55.05 L 199.6 55.05 M 179.6 85.05 L 199.6 85.05 M 199.6 40.05 L 229.6 40.05 C 246.17 40.05 259.6 53.48 259.6 70.05 C 259.6 86.62 246.17 100.05 229.6 100.05 L 199.6 100.05 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 60
+            },
+            "raw_svg_content": "<path d=\"M 259.6 70.05 L 279.6 70.05 M 179.6 55.05 L 199.6 55.05 M 179.6 85.05 L 199.6 85.05\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 199.6 40.05 L 229.6 40.05 C 246.17 40.05 259.6 53.48 259.6 70.05 C 259.6 86.62 246.17 100.05 229.6 100.05 L 199.6 100.05 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><ellipse cx=\"263.35\" cy=\"70.05\" rx=\"3.75\" ry=\"3.75\" fill=\"#ffffff\" stroke=\"#000000\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          }
+        },
+        "ports": [
+          {
+            "id": "HUCD7_BCj626kMmnS6GJ-8",
+            "type": "output",
+            "x": 295,
+            "y": 70,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "HUCD7_BCj626kMmnS6GJ-13",
+            "type": "input",
+            "x": 25,
+            "y": 30,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "HUCD7_BCj626kMmnS6GJ-14",
+            "type": "input",
+            "x": 20,
+            "y": 110,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          }
+        ],
+        "wires": [
+          {
+            "id": "HUCD7_BCj626kMmnS6GJ-9",
+            "path": "M 279.60 70.05 L 295.00 70.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": null,
+            "target_id": "HUCD7_BCj626kMmnS6GJ-8",
+            "logic_state": null
+          },
+          {
+            "id": "suZ9D4geNTOpsQTQff5G-2",
+            "path": "M 25.00 30.00 L 39.63 30.08 L 39.63 15.05 L 49.60 15.05",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "HUCD7_BCj626kMmnS6GJ-13",
+            "target_id": "HUCD7_BCj626kMmnS6GJ-12",
+            "logic_state": null
+          },
+          {
+            "id": "suZ9D4geNTOpsQTQff5G-3",
+            "path": "M 25.00 30.00 L 39.63 30.08 L 39.63 45.05 L 49.60 45.05",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "HUCD7_BCj626kMmnS6GJ-13",
+            "target_id": "HUCD7_BCj626kMmnS6GJ-12",
+            "logic_state": null
+          },
+          {
+            "id": "suZ9D4geNTOpsQTQff5G-4",
+            "path": "M 20.00 110.00 L 37.08 110.08 L 37.08 95.05 L 49.60 95.05",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "HUCD7_BCj626kMmnS6GJ-14",
+            "target_id": "suZ9D4geNTOpsQTQff5G-0",
+            "logic_state": null
+          },
+          {
+            "id": "suZ9D4geNTOpsQTQff5G-5",
+            "path": "M 20.00 110.00 L 37.08 110.08 L 37.08 125.05 L 49.60 125.05",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "HUCD7_BCj626kMmnS6GJ-14",
+            "target_id": "suZ9D4geNTOpsQTQff5G-0",
+            "logic_state": null
+          },
+          {
+            "id": "suZ9D4geNTOpsQTQff5G-6",
+            "path": "M 149.6 30.05 L 164.6 30.08 L 164.6 55.05 L 179.6 55.05",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "HUCD7_BCj626kMmnS6GJ-12",
+            "target_id": "suZ9D4geNTOpsQTQff5G-1",
+            "logic_state": null
+          },
+          {
+            "id": "suZ9D4geNTOpsQTQff5G-7",
+            "path": "M 149.6 110.05 L 164.6 110.08 L 164.6 85.05 L 179.6 85.05",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "suZ9D4geNTOpsQTQff5G-0",
+            "target_id": "suZ9D4geNTOpsQTQff5G-1",
+            "logic_state": null
+          }
+        ],
+        "junctions": [],
+        "widgets": [
+          {
+            "id": "HUCD7_BCj626kMmnS6GJ-11",
+            "type": "svgSymbol",
+            "x": 299,
+            "y": 55,
+            "width": 20,
+            "height": 30,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_717403347",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "HUCD7_BCj626kMmnS6GJ-12",
+            "type": "svgSymbol",
+            "x": 50,
+            "y": 0,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1525646727",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "HUCD7_BCj626kMmnS6GJ-17",
+            "type": "svgSymbol",
+            "x": 0,
+            "y": 15,
+            "width": 15,
+            "height": 30,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1549402055",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "HUCD7_BCj626kMmnS6GJ-18",
+            "type": "svgSymbol",
+            "x": 0,
+            "y": 95,
+            "width": 15,
+            "height": 30,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1259228779",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "suZ9D4geNTOpsQTQff5G-0",
+            "type": "svgSymbol",
+            "x": 50,
+            "y": 80,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1112659846",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "suZ9D4geNTOpsQTQff5G-1",
+            "type": "svgSymbol",
+            "x": 180,
+            "y": 40,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1948217559",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          }
+        ],
+        "verification": null
+      },
+      "circuit_file": null,
+      "hint": "ใช้ IC 7400 เพียงตัวเดียวประกอบเป็นวงจร OR Gate จาก NAND 3 ตัว",
+      "inputs": [
+        "A0",
+        "A1"
+      ],
+      "outputs": [
+        "Y0"
+      ],
+      "gate_type": "NAND",
+      "ic": null,
+      "instructions": null,
+      "verification": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "verify",
+      "title": "ตรวจสอบวงจร",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": null,
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "verification": {
+        "ic_name": "",
+        "description": "",
+        "drive_ports": [
+          "pin0",
+          "pin1"
+        ],
+        "read_ports": [
+          "pin0"
+        ],
+        "truth_table": [
+          {
+            "inputs": [
+              0,
+              0
+            ],
+            "expected": [
+              0
+            ]
+          },
+          {
+            "inputs": [
+              0,
+              1
+            ],
+            "expected": [
+              1
+            ]
+          },
+          {
+            "inputs": [
+              1,
+              0
+            ],
+            "expected": [
+              1
+            ]
+          },
+          {
+            "inputs": [
+              1,
+              1
+            ],
+            "expected": [
+              1
+            ]
+          }
+        ],
+        "timing": null,
+        "common_errors": [],
+        "fault_cases": [],
+        "lesson_steps": []
+      },
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "summary",
+      "title": "สรุปผล",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": "สำเร็จแล้วครับ! ผู้เรียนพิสูจน์ได้ว่า NAND Gate 3 ตัวสามารถนำมาต่อรวมกันเพื่อสร้างฟังก์ชัน OR Gate ได้สำเร็จ",
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "verification": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    }
+  ]
+}

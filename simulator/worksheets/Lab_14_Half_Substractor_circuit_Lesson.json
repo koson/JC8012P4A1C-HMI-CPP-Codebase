@@ -1,0 +1,554 @@
+{
+  "version": "1.0",
+  "lesson_id": "editor-20260729",
+  "title": "Lab_14_Half_Substractor_circuit_Lesson",
+  "title_th": "Lab_14_Half_Substractor_circuit_Lesson",
+  "category": "custom",
+  "difficulty": "beginner",
+  "estimated_minutes": 25,
+  "ic": "",
+  "pages": [
+    {
+      "page_type": "cover",
+      "title": "Half Subtractor Lesson",
+      "subtitle": "วงจบลบเลขฐานสองขนาดครึ่งบิต",
+      "ic_label": "7486 / 7404 / 7408",
+      "objectives": [
+        "เข้าใจหลักการลบเลขฐานสอง ($A - B$)",
+        "สร้างวงจร Half Subtractor คำนวณค่า Difference ($D$) และ Borrow Out ($B_{OUT}$)",
+        "เรียนรู้ความสัมพันธ์ระหว่างวงจรบวกและวงจบลบเลขดิจิทัล"
+      ],
+      "body": null,
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "verification": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "theory",
+      "title": "ทฤษฎีพื้นฐาน",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": "Half Subtractor ทำหน้าที่ลบเลข 1 บิต ($A - B$):\n- **Difference ($D$):** $D = A \\oplus B$\n- **Borrow Out ($B_{OUT}$):** $B_{OUT} = \\overline{A} \\cdot B$ (ต้องยืมเมื่อ $A=0$ และ $B=1$)",
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "verification": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "circuit",
+      "title": "วงจรทดลอง",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": null,
+      "circuit_screen": {
+        "version": "2.0-2607",
+        "title": "Converted Circuit",
+        "description": "coord_mode=raw",
+        "width": 1000,
+        "height": 1000,
+        "background_color": "#FFFFFF",
+        "embedded_symbols": {
+          "Dynamic_Symbol_708224471": {
+            "id": "Dynamic_Symbol_708224471",
+            "title": "Xor Gate",
+            "category": "Dynamic",
+            "path_data": "M 169.25 29.5 L 189.25 29.5 M 89.25 14.5 L 112.25 14.5 M 89.25 44.5 L 112.25 44.5 M 99.25 -0.5 C 109.97 18.06 109.97 40.94 99.25 59.5 M 129.25 -0.5 C 146.72 0.06 162.31 11.75 169.25 29.5 C 162.31 47.25 146.72 58.94 129.25 59.5 L 104.25 59.5 C 114.97 40.94 114.97 18.06 104.25 -0.5 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 60
+            },
+            "raw_svg_content": "<path d=\"M 169.25 29.5 L 189.25 29.5 M 89.25 14.5 L 112.25 14.5 M 89.25 44.5 L 112.25 44.5\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 99.25 -0.5 C 109.97 18.06 109.97 40.94 99.25 59.5\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 129.25 -0.5 C 146.72 0.06 162.31 11.75 169.25 29.5 C 162.31 47.25 146.72 58.94 129.25 59.5 L 104.25 59.5 C 114.97 40.94 114.97 18.06 104.25 -0.5 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1879197800": {
+            "id": "Dynamic_Symbol_1879197800",
+            "title": "Inverter 2",
+            "category": "Dynamic",
+            "path_data": "M 79.25 114.5 L 99.25 114.5 M 163.25 114.5 L 179.25 114.5 M 156.25 114.5 L 96.25 144.5 L 96.25 84.5 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 60
+            },
+            "raw_svg_content": "<path d=\"M 79.25 114.5 L 99.25 114.5\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 163.25 114.5 L 179.25 114.5\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 156.25 114.5 L 96.25 144.5 L 96.25 84.5 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><ellipse cx=\"160.25\" cy=\"114.5\" rx=\"4\" ry=\"4\" fill=\"#ffffff\" stroke=\"#000000\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1471710174": {
+            "id": "Dynamic_Symbol_1471710174",
+            "title": "And Gate",
+            "category": "Dynamic",
+            "path_data": "M 289.25 154.5 L 309.25 154.5 M 209.25 139.5 L 229.25 139.5 M 209.25 169.5 L 229.25 169.5 M 229.25 124.5 L 259.25 124.5 C 275.82 124.5 289.25 137.93 289.25 154.5 C 289.25 171.07 275.82 184.5 259.25 184.5 L 229.25 184.5 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 60
+            },
+            "raw_svg_content": "<path d=\"M 289.25 154.5 L 309.25 154.5 M 209.25 139.5 L 229.25 139.5 M 209.25 169.5 L 229.25 169.5\" fill=\"none\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" /><path d=\"M 229.25 124.5 L 259.25 124.5 C 275.82 124.5 289.25 137.93 289.25 154.5 C 289.25 171.07 275.82 184.5 259.25 184.5 L 229.25 184.5 Z\" fill=\"#ffffff\" stroke=\"#000000\" stroke-miterlimit=\"10\" pointer-events=\"all\" style=\"fill: var(--ge-adaptive-bg, #ffffff); stroke: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\" />",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1433157376": {
+            "id": "Dynamic_Symbol_1433157376",
+            "title": "Component",
+            "category": "Dynamic",
+            "path_data": "M -0.75,-0.5 H 14.25 V 29.5 H -0.75 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 15,
+              "height": 30
+            },
+            "raw_svg_content": "<rect x=\"-0.75\" y=\"-0.5\" width=\"15\" height=\"30\" fill=\"none\" stroke=\"none\" pointer-events=\"all\" /><text x=\"7\" y=\"18\" fill=\"#000000\" font-family=\"Helvetica\" font-size=\"12px\" text-anchor=\"middle\" style=\"fill: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\">A</text>",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1250565543": {
+            "id": "Dynamic_Symbol_1250565543",
+            "title": "Component",
+            "category": "Dynamic",
+            "path_data": "M -0.75,29.5 H 14.25 V 59.5 H -0.75 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 15,
+              "height": 30
+            },
+            "raw_svg_content": "<rect x=\"-0.75\" y=\"29.5\" width=\"15\" height=\"30\" fill=\"none\" stroke=\"none\" pointer-events=\"all\" /><text x=\"7\" y=\"48\" fill=\"#000000\" font-family=\"Helvetica\" font-size=\"12px\" text-anchor=\"middle\" style=\"fill: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\">B</text>",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1006367793": {
+            "id": "Dynamic_Symbol_1006367793",
+            "title": "Component",
+            "category": "Dynamic",
+            "path_data": "M 339.25,139.5 H 399.25 V 169.5 H 339.25 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 60,
+              "height": 30
+            },
+            "raw_svg_content": "<rect x=\"339.25\" y=\"139.5\" width=\"60\" height=\"30\" fill=\"none\" stroke=\"none\" pointer-events=\"all\" /><text x=\"369\" y=\"158\" fill=\"#000000\" font-family=\"Helvetica\" font-size=\"12px\" text-anchor=\"middle\" style=\"fill: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\">BORROW</text>",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          },
+          "Dynamic_Symbol_1443756985": {
+            "id": "Dynamic_Symbol_1443756985",
+            "title": "Component",
+            "category": "Dynamic",
+            "path_data": "M 214.25,14.5 H 294.25 V 44.5 H 214.25 Z",
+            "view_box": {
+              "x": 0,
+              "y": 0,
+              "width": 80,
+              "height": 30
+            },
+            "raw_svg_content": "<rect x=\"214.25\" y=\"14.5\" width=\"80\" height=\"30\" fill=\"none\" stroke=\"none\" pointer-events=\"all\" /><text x=\"254\" y=\"33\" fill=\"#000000\" font-family=\"Helvetica\" font-size=\"12px\" text-anchor=\"middle\" style=\"fill: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));\">DIFFERENCE</text>",
+            "pins": null,
+            "description": "Generated dynamically from draw.io SVG element payload",
+            "text_labels": null
+          }
+        },
+        "ports": [
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-7",
+            "type": "input",
+            "x": 20,
+            "y": 15,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-8",
+            "type": "input",
+            "x": 20,
+            "y": 45,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-17",
+            "type": "output",
+            "x": 205,
+            "y": 30,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-19",
+            "type": "output",
+            "x": 330,
+            "y": 155,
+            "radius": 5,
+            "label": null,
+            "label_position": null,
+            "direction": null
+          }
+        ],
+        "wires": [
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-16",
+            "path": "M 179.25 114.5 L 199.28 114.5 L 199.28 139.53 L 209.25 139.5",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "i5q-wFNTNxQ3Y_8osIX0-3",
+            "target_id": "i5q-wFNTNxQ3Y_8osIX0-4",
+            "logic_state": null
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-9",
+            "path": "M 79.25 114.50 L 69.28 114.50 L 70.00 15.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "i5q-wFNTNxQ3Y_8osIX0-3",
+            "target_id": "i5q-wFNTNxQ3Y_8osIX0-5",
+            "logic_state": null
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-10",
+            "path": "M 209.25 169.50 L 49.45 169.53 L 50.00 45.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "i5q-wFNTNxQ3Y_8osIX0-4",
+            "target_id": "i5q-wFNTNxQ3Y_8osIX0-6",
+            "logic_state": null
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-11",
+            "path": "M 20.00 15.00 L 70.00 15.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "i5q-wFNTNxQ3Y_8osIX0-7",
+            "target_id": "i5q-wFNTNxQ3Y_8osIX0-5",
+            "logic_state": null
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-12",
+            "path": "M 70.00 15.00 L 89.25 14.50",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "i5q-wFNTNxQ3Y_8osIX0-5",
+            "target_id": "i5q-wFNTNxQ3Y_8osIX0-2",
+            "logic_state": null
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-13",
+            "path": "M 20.00 45.00 L 50.00 45.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "i5q-wFNTNxQ3Y_8osIX0-8",
+            "target_id": "i5q-wFNTNxQ3Y_8osIX0-6",
+            "logic_state": null
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-14",
+            "path": "M 50.00 45.00 L 89.25 44.50",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "i5q-wFNTNxQ3Y_8osIX0-6",
+            "target_id": "i5q-wFNTNxQ3Y_8osIX0-2",
+            "logic_state": null
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-18",
+            "path": "M 189.25 29.50 L 205.00 30.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "i5q-wFNTNxQ3Y_8osIX0-2",
+            "target_id": "i5q-wFNTNxQ3Y_8osIX0-17",
+            "logic_state": null
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-20",
+            "path": "M 309.25 154.50 L 330.00 155.00",
+            "stroke_width": 2,
+            "color": "#2C3E50",
+            "source_id": "i5q-wFNTNxQ3Y_8osIX0-4",
+            "target_id": "i5q-wFNTNxQ3Y_8osIX0-19",
+            "logic_state": null
+          }
+        ],
+        "junctions": [
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-5",
+            "x": 70,
+            "y": 15,
+            "radius": 5,
+            "color": "#2C3E50"
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-6",
+            "x": 50,
+            "y": 45,
+            "radius": 5,
+            "color": "#2C3E50"
+          }
+        ],
+        "widgets": [
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-2",
+            "type": "svgSymbol",
+            "x": 90,
+            "y": 0,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_708224471",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-3",
+            "type": "svgSymbol",
+            "x": 80,
+            "y": 85,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1879197800",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-4",
+            "type": "svgSymbol",
+            "x": 210,
+            "y": 125,
+            "width": 100,
+            "height": 60,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1471710174",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-21",
+            "type": "svgSymbol",
+            "x": 0,
+            "y": 0,
+            "width": 15,
+            "height": 30,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1433157376",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-22",
+            "type": "svgSymbol",
+            "x": 0,
+            "y": 30,
+            "width": 15,
+            "height": 30,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1250565543",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-23",
+            "type": "svgSymbol",
+            "x": 340,
+            "y": 140,
+            "width": 60,
+            "height": 30,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1006367793",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          },
+          {
+            "id": "i5q-wFNTNxQ3Y_8osIX0-24",
+            "type": "svgSymbol",
+            "x": 215,
+            "y": 15,
+            "width": 80,
+            "height": 30,
+            "rotation": 0,
+            "symbol_id": "Dynamic_Symbol_1443756985",
+            "raw_group_content": "",
+            "fill": null,
+            "stroke": "#2C3E50",
+            "stroke_width": 2,
+            "scale": 1
+          }
+        ],
+        "verification": null
+      },
+      "circuit_file": null,
+      "hint": "ใช้ XOR Gate 1 ตัวสำหรับ Difference และ NOT + AND Gate สำหรับ Borrow Out",
+      "inputs": [
+        "A0",
+        "A1"
+      ],
+      "outputs": [
+        "Y0",
+        "Y1"
+      ],
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "verification": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "verify",
+      "title": "ตรวจสอบวงจร",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": null,
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": "7486, 7404, 7408",
+      "instructions": null,
+      "verification": {
+        "ic_name": "",
+        "description": "",
+        "drive_ports": [
+          "pin0",
+          "pin1"
+        ],
+        "read_ports": [
+          "pin0",
+          "pin1"
+        ],
+        "truth_table": [
+          {
+            "inputs": [
+              0,
+              0
+            ],
+            "expected": [
+              0,
+              0
+            ]
+          },
+          {
+            "inputs": [
+              0,
+              1
+            ],
+            "expected": [
+              1,
+              1
+            ]
+          },
+          {
+            "inputs": [
+              1,
+              0
+            ],
+            "expected": [
+              1,
+              0
+            ]
+          },
+          {
+            "inputs": [
+              1,
+              1
+            ],
+            "expected": [
+              0,
+              0
+            ]
+          }
+        ],
+        "timing": null,
+        "common_errors": [],
+        "fault_cases": [],
+        "lesson_steps": []
+      },
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    },
+    {
+      "page_type": "summary",
+      "title": "สรุปผล",
+      "subtitle": null,
+      "ic_label": null,
+      "objectives": null,
+      "body": "สำเร็จแล้วครับ! ผู้เรียนเข้าใจหลักการลบเลขฐานสองระดับบิตพื้นฐานด้วย Half Subtractor เรียบร้อยแล้ว",
+      "circuit_screen": null,
+      "circuit_file": null,
+      "hint": null,
+      "inputs": null,
+      "outputs": null,
+      "gate_type": null,
+      "ic": null,
+      "instructions": null,
+      "verification": null,
+      "photo_url": null,
+      "photo_caption": null,
+      "encouragement_icon": null,
+      "encouragement_message": null
+    }
+  ]
+}
