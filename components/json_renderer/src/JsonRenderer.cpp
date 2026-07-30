@@ -382,12 +382,10 @@ namespace JsonRenderer
                     logicalScaleX = uniformScale;
                     logicalScaleY = uniformScale;
 
-                    // Center the symbol vertically within the widget's bounding box
-                    const float extraW = widget.width - boundsW * uniformScale;
-                    const float extraH = widget.height - boundsH * uniformScale;
-
-                    placeX = widgetBaseX + extraW / 2.0f;
-                    placeY = widgetBaseY + extraH / 2.0f;
+                    // Place symbol directly at widgetBaseX, widgetBaseY (matching WASM & DrawIO spec)
+                    // Do NOT add extraW / 2.0f centering offset, as that shifts gate pins away from wire endpoints!
+                    placeX = widgetBaseX;
+                    placeY = widgetBaseY;
 
                     // Detailed log showing SVG coordinates vs logical HMI coordinates
                     ESP_LOGI(TAG, "=== SVG COORD DIAGNOSTIC [%s] ===", widget.symbolId.c_str());

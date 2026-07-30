@@ -1,5 +1,6 @@
 #include "JsonParser.hpp"
 #include "SvgPathParser.hpp"
+#include "MathEquationParser.hpp"
 #include "esp_log.h"
 #include <cstdlib>
 #include <cstring>
@@ -413,7 +414,7 @@ namespace JsonRenderer
                     if (lbl && cJSON_IsObject(lbl))
                     {
                         TextLabel tl;
-                        tl.text = getString(lbl, "text", "");
+                        tl.text = MathEquationParser::process_text_math(getString(lbl, "text", ""));
                         tl.x = getFloat(lbl, "x", 0.0f);
                         tl.y = getFloat(lbl, "y", 0.0f);
                         if (!tl.text.empty())
@@ -557,7 +558,7 @@ namespace JsonRenderer
             }
 
             // Additional properties for labels
-            widget.text = getString(item, "text", "");
+            widget.text = MathEquationParser::process_text_math(getString(item, "text", ""));
             widget.fontSize = getInt(item, "fontSize", 16);
             widget.textColor = getString(item, "textColor", "#000000");
             widget.fontWeight = getString(item, "fontWeight", "normal");

@@ -6,6 +6,7 @@
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_line.h"
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_label.h"
 #include "font_thai.h"
+#include "MathEquationParser.hpp"
 
 LVCanvas::LVCanvas(lv_obj_t *parent, uint16_t width, uint16_t height, lv_color_format_t fmt, void *buffer)
     : m_width(width), m_height(height)
@@ -192,6 +193,9 @@ void LVCanvas::drawText(int32_t x, int32_t y, const char *text, LVColor color, i
     lv_layer_t tmp;
     lv_layer_t *layer = acquireLayer(&tmp);
 
+    // Process inline math equations ($...$)
+    std::string processedText = MathEquationParser::process_text_math(text);
+
     // Select font: always TH Niramit for consistent sizing between Thai and Latin-only text.
     // Montserrat renders Latin at a visually larger size than TH Niramit at the same fontSize,
     // which confuses users when mixing screens. TH Niramit contains full Latin (U+0020-007F).
@@ -201,7 +205,7 @@ void LVCanvas::drawText(int32_t x, int32_t y, const char *text, LVColor color, i
     lv_draw_label_dsc_init(&dsc);
     dsc.color = color.raw();
     dsc.font = font;
-    dsc.text = text;
+    dsc.text = processedText.c_str();
     int32_t w = (max_width > 0) ? max_width : (int32_t)m_width - x;
 
     lv_area_t area;
@@ -246,22 +250,72 @@ static uint32_t utf8_next_cp(const uint8_t **p)
     if ((b & 0xE0) == 0xC0)
     {
         uint32_t cp = (uint32_t)(b & 0x1F) << 6;
-        cp |= (**p & 0x3F);
-        (*p)++;
+        if ((**p & 0xC0) == 0x80)
+        {
+            cp |= (**p & 0x3F);
+            (*p)++;
+        }
         return cp;
     }
     if ((b & 0xF0) == 0xE0)
     {
         uint32_t cp = (uint32_t)(b & 0x0F) << 12;
-        cp |= (uint32_t)(**p & 0x3F) << 6;
-        (*p)++;
-        cp |= (**p & 0x3F);
-        (*p)++;
+        if ((**p & 0xC0) == 0x80)
+        {
+            cp |= (uint32_t)(**p & 0x3F) << 6;
+            (*p)++;
+        }
+        if ((**p & 0xC0) == 0x80)
+        {
+            cp |= (**p & 0x3F);
+            (*p)++;
+        }
         return cp;
     }
-    // 4-byte (outside BMP, skip)
-    (*p) += 3;
+    if ((b & 0xF8) == 0xF0)
+    {
+        uint32_t cp = (uint32_t)(b & 0x07) << 18;
+        if ((**p & 0xC0) == 0x80)
+        {
+            cp |= (uint32_t)(**p & 0x3F) << 12;
+            (*p)++;
+        }
+        if ((**p & 0xC0) == 0x80)
+        {
+            cp |= (uint32_t)(**p & 0x3F) << 6;
+            (*p)++;
+        }
+        if ((**p & 0xC0) == 0x80)
+        {
+            cp |= (**p & 0x3F);
+            (*p)++;
+        }
+        return cp;
+    }
     return 0xFFFD;
+}
+
+// Check whether codepoint is supported by HMI font atlas (ASCII, Thai, Latin-1 Supplement).
+// Unsupported codepoints (emojis, missing glyphs 0xFFFD, variation selectors 0xFE00..FE0F,
+// keycaps 0x20E3, dingbats 0x2700+, misc symbols 0x2600+, tech symbols 0x2300+) cause Tofu boxes.
+static inline bool is_supported_font_cp(uint32_t cp)
+{
+    // ASCII printable & standard whitespace
+    if (cp >= 0x0020 && cp <= 0x007E) return true;
+    if (cp == '\n' || cp == '\r' || cp == '\t') return true;
+
+    // Thai Unicode block (U+0E00 .. U+0E7F)
+    if (cp >= 0x00E00 && cp <= 0x00E7F) return true;
+
+    // Latin-1 Supplement (U+00A0 .. U+00FF, e.g. °, ±, ·, ×, ÷, ², ³, etc.)
+    if (cp >= 0x00A0 && cp <= 0x00FF) return true;
+
+    // Math Operators, Subscripts/Superscripts & Diacritics (e.g. ⊕ U+2295, ⊗ U+2297, ₀-₉, ⁰-⁹)
+    if (cp >= 0x2200 && cp <= 0x22FF) return true;
+    if (cp >= 0x2070 && cp <= 0x209F) return true;
+    if (cp >= 0x0300 && cp <= 0x036F) return true;
+
+    return false;
 }
 
 // Write one UTF-8 codepoint to buf (must have at least 4 bytes). Returns byte count.
@@ -298,6 +352,23 @@ void LVCanvas::drawTextThaiShaped(lv_layer_t *layer, const lv_draw_label_dsc_t *
     ToneMark tone_list[MAX_TONES];
     int tone_count = 0;
 
+    struct OverbarItem
+    {
+        int32_t x1;
+        int32_t x2;
+        int32_t y;
+        int depth;
+    };
+    OverbarItem overbar_list[32];
+    int overbar_count = 0;
+
+    struct ObStackItem
+    {
+        int32_t x;
+    };
+    ObStackItem ob_stack[8];
+    int ob_stack_depth = 0;
+
     // Build base_buf: original text with 2-layer tone marks removed
     char base_buf[512];
     uint8_t *out = (uint8_t *)base_buf;
@@ -312,6 +383,40 @@ void LVCanvas::drawTextThaiShaped(lv_layer_t *layer, const lv_draw_label_dsc_t *
         uint32_t cp = utf8_next_cp(&p);
         if (cp == 0)
             break;
+
+        if (cp == 0x01)
+        {
+            if (ob_stack_depth < 8)
+            {
+                ob_stack[ob_stack_depth++] = {area->x1 + x_acc};
+            }
+            prev_cp = cp;
+            continue;
+        }
+        if (cp == 0x02)
+        {
+            if (ob_stack_depth > 0)
+            {
+                ob_stack_depth--;
+                if (overbar_count < 32)
+                {
+                    overbar_list[overbar_count++] = {
+                        ob_stack[ob_stack_depth].x,
+                        area->x1 + x_acc,
+                        area->y1 + (dsc->font ? (dsc->font->line_height / 6) : 2) - (ob_stack_depth * 4),
+                        ob_stack_depth};
+                }
+            }
+            prev_cp = cp;
+            continue;
+        }
+
+        // Skip emojis & unsupported symbols to prevent vertical rectangle Tofu boxes (▯)
+        if (!is_supported_font_cp(cp))
+        {
+            prev_cp = cp;
+            continue;
+        }
 
         // Track current cluster's base consonant (Thai: 0E01–0E2E)
         if (cp >= 0x0E01 && cp <= 0x0E2E)
@@ -363,18 +468,6 @@ void LVCanvas::drawTextThaiShaped(lv_layer_t *layer, const lv_draw_label_dsc_t *
     // Render each 2-layer tone mark with a per-consonant dynamic offset
     for (int i = 0; i < tone_count; i++)
     {
-        // Compute how many pixels to lower the tone mark so it sits just above the consonant.
-        //
-        // Font coordinate system (positive = up from baseline):
-        //   consonant top = cons_g.box_h + cons_g.ofs_y   (pixels above baseline)
-        //   tone mark bottom = tone_g.ofs_y               (pixels above baseline)
-        //
-        // We want: tone_bottom_on_screen ≈ consonant_top_on_screen + 1 px gap
-        // Since screen y increases downward, "lower the tone by Δ" means area.y1 += Δ.
-        // Δ = tone_bottom - consonant_top - 1
-        // Clamp to 0: tall consonants (ห, บ, ด …) where consonant_top ≈ tone_bottom need
-        // no adjustment (the font already positions them correctly for 2-layer).
-
         lv_font_glyph_dsc_t cons_g = {}, tone_g = {};
         lv_font_get_glyph_dsc(dsc->font, &cons_g, tone_list[i].base_cp, 0);
         lv_font_get_glyph_dsc(dsc->font, &tone_g, tone_list[i].cp, 0);
@@ -382,7 +475,7 @@ void LVCanvas::drawTextThaiShaped(lv_layer_t *layer, const lv_draw_label_dsc_t *
         int32_t cons_top = (int32_t)cons_g.box_h + (int32_t)cons_g.ofs_y;
         int32_t tone_bott = (int32_t)tone_g.ofs_y;
         int32_t drop = tone_bott - cons_top - 1;
-        int32_t offset = (drop > 0) ? drop : 0;
+        int32_t offset = 0; // Standard 2-layer tone placement (prevents Mai Tho from dropping down into consonant space)
 
         // Build single-character UTF-8 string into arena
         char tbuf[4];
@@ -399,6 +492,25 @@ void LVCanvas::drawTextThaiShaped(lv_layer_t *layer, const lv_draw_label_dsc_t *
         tone_area.y1 = area->y1 + offset;
 
         lv_draw_label(layer, &tone_dsc, &tone_area);
+    }
+
+    // Render overbar lines
+    for (int i = 0; i < overbar_count; i++)
+    {
+        if (overbar_list[i].x2 > overbar_list[i].x1)
+        {
+            lv_draw_line_dsc_t line_dsc;
+            lv_draw_line_dsc_init(&line_dsc);
+            line_dsc.color = dsc->color;
+            line_dsc.width = 2;
+            line_dsc.p1.x = overbar_list[i].x1;
+            line_dsc.p1.y = overbar_list[i].y;
+            line_dsc.p2.x = overbar_list[i].x2;
+            line_dsc.p2.y = overbar_list[i].y;
+            line_dsc.round_start = 1;
+            line_dsc.round_end = 1;
+            lv_draw_line(layer, &line_dsc);
+        }
     }
 }
 

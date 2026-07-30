@@ -987,7 +987,7 @@ void LessonPlayer::buildCoverPage(lv_obj_t *cont, cJSON *page)
             if (!cJSON_IsString(item))
                 continue;
 
-            char buf[128];
+            char buf[512];
             snprintf(buf, sizeof(buf), "  %d.  %s", i + 1, item->valuestring);
 
             lv_obj_t *row = thai_label_create(panel);
@@ -995,7 +995,7 @@ void LessonPlayer::buildCoverPage(lv_obj_t *cont, cJSON *page)
             thai_label_set_font(row, th_niramit_select(24));
             thai_label_set_color(row, lv_color_hex(0xccccdd));
             thai_label_set_align(row, LV_TEXT_ALIGN_LEFT);
-            lv_obj_set_size(row, SCR_W - PAD * 2 - 40, 48);
+            lv_obj_set_size(row, SCR_W - PAD * 2 - 40, LV_SIZE_CONTENT);
         }
     }
 }

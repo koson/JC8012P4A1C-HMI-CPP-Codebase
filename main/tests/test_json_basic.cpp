@@ -382,3 +382,25 @@ void test_json_parse_snake_case_embedded_symbol_and_widget_link(void) {
 
     tearDown_json();
 }
+
+#include "MathEquationParser.hpp"
+
+void test_math_equation_parser_conversions(void) {
+    using MathEquationParser::process_text_math;
+
+    TEST_ASSERT_EQUAL_STRING(
+        "NAND Gate (Y = (A · B)')",
+        process_text_math("NAND Gate ($Y = \\overline{A \\cdot B}$)").c_str());
+
+    TEST_ASSERT_EQUAL_STRING(
+        "XOR (Y = A ⊕ B)",
+        process_text_math("XOR ($Y = A \\oplus B$)").c_str());
+
+    TEST_ASSERT_EQUAL_STRING(
+        "SUM = A ⊕ B ⊕ C_IN",
+        process_text_math("$SUM = A \\oplus B \\oplus C_{IN}$").c_str());
+
+    TEST_ASSERT_EQUAL_STRING(
+        "(A · B)' = A' + B'",
+        process_text_math("$\\overline{A \\cdot B} = \\overline{A} + \\overline{B}$").c_str());
+}

@@ -10,6 +10,7 @@
  */
 #include "ThaiLabel.h"
 #include "font_thai.h"
+#include "MathEquationParser.hpp"
 
 #include "../../managed_components/lvgl__lvgl/src/draw/lv_draw_label.h"
 #include "../../managed_components/lvgl__lvgl/src/misc/lv_text.h"
@@ -56,21 +57,72 @@ static uint32_t utf8_next_cp(const uint8_t **p)
     if ((b & 0xE0) == 0xC0)
     {
         uint32_t cp = (uint32_t)(b & 0x1F) << 6;
-        cp |= (**p & 0x3F);
-        (*p)++;
+        if ((**p & 0xC0) == 0x80)
+        {
+            cp |= (**p & 0x3F);
+            (*p)++;
+        }
         return cp;
     }
     if ((b & 0xF0) == 0xE0)
     {
         uint32_t cp = (uint32_t)(b & 0x0F) << 12;
-        cp |= (uint32_t)(**p & 0x3F) << 6;
-        (*p)++;
-        cp |= (**p & 0x3F);
-        (*p)++;
+        if ((**p & 0xC0) == 0x80)
+        {
+            cp |= (uint32_t)(**p & 0x3F) << 6;
+            (*p)++;
+        }
+        if ((**p & 0xC0) == 0x80)
+        {
+            cp |= (**p & 0x3F);
+            (*p)++;
+        }
         return cp;
     }
-    (*p) += 3;
+    if ((b & 0xF8) == 0xF0)
+    {
+        uint32_t cp = (uint32_t)(b & 0x07) << 18;
+        if ((**p & 0xC0) == 0x80)
+        {
+            cp |= (uint32_t)(**p & 0x3F) << 12;
+            (*p)++;
+        }
+        if ((**p & 0xC0) == 0x80)
+        {
+            cp |= (uint32_t)(**p & 0x3F) << 6;
+            (*p)++;
+        }
+        if ((**p & 0xC0) == 0x80)
+        {
+            cp |= (**p & 0x3F);
+            (*p)++;
+        }
+        return cp;
+    }
     return 0xFFFD;
+}
+
+// Check whether codepoint is supported by HMI font atlas (ASCII, Thai, Latin-1 Supplement).
+// Unsupported codepoints (emojis, missing glyphs 0xFFFD, variation selectors 0xFE00..FE0F,
+// keycaps 0x20E3, dingbats 0x2700+, misc symbols 0x2600+, tech symbols 0x2300+) cause Tofu boxes.
+static inline bool is_supported_font_cp(uint32_t cp)
+{
+    // ASCII printable & standard whitespace
+    if (cp >= 0x0020 && cp <= 0x007E) return true;
+    if (cp == '\n' || cp == '\r' || cp == '\t') return true;
+
+    // Thai Unicode block (U+0E00 .. U+0E7F)
+    if (cp >= 0x00E00 && cp <= 0x00E7F) return true;
+
+    // Latin-1 Supplement (U+00A0 .. U+00FF, e.g. °, ±, ·, ×, ÷, ², ³, etc.)
+    if (cp >= 0x00A0 && cp <= 0x00FF) return true;
+
+    // Math Operators, Subscripts/Superscripts & Diacritics (e.g. ⊕ U+2295, ⊗ U+2297, ₀-₉, ⁰-⁹)
+    if (cp >= 0x2200 && cp <= 0x22FF) return true;
+    if (cp >= 0x2070 && cp <= 0x209F) return true;
+    if (cp >= 0x0300 && cp <= 0x036F) return true;
+
+    return false;
 }
 
 static int utf8_write_cp(uint8_t *buf, uint32_t cp)
@@ -141,6 +193,11 @@ static void thai_draw_shaped(lv_layer_t *layer,
             uint32_t cp = utf8_next_cp(&p);
             if (!cp)
                 break;
+            if (!is_supported_font_cp(cp))
+            {
+                prev = cp;
+                continue;
+            }
             if (th_is_tone_mark(cp) && !th_is_above_vowel(prev))
             {
                 prev = cp;
@@ -166,6 +223,24 @@ static void thai_draw_shaped(lv_layer_t *layer,
     uint32_t line_start = 0;
     int32_t cursor_y = 0; // relative to area->y1
 
+    struct OverbarItem
+    {
+        int32_t x1;
+        int32_t x2;
+        int32_t y;
+        int depth;
+    };
+    OverbarItem overbar_list[32];
+    int overbar_count = 0;
+
+    struct ObStackItem
+    {
+        int32_t x;
+        int32_t y;
+    };
+    ObStackItem ob_stack[8];
+    int ob_stack_depth = 0;
+
     while (line_start < full_len && txt[line_start] != '\0')
     {
         // Find where this line ends (using same wrap width as lv_draw_label)
@@ -183,14 +258,12 @@ static void thai_draw_shaped(lv_layer_t *layer,
             break;
 
         // Compute per-line alignment offset
-        // (tone marks have adv_w=0 → lv_text_get_width on original line = base line width)
         int32_t align_ofs = 0;
         if (dsc->align != LV_TEXT_ALIGN_LEFT)
         {
             lv_text_attributes_t wa = {};
             wa.letter_space = dsc->letter_space;
             wa.max_width = LV_COORD_MAX;
-            // Exclude trailing \n/\r from width measurement
             uint32_t mlen = line_len;
             while (mlen > 0 && (txt[line_start + mlen - 1] == '\n' ||
                                 txt[line_start + mlen - 1] == '\r'))
@@ -202,7 +275,7 @@ static void thai_draw_shaped(lv_layer_t *layer,
                 align_ofs = 0;
         }
 
-        // Walk this line's codepoints, track cursor x, record tone marks
+        // Walk this line's codepoints, track cursor x, record tone marks and overbars
         int tone_line_start = tone_count;
         const uint8_t *lp = (const uint8_t *)&txt[line_start];
         const uint8_t *lend = lp + line_len;
@@ -218,6 +291,33 @@ static void thai_draw_shaped(lv_layer_t *layer,
             if (!cp || cp == '\n' || cp == '\r')
                 break;
 
+            if (cp == 0x01)
+            {
+                if (ob_stack_depth < 8)
+                {
+                    ob_stack[ob_stack_depth++] = {x_acc, cursor_y};
+                }
+                prev_cp = cp;
+                continue;
+            }
+            if (cp == 0x02)
+            {
+                if (ob_stack_depth > 0)
+                {
+                    ob_stack_depth--;
+                    if (overbar_count < 32)
+                    {
+                        overbar_list[overbar_count++] = {
+                            area->x1 + align_ofs + ob_stack[ob_stack_depth].x,
+                            area->x1 + align_ofs + x_acc,
+                            area->y1 + cursor_y + (dsc->font ? (dsc->font->line_height / 6) : 2) - (ob_stack_depth * 4),
+                            ob_stack_depth};
+                    }
+                }
+                prev_cp = cp;
+                continue;
+            }
+
             if (cp >= 0x0E01 && cp <= 0x0E2E)
                 cluster_base = cp;
 
@@ -225,16 +325,13 @@ static void thai_draw_shaped(lv_layer_t *layer,
             {
                 if (tone_count < MAX_TONES)
                 {
-                    // Record cursor AFTER consonant (x_acc already includes consonant adv_w).
-                    // We do NOT subtract prev_adv: the font's ofs_x (negative) handles
-                    // the horizontal overlay onto the consonant.
                     tone_list[tone_count++] = {
-                        x_acc,    // relative to line text start; patched below
-                        cursor_y, // relative to area->y1; patched below
+                        x_acc,
+                        cursor_y,
                         cp, cluster_base};
                 }
                 prev_cp = cp;
-                continue; // tone marks have adv_w≈0; do NOT advance x_acc
+                continue;
             }
 
             lv_font_glyph_dsc_t g;
@@ -272,11 +369,10 @@ static void thai_draw_shaped(lv_layer_t *layer,
         lv_font_get_glyph_dsc(dsc->font, &cons_g, tone_list[i].base_cp, 0);
         lv_font_get_glyph_dsc(dsc->font, &tone_g, tone_list[i].cp, 0);
 
-        // Vertical adjustment: push tone mark up if it would overlap consonant cap
         int32_t cons_top = (int32_t)cons_g.box_h + (int32_t)cons_g.ofs_y;
         int32_t tone_bott = (int32_t)tone_g.ofs_y;
         int32_t drop = tone_bott - cons_top - 1;
-        int32_t y_offset = (drop > 0) ? drop : 0;
+        int32_t y_offset = 0; // Standard 2-layer tone placement (prevents Mai Tho from dropping down into consonant space)
 
         char tbuf[4];
         int bytes = utf8_write_cp((uint8_t *)tbuf, tone_list[i].cp);
@@ -286,16 +382,33 @@ static void thai_draw_shaped(lv_layer_t *layer,
         tone_dsc.text = tbuf;
         tone_dsc.text_length = (uint32_t)bytes;
         tone_dsc.text_local = 1;
-        // LEFT: pos.x == tone_area.x1 == cursor-after-consonant.
-        // Font's ofs_x (negative) overlays the glyph onto the consonant.
         tone_dsc.align = LV_TEXT_ALIGN_LEFT;
 
         lv_area_t tone_area = *area;
         tone_area.x1 = tone_list[i].abs_x;
-        tone_area.x2 = tone_list[i].abs_x + dsc->font->line_height; // generous width
+        tone_area.x2 = tone_list[i].abs_x + dsc->font->line_height;
         tone_area.y1 = tone_list[i].abs_y1 + y_offset;
 
         lv_draw_label(layer, &tone_dsc, &tone_area);
+    }
+
+    // ── Render overbar lines ──────────────────────────────────────────────────
+    for (int i = 0; i < overbar_count; i++)
+    {
+        if (overbar_list[i].x2 > overbar_list[i].x1)
+        {
+            lv_draw_line_dsc_t line_dsc;
+            lv_draw_line_dsc_init(&line_dsc);
+            line_dsc.color = dsc->color;
+            line_dsc.width = 2;
+            line_dsc.p1.x = overbar_list[i].x1;
+            line_dsc.p1.y = overbar_list[i].y;
+            line_dsc.p2.x = overbar_list[i].x2;
+            line_dsc.p2.y = overbar_list[i].y;
+            line_dsc.round_start = 1;
+            line_dsc.round_end = 1;
+            lv_draw_line(layer, &line_dsc);
+        }
     }
 }
 
@@ -398,7 +511,7 @@ extern "C"
         ThaiLabelData *d = get_data(obj);
         if (!d)
             return;
-        d->text = text ? text : "";
+        d->text = text ? MathEquationParser::process_text_math(text) : "";
         lv_obj_invalidate(obj);
     }
 

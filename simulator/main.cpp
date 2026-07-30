@@ -377,7 +377,7 @@ static void show_main_menu(void) {
   };
 
   MenuOption options[] = {
-      {"1. 📁 Lesson & Worksheet File Browser (Select & Run)",
+      {"1. " LV_SYMBOL_DIRECTORY " Lesson & Worksheet File Browser (Select & Run)",
        "Browse and render all 29+ JSON lessons & circuit worksheets",
        run_lesson_browser_demo, 0x00A86B},
       {"2. Interactive Lesson Player (L001 NOT Gate)",

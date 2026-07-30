@@ -21,6 +21,7 @@ extern void test_json_parse_widget_basic(void);
 extern void test_json_parse_wires(void);
 extern void test_json_parse_and_gate_circuit(void);
 extern void test_json_parse_snake_case_embedded_symbol_and_widget_link(void);
+extern void test_math_equation_parser_conversions(void);
 
 // ============================================================================
 // Test Declarations - SVG Path Parser
@@ -104,6 +105,7 @@ inline void run_all_tests(void) {
     RUN_TEST(test_json_parse_wires);
     RUN_TEST(test_json_parse_and_gate_circuit);
     RUN_TEST(test_json_parse_snake_case_embedded_symbol_and_widget_link);
+    RUN_TEST(test_math_equation_parser_conversions);
     
     // ========================================================================
     // SVG Path Parser Tests (16 tests)
